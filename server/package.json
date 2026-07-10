@@ -1,0 +1,43 @@
+{
+  "name": "threads-downloader-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --experimental-sqlite --import tsx src/index.ts",
+    "start": "node --experimental-sqlite --import tsx src/index.ts",
+    "test:media": "tsx src/scripts/testMedia.ts",
+    "test:download": "tsx src/scripts/testDownload.ts",
+    "test:comments": "tsx src/scripts/testComments.ts",
+    "test:proxy": "tsx src/scripts/testProxy.ts",
+    "test:http": "tsx src/scripts/testHttp.ts",
+    "batch": "node --experimental-sqlite --import tsx src/scripts/run.ts",
+    "db:show": "node --experimental-sqlite --import tsx src/scripts/dbShow.ts",
+    "account:add": "node --experimental-sqlite --import tsx src/scripts/accountAdd.ts",
+    "export:shopee": "node --experimental-sqlite --import tsx src/scripts/exportShopee.ts",
+    "import:shopee": "node --experimental-sqlite --import tsx src/scripts/importShopee.ts",
+    "export:posts": "node --experimental-sqlite --import tsx src/scripts/exportPosts.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "https-proxy-agent": "^7.0.6",
+    "multer": "^1.4.5-lts.1",
+    "p-limit": "^6.2.0",
+    "playwright": "^1.49.1",
+    "proxy-chain": "^2.5.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.13",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

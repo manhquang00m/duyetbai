@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# output cua tool (media da tai ve) - KHONG commit
+downloads/
+
+# database SQLite - KHONG commit
+data/
+
+# file Excel xuat ra - KHONG commit
+exports/
+
+# bien moi truong chua RAPIDAPI_KEY that - KHONG commit
+.env
+*.env.local
+
+# session dang nhap cua Playwright (Step 4) - KHONG commit
+.pw-session/
+
+# build output
+dist/
+
+# logs
+*.log

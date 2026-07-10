@@ -1,0 +1,18 @@
+{
+  "name": "threads-downloader",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tool tải media/caption/comment tu Threads theo danh sach URL",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
