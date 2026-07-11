@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Play, Save, Trash2, RefreshCw } from 'lucide-react'
+import { Loader2, Play, Save, Trash2, RefreshCw, Search } from 'lucide-react'
 import {
   checkProxies,
   fetchProxies,
@@ -13,7 +13,9 @@ import {
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 function StatusBadge({ status }: { status: string | null }) {
   if (status === 'live')
@@ -38,6 +40,25 @@ export function ProxyPage() {
 
   const { data: saved } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['proxies'] })
+
+  const [savedSearch, setSavedSearch] = useState('')
+  const [savedStatusFilter, setSavedStatusFilter] = useState<'all' | 'live' | 'die' | 'unchecked'>(
+    'live',
+  )
+
+  const filteredSaved = useMemo(() => {
+    const q = savedSearch.trim().toLowerCase()
+    return (saved ?? []).filter((p) => {
+      if (savedStatusFilter === 'live' && p.status !== 'live') return false
+      if (savedStatusFilter === 'die' && p.status !== 'die') return false
+      if (savedStatusFilter === 'unchecked' && p.status) return false
+      if (q) {
+        const hay = `${p.proxy} ${p.account_names ?? ''}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      return true
+    })
+  }, [saved, savedSearch, savedStatusFilter])
 
   const checkMut = useMutation({
     mutationFn: (proxies: string[]) => checkProxies(proxies),
@@ -94,7 +115,7 @@ export function ProxyPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Proxy</h1>
         <p className="text-sm text-muted-foreground">
@@ -168,59 +189,104 @@ export function ProxyPage() {
         </div>
       )}
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Proxy đã lưu ({saved?.length ?? 0})</h2>
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
+            <h2 className="mr-auto shrink-0 text-sm font-semibold">
+              Proxy đã lưu{' '}
+              <span className="font-normal text-muted-foreground">
+                ({filteredSaved.length}/{saved?.length ?? 0})
+              </span>
+            </h2>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Tìm proxy / account"
+                value={savedSearch}
+                onChange={(e) => setSavedSearch(e.target.value)}
+                className="h-7 w-40 pl-6 text-xs"
+              />
+            </div>
+            <div className="flex gap-0.5 rounded-md border p-0.5">
+              {(
+                [
+                  { v: 'all', label: 'Tất cả' },
+                  { v: 'live', label: 'Live' },
+                  { v: 'die', label: 'Die' },
+                  { v: 'unchecked', label: 'Chưa ktra' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setSavedStatusFilter(opt.v)}
+                  className={cn(
+                    'rounded px-2 py-1 text-[11px] font-medium transition-colors',
+                    savedStatusFilter === opt.v
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="p-3 text-left font-medium">Proxy</th>
                 <th className="p-3 text-left font-medium">Trạng thái</th>
                 <th className="p-3 text-left font-medium">Exit IP</th>
+                <th className="p-3 text-left font-medium">Account đang dùng</th>
                 <th className="p-3 text-center font-medium"></th>
               </tr>
             </thead>
             <tbody>
-              {(saved ?? []).map((p: SavedProxy) => (
-                <tr key={p.id} className="border-b last:border-0">
-                  <td className="max-w-xs truncate p-3 font-mono text-xs">{p.proxy}</td>
-                  <td className="p-3">
-                    <StatusBadge status={p.status} />
-                  </td>
-                  <td className="p-3 text-muted-foreground">{p.ip ?? '—'}</td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={recheckMut.isPending}
-                        onClick={() => recheckMut.mutate(p.id)}
-                        aria-label="Kiểm tra lại"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => delMut.mutate(p.id)}
-                        aria-label="Xoá"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {(saved ?? []).length === 0 && (
+              {filteredSaved.map((p: SavedProxy) => {
+                const isChecking = recheckMut.isPending && recheckMut.variables === p.id
+                return (
+                  <tr key={p.id} className="border-b last:border-0">
+                    <td className="max-w-xs truncate p-3 font-mono text-xs">{p.proxy}</td>
+                    <td className="p-3">
+                      <StatusBadge status={p.status} />
+                    </td>
+                    <td className="p-3 text-muted-foreground">{p.ip ?? '—'}</td>
+                    <td className="p-3 text-muted-foreground">{p.account_names || '—'}</td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={isChecking}
+                          onClick={() => recheckMut.mutate(p.id)}
+                          aria-label="Kiểm tra lại"
+                        >
+                          <RefreshCw className={cn('h-4 w-4', isChecking && 'animate-spin')} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => delMut.mutate(p.id)}
+                          aria-label="Xoá"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+              {filteredSaved.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                    Chưa lưu proxy nào.
+                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                    {(saved ?? []).length === 0
+                      ? 'Chưa lưu proxy nào.'
+                      : 'Không có proxy khớp bộ lọc.'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
       </div>
     </div>
   )

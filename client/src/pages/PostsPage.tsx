@@ -14,11 +14,14 @@ import {
   RefreshCw,
   Copy,
   Trash2,
+  Wand2,
+  AlertTriangle,
 } from 'lucide-react'
 import {
   fetchPosts,
   fetchPost,
   deletePosts,
+  fetchExportPostsWarnings,
   exportPostsUrl,
   exportShopeeUrl,
   type PostListItem,
@@ -28,8 +31,10 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
+import { BeautifyDialog } from '@/components/BeautifyDialog'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
@@ -96,7 +101,12 @@ export function PostsPage() {
   const [oneShopee, setOneShopee] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
+  const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
+  const [exportWarn, setExportWarn] = useState<{ notUpdated: number; multiComment: number } | null>(
+    null,
+  )
+  const [checkingExport, setCheckingExport] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee],
@@ -162,6 +172,26 @@ export function PostsPage() {
     resetPage()
   }
 
+  const doExportPosts = () => {
+    window.location.href = exportPostsUrl
+  }
+
+  const onExportPostsClick = async () => {
+    setCheckingExport(true)
+    try {
+      const w = await fetchExportPostsWarnings()
+      if (w.notUpdated > 0 || w.multiComment > 0) {
+        setExportWarn(w)
+      } else {
+        doExportPosts()
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không kiểm tra được dữ liệu trước khi xuất')
+    } finally {
+      setCheckingExport(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -173,9 +203,9 @@ export function PostsPage() {
           <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
             <FileDown className="h-4 w-4" /> Shopee input
           </a>
-          <a href={exportPostsUrl} className={cn(buttonVariants({ size: 'sm' }))}>
+          <Button size="sm" onClick={onExportPostsClick} disabled={checkingExport}>
             <Download className="h-4 w-4" /> posts.xlsx
-          </a>
+          </Button>
         </div>
       </div>
 
@@ -295,14 +325,14 @@ export function PostsPage() {
                     <span
                       className={cn(
                         'mb-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium',
-                        (p.shopee_comment_count ?? 0) > 1
+                        p.shopee_count > 1
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
                           : 'bg-muted text-muted-foreground',
                       )}
-                      title="Số comment của tác giả có link shopee"
+                      title="Số link shopee đã lưu (khớp với Detail)"
                     >
                       <MessageCircle className="h-3 w-3" />
-                      {p.shopee_comment_count ?? 0} cmt shopee
+                      {p.shopee_count} cmt shopee
                     </span>
                     <div className="truncate text-xs text-muted-foreground">{p.comment || '—'}</div>
                   </td>
@@ -402,6 +432,9 @@ export function PostsPage() {
           <Button size="sm" variant="outline" onClick={() => setRescrapeIds([...sel])}>
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setBeautifyIds([...sel])}>
+            <Wand2 className="h-4 w-4" /> Làm đẹp video
+          </Button>
           <Button size="sm" variant="outline" onClick={doDelete}>
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa
           </Button>
@@ -424,6 +457,53 @@ export function PostsPage() {
         }}
         onDone={invalidateAll}
       />
+
+      <BeautifyDialog
+        open={!!beautifyIds}
+        postIds={beautifyIds ?? []}
+        onClose={() => {
+          setBeautifyIds(null)
+          invalidateAll()
+        }}
+        onDone={invalidateAll}
+      />
+
+      <Dialog open={!!exportWarn} onClose={() => setExportWarn(null)} className="max-w-md">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+          <div>
+            <h2 className="text-lg font-semibold">Dữ liệu chưa hoàn thiện</h2>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              {(exportWarn?.notUpdated ?? 0) > 0 && (
+                <li>
+                  <strong className="text-foreground">{exportWarn?.notUpdated}</strong> bài chưa cập
+                  nhật link mới (còn link Shopee gốc).
+                </li>
+              )}
+              {(exportWarn?.multiComment ?? 0) > 0 && (
+                <li>
+                  <strong className="text-foreground">{exportWarn?.multiComment}</strong> bài có nhiều
+                  hơn 1 comment Shopee — file chỉ xuất comment sớm nhất, có thể sót link ở các comment
+                  còn lại.
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setExportWarn(null)}>
+            Huỷ
+          </Button>
+          <Button
+            onClick={() => {
+              setExportWarn(null)
+              doExportPosts()
+            }}
+          >
+            Vẫn xuất file
+          </Button>
+        </div>
+      </Dialog>
     </div>
   )
 }
@@ -467,7 +547,22 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
       <div className="grid grid-cols-2 gap-3">
         {data.media.map((m) =>
           m.type === 'video' ? (
-            <video key={m.file} src={m.url} controls className="w-full rounded-lg" />
+            <div key={m.file} className="space-y-1.5">
+              <video src={m.url} controls className="w-full rounded-lg" />
+              {m.processedUrl && (
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">Bản đã làm đẹp</div>
+                  <video src={m.processedUrl} controls className="w-full rounded-lg ring-1 ring-primary/40" />
+                  <a
+                    href={m.processedUrl}
+                    download
+                    className="inline-block text-xs text-primary underline-offset-2 hover:underline"
+                  >
+                    Tải bản đã làm đẹp
+                  </a>
+                </div>
+              )}
+            </div>
           ) : (
             <img key={m.file} src={m.url} alt="" className="w-full rounded-lg" />
           ),

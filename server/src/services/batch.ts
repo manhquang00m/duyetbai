@@ -17,6 +17,7 @@ export interface BatchItemResult {
   entries?: number;
   scrapeError?: string;
   error?: string;
+  file?: string; // ten file video (dung cho job "lam dep video")
 }
 
 export type BatchProgress = (item: BatchItemResult, done: number, total: number) => void;

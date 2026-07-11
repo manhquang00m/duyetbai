@@ -76,6 +76,41 @@ try {
   // cot da ton tai -> bo qua
 }
 
+// Rang buoc: 1 proxy chi duoc gan cho toi da 1 account (bo trong/NULL). Neu DB dang co san
+// du lieu trung tu truoc (import cu) thi lenh nay se loi -> bo qua, code tang ung dung
+// (db/accounts.ts) van chan duoc truong hop trung cho cac thay doi MOI tu day ve sau.
+try {
+  db.exec(
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_proxy_unique ON accounts(proxy) WHERE proxy IS NOT NULL AND proxy <> ''",
+  );
+} catch {
+  // du lieu cu dang trung -> bo qua, khong chan server khoi dong
+}
+
+// Migration: file video da "lam dep" (watermark/filter/crop/toc do), luu canh file goc.
+try {
+  db.exec('ALTER TABLE media ADD COLUMN processed_file TEXT');
+} catch {
+  // cot da ton tai -> bo qua
+}
+
+// Migration: mo rong bang accounts thanh kho quan ly account Threads day du
+// (import tu Excel: Profile=name, Thiet bi, Banned, Ngay tao=created_at, Pass_Threads, Gmail, Password, Proxy).
+for (const stmt of [
+  'ALTER TABLE accounts ADD COLUMN device TEXT',
+  'ALTER TABLE accounts ADD COLUMN banned INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE accounts ADD COLUMN pass_threads TEXT',
+  'ALTER TABLE accounts ADD COLUMN gmail TEXT',
+  'ALTER TABLE accounts ADD COLUMN gmail_password TEXT',
+  'ALTER TABLE accounts ADD COLUMN proxy TEXT',
+]) {
+  try {
+    db.exec(stmt);
+  } catch {
+    // cot da ton tai -> bo qua
+  }
+}
+
 // Backfill cho bai cu (cot NULL): dem so comment distinct co link trong shopee_entries.
 try {
   db.exec(`

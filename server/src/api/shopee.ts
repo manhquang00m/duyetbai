@@ -5,6 +5,7 @@ import multer from 'multer';
 import { exportShopeeInput, exportPosts } from '../services/exporter';
 import { importShopeeLinks } from '../services/importer';
 import { db } from '../db';
+import { getExportWarnings } from '../db/queries';
 import { EXPORT_DIR } from '../config';
 
 const uploadDir = path.join(EXPORT_DIR, '_uploads');
@@ -29,6 +30,11 @@ router.get('/export/shopee', async (_req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// GET /api/export/posts/check -> canh bao truoc khi xuat (chua cap nhat link / >1 comment shopee)
+router.get('/export/posts/check', (_req, res) => {
+  res.json(getExportWarnings());
 });
 
 // GET /api/export/posts -> tai file cuoi cho tool auto dang

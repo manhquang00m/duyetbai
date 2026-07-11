@@ -35,3 +35,10 @@ export const EXPORT_DIR = process.env.EXPORT_DIR
 export const ACCOUNTS_FILE = process.env.ACCOUNTS_FILE
   ? path.resolve(process.env.ACCOUNTS_FILE)
   : path.join(repoRoot, 'accounts.txt');
+
+/**
+ * Duong dan toi binary ffmpeg (dung cho tinh nang "lam dep video").
+ * Mac dinh 'ffmpeg' -> yeu cau da cai dat va co trong PATH he thong.
+ * Doi bang bien moi truong FFMPEG_PATH neu ffmpeg nam o noi khac.
+ */
+export const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';

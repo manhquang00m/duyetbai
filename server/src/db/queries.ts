@@ -97,6 +97,7 @@ export interface MediaRow {
   ok: number;
   error: string | null;
   url: string; // /media/... de client phat truc tiep
+  processedUrl?: string | null; // ban da "lam dep" (neu co)
 }
 
 export interface ShopeeRow {
@@ -112,13 +113,23 @@ export function getPostDetail(postId: string) {
   if (!post) return null;
 
   const media = (
-    db.prepare('SELECT type, file, ok, error FROM media WHERE post_id = ? ORDER BY id').all(postId) as {
+    db
+      .prepare('SELECT type, file, ok, error, processed_file FROM media WHERE post_id = ? ORDER BY id')
+      .all(postId) as {
       type: string;
       file: string;
       ok: number;
       error: string | null;
+      processed_file: string | null;
     }[]
-  ).map((m) => ({ ...m, url: `/media/post_${postId}/${m.file}` }));
+  ).map((m) => {
+    const { processed_file, ...rest } = m;
+    return {
+      ...rest,
+      url: `/media/post_${postId}/${m.file}`,
+      processedUrl: processed_file ? `/media/post_${postId}/${processed_file}` : null,
+    };
+  });
 
   const shopee = db
     .prepare('SELECT comment, link, new_link FROM shopee_entries WHERE post_id = ? ORDER BY id')
@@ -137,6 +148,26 @@ export function getStats() {
   };
 }
 
+/**
+ * Canh bao truoc khi xuat posts.xlsx:
+ * - notUpdated: bai co link shopee nhung chua duoc cap nhat link moi (new_link trong)
+ * - multiComment: bai co > 1 comment (cua tac gia) chua link shopee -> file chi xuat 1 comment
+ *   (comment som nhat), co the sot link cua cac comment con lai.
+ */
+export function getExportWarnings(): { notUpdated: number; multiComment: number } {
+  const n = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
+  return {
+    notUpdated: n(`
+      SELECT COUNT(*) AS n FROM posts p
+       WHERE EXISTS (
+         SELECT 1 FROM shopee_entries s
+          WHERE s.post_id = p.post_id AND (s.new_link IS NULL OR s.new_link = '')
+       )
+    `),
+    multiComment: n('SELECT COUNT(*) AS n FROM posts WHERE shopee_comment_count > 1'),
+  };
+}
+
 /** Bai da co trong DB chua (dedup theo post_id). */
 export function postExists(postId: string): boolean {
   return !!db.prepare('SELECT 1 FROM posts WHERE post_id = ?').get(postId);
@@ -145,6 +176,27 @@ export function postExists(postId: string): boolean {
 /** Xoa 1 bai (FK ON DELETE CASCADE tu xoa media + shopee_entries). */
 export function deletePost(postId: string): void {
   db.prepare('DELETE FROM posts WHERE post_id = ?').run(postId);
+}
+
+export interface VideoMediaRow {
+  id: number;
+  post_id: string;
+  file: string; // duong dan tuong doi trong post_<id>/, vd videos/xxx.mp4
+  username: string;
+}
+
+/** Lay toan bo video (media.type='video', ok=1) cua danh sach bai -> dung cho job "lam dep video". */
+export function getVideoMedia(postIds: string[]): VideoMediaRow[] {
+  if (postIds.length === 0) return [];
+  const placeholders = postIds.map(() => '?').join(',');
+  return db
+    .prepare(
+      `SELECT m.id, m.post_id, m.file, p.username
+         FROM media m JOIN posts p ON p.post_id = m.post_id
+        WHERE m.type = 'video' AND m.ok = 1 AND m.post_id IN (${placeholders})
+        ORDER BY m.id`,
+    )
+    .all(...postIds) as VideoMediaRow[];
 }
 
 /** Thong tin ngan cho item "da tai roi" + rescrape. */

@@ -32,6 +32,13 @@ const updateScrape = db.prepare(
   'UPDATE posts SET post_date = ?, scrape_error = ?, shopee_comment_count = ? WHERE post_id = ?',
 );
 
+const updateProcessedFile = db.prepare('UPDATE media SET processed_file = ? WHERE id = ?');
+
+/** Luu duong dan file video da "lam dep" (watermark/filter/crop/toc do) cho 1 media. */
+export function setProcessedFile(mediaId: number, processedFile: string): void {
+  updateProcessedFile.run(processedFile, mediaId);
+}
+
 /** Chi cap nhat comment/postDate cua 1 bai (nut "Lay lai comment"). */
 export function saveScrape(
   postId: string,

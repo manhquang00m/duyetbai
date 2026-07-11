@@ -7,6 +7,7 @@ export interface Proxy {
   ip: string | null;
   checked_at: string | null;
   created_at: string;
+  account_names: string | null; // ten (cac) account dang gan proxy nay, cach nhau ", "
 }
 
 export interface ProxyInput {
@@ -15,9 +16,15 @@ export interface ProxyInput {
   ip?: string;
 }
 
+/** Danh sach proxy da luu, kem ten account dang gan (join theo chuoi proxy trung khop). */
 export function listProxies(): Proxy[] {
   return db
-    .prepare('SELECT id, proxy, status, ip, checked_at, created_at FROM proxies ORDER BY id DESC')
+    .prepare(
+      `SELECT p.id, p.proxy, p.status, p.ip, p.checked_at, p.created_at,
+              (SELECT GROUP_CONCAT(a.name, ', ') FROM accounts a WHERE a.proxy = p.proxy) AS account_names
+         FROM proxies p
+        ORDER BY p.id DESC`,
+    )
     .all() as Proxy[];
 }
 
