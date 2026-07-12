@@ -12,9 +12,10 @@ export interface PostListItem {
   scraped_at: string;
   scrape_error: string | null;
   media_count: number;
-  shopee_count: number;
+  shopee_count: number; // so link da luu (1 comment nhieu link -> nhieu dong)
+  distinct_comment_count: number; // so comment THUC su khac nhau (dung de hien thi "X cmt shopee")
   new_count: number; // so link shopee da co new_link (da update)
-  shopee_comment_count: number | null; // so comment (chu bai) co link shopee
+  shopee_comment_count: number | null; // so comment (chu bai) co link shopee - lay tu scrape, co the lech neu re-scrape chua chay
   comment: string | null; // comment shopee dau tien (ngan gon)
   thumb: string | null; // duong dan tuong doi trong /media, vd post_X/img/image.jpg
 }
@@ -24,6 +25,7 @@ const SELECT_LIST = `
          p.post_date, p.scraped_at, p.scrape_error, p.shopee_comment_count,
          (SELECT COUNT(*) FROM media m WHERE m.post_id = p.post_id) AS media_count,
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id) AS shopee_count,
+         (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
             AND s.new_link IS NOT NULL AND s.new_link <> '') AS new_count,
          (SELECT comment FROM shopee_entries s WHERE s.post_id = p.post_id

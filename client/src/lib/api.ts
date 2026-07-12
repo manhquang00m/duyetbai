@@ -30,6 +30,7 @@ export interface PostListItem {
   scrape_error: string | null
   media_count: number
   shopee_count: number
+  distinct_comment_count: number
   new_count: number
   shopee_comment_count: number | null
   comment: string | null

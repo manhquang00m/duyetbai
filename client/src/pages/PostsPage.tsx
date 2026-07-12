@@ -193,7 +193,7 @@ export function PostsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 pb-20">
+    <div className="mx-auto max-w-8xl space-y-4 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Bài viết</h1>
@@ -325,14 +325,14 @@ export function PostsPage() {
                     <span
                       className={cn(
                         'mb-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium',
-                        p.shopee_count > 1
+                        p.distinct_comment_count > 1
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
                           : 'bg-muted text-muted-foreground',
                       )}
-                      title="Số link shopee đã lưu (khớp với Detail)"
+                      title="Số comment khác nhau có link shopee (1 comment nhiều link vẫn tính là 1)"
                     >
                       <MessageCircle className="h-3 w-3" />
-                      {p.shopee_count} cmt shopee
+                      {p.distinct_comment_count} cmt shopee
                     </span>
                     <div className="truncate text-xs text-muted-foreground">{p.comment || '—'}</div>
                   </td>
@@ -517,6 +517,14 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
   const caption = String(data.post.caption ?? '')
   const url = String(data.post.url ?? '')
 
+  // Gom cac dong shopee cung 1 comment (nhieu link) lai voi nhau, chi hien comment 1 lan.
+  const shopeeGroups: { comment: string; entries: typeof data.shopee }[] = []
+  for (const s of data.shopee) {
+    const g = shopeeGroups.find((g) => g.comment === s.comment)
+    if (g) g.entries.push(s)
+    else shopeeGroups.push({ comment: s.comment, entries: [s] })
+  }
+
   const copyUrl = () => {
     navigator.clipboard.writeText(url).then(
       () => toast.success('Đã copy URL'),
@@ -575,24 +583,50 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
       </div>
 
       <div>
-        <div className="mb-2 text-sm font-medium">Link Shopee ({data.shopee.length})</div>
+        <div className="mb-2 text-sm font-medium">
+          Link Shopee ({data.shopee.length}
+          {shopeeGroups.length !== data.shopee.length ? ` · ${shopeeGroups.length} comment` : ''})
+        </div>
         <ul className="space-y-2 text-sm">
-          {data.shopee.map((s, i) => (
+          {shopeeGroups.map((g, i) => (
             <li key={i} className="rounded-lg border p-3">
-              <div className="mb-1 text-muted-foreground">{s.comment}</div>
-              <a
-                href={s.link}
-                target="_blank"
-                rel="noreferrer"
-                className="break-all text-primary underline"
-              >
-                {s.link}
-              </a>
-              {s.new_link && (
-                <div className="mt-1 break-all text-xs text-green-600 dark:text-green-400">
-                  → {s.new_link}
-                </div>
-              )}
+              <div className="mb-1.5 text-muted-foreground">{g.comment}</div>
+              <div className="space-y-1.5">
+                {g.entries.map((s, j) => (
+                  <div key={j} className="rounded-md bg-muted/40 p-2">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                        Gốc:
+                      </span>
+                      <a
+                        href={s.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="break-all text-primary underline"
+                      >
+                        {s.link}
+                      </a>
+                    </div>
+                    <div className="mt-0.5 flex items-baseline gap-1.5">
+                      <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                        Mới:
+                      </span>
+                      {s.new_link ? (
+                        <a
+                          href={s.new_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="break-all text-green-600 underline dark:text-green-400"
+                        >
+                          {s.new_link}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Chưa cập nhật</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </li>
           ))}
           {data.shopee.length === 0 && <li className="text-muted-foreground">Không có.</li>}
