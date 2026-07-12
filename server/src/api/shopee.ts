@@ -57,9 +57,11 @@ router.post('/import/shopee', upload.single('file'), async (req, res, next) => {
   }
   const filePath = req.file.path;
   try {
-    const origCol = parseCol(req.body?.origCol) ?? 1;
-    const newCol = parseCol(req.body?.newCol) ?? 7; // Shopee gen link o cot G
-    const result = await importShopeeLinks(filePath, { origCol, newCol });
+    const origCol = parseCol(req.body?.origCol) ?? 1; // A: Lien ket chinh
+    const newCol = parseCol(req.body?.newCol) ?? 7; // G: Lien ket chuyen doi
+    const subIdCol = parseCol(req.body?.subIdCol) ?? 2; // B: Sub_id1 (= POST_ID)
+    const isCsv = /\.csv$/i.test(req.file.originalname || '');
+    const result = await importShopeeLinks(filePath, { origCol, newCol, subIdCol, isCsv });
     res.json(result);
   } catch (err) {
     next(err);

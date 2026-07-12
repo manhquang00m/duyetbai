@@ -55,7 +55,7 @@ export function ShopeePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              File [Liên kết gốc | Sub_id] để đưa lên Shopee gen link.
+              File [Liên kết chính | Sub_id1..Sub_id5] (sheet "Sheet 1") để đưa lên Shopee gen link.
             </p>
             <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
               <FileDown className="h-4 w-4" /> shopee_input.xlsx
@@ -69,9 +69,9 @@ export function ShopeePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Tải file Shopee trả về (link mới ở cột G) lên đây.
+              Tải file Shopee trả về (.xlsx hoặc .csv, link mới ở cột G) lên đây.
             </p>
-            <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={onFile} />
+            <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} />
             <Button
               variant="outline"
               size="sm"

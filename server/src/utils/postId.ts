@@ -16,6 +16,14 @@ export function postFolderName(url: string): string {
 }
 
 /**
+ * Lam sach post_id de dung lam Sub_id khi xuat file cho Shopee (chi chap nhan chu+so,
+ * post_id thuc te co the co "_"/"-" tu shortcode Threads).
+ */
+export function cleanSubId(postId: string): string {
+  return postId.replace(/[^a-zA-Z0-9]/g, '');
+}
+
+/**
  * Trich username chu bai tu URL.
  * Vi du: https://www.threads.com/@baoyennn_1406/post/DMASTC8SVKz -> baoyennn_1406
  */

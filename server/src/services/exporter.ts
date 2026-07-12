@@ -2,12 +2,14 @@ import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { db } from '../db';
 import { listActiveAccounts } from '../db/accounts';
+import { cleanSubId } from '../utils/postId';
 import { DOWNLOAD_DIR } from '../config';
 
 /**
  * Buoc 1: xuat file cho Shopee gen link moi.
- * Cot: "Lien ket goc" (link shopee goc) | "Sub_id" (= POST_ID cua bai).
- * Moi link 1 dong (bai co N link -> N dong, cung Sub_id).
+ * Dung dinh dang Shopee yeu cau: sheet ten "Sheet 1", cot A = link goc,
+ * cot B->F = Sub_id1..Sub_id5 (Sub_id1 = POST_ID da lam sach ky tu dac biet).
+ * Moi link 1 dong (bai co N link -> N dong, cung Sub_id1).
  */
 export async function exportShopeeInput(filePath: string): Promise<number> {
   const rows = db
@@ -20,9 +22,9 @@ export async function exportShopeeInput(filePath: string): Promise<number> {
     .all() as { link: string; post_id: string }[];
 
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('shopee');
-  ws.addRow(['Liên kết gốc', 'Sub_id']);
-  for (const r of rows) ws.addRow([r.link, r.post_id]);
+  const ws = wb.addWorksheet('Sheet 1');
+  ws.addRow(['Liên kết chính', 'Sub_id1', 'Sub_id2', 'Sub_id3', 'Sub_id4', 'Sub_id5']);
+  for (const r of rows) ws.addRow([r.link, cleanSubId(r.post_id), '', '', '', '']);
 
   await wb.xlsx.writeFile(filePath);
   return rows.length;
