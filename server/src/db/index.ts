@@ -60,6 +60,21 @@ db.exec(`
     checked_at  TEXT,
     created_at  TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS collect_history (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    url          TEXT NOT NULL UNIQUE,
+    post_id      TEXT,
+    ok           INTEGER NOT NULL,
+    skipped      INTEGER NOT NULL DEFAULT 0,
+    error        TEXT,
+    attempted_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 // Migration: them cot new_link cho shopee_entries neu chua co (DB cu).
@@ -103,6 +118,20 @@ for (const stmt of [
   'ALTER TABLE accounts ADD COLUMN gmail TEXT',
   'ALTER TABLE accounts ADD COLUMN gmail_password TEXT',
   'ALTER TABLE accounts ADD COLUMN proxy TEXT',
+]) {
+  try {
+    db.exec(stmt);
+  } catch {
+    // cot da ton tai -> bo qua
+  }
+}
+
+// Migration: trang thai xuat/dang bai + account co dinh (khong random lai moi lan export posts.xlsx).
+for (const stmt of [
+  'ALTER TABLE posts ADD COLUMN assigned_account TEXT',
+  "ALTER TABLE posts ADD COLUMN post_status TEXT NOT NULL DEFAULT 'new'",
+  'ALTER TABLE posts ADD COLUMN exported_at TEXT',
+  'ALTER TABLE posts ADD COLUMN posted_at TEXT',
 ]) {
   try {
     db.exec(stmt);

@@ -50,10 +50,22 @@ export function addAccount(name: string): void {
   insAccount.run(name, new Date().toISOString());
 }
 
-/** Danh sach ten account dang active, theo thu tu them vao (dung cho round-robin). */
+/**
+ * Danh sach ten account dang active VA proxy khong bi Die, theo thu tu them vao (dung cho round-robin).
+ * Account co proxy da kiem tra = 'die' se bi loai (tranh gan bai cho account chac chan khong dang duoc);
+ * account chua co proxy hoac proxy chua kiem tra van duoc tinh la kha dung.
+ */
 export function listActiveAccounts(): string[] {
   const rows = db
-    .prepare('SELECT name FROM accounts WHERE active = 1 ORDER BY id')
+    .prepare(
+      `SELECT a.name
+         FROM accounts a
+        WHERE a.active = 1
+          AND NOT EXISTS (
+            SELECT 1 FROM proxies p WHERE p.proxy = a.proxy AND p.status = 'die'
+          )
+        ORDER BY a.id`,
+    )
     .all() as { name: string }[];
   return rows.map((r) => r.name);
 }

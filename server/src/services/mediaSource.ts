@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import { z } from 'zod';
-import { extractShortcode } from '../utils/postId';
+import { extractShortcode, extractAuthor } from '../utils/postId';
 import { getProxyAgent } from '../utils/httpAgent';
 
 /**
@@ -61,7 +61,12 @@ const ResponseSchema = z.object({
         viewsCount: z.string().optional(),
       })
       .optional(),
-    mediaItems: z.array(MediaItemSchema).default([]),
+    // savethreads doi khi tra "mediaItems": false (bai khong co media) thay vi mang rong
+    // -> ep ve [] truoc khi validate, tranh loi zod cung (Expected array, received boolean).
+    mediaItems: z.preprocess(
+      (v) => (Array.isArray(v) ? v : []),
+      z.array(MediaItemSchema),
+    ),
   }),
 });
 
@@ -106,7 +111,11 @@ export async function getPostMedia(url: string): Promise<PostMedia> {
   const client = makeClient();
   const cookie = await getSessionCookie(client);
 
-  const res = await client.post(PROXY_URL, new URLSearchParams({ url }).toString(), {
+  // Bo cac query param theo doi (?xmt=...&slof=1...) truoc khi goi savethreads - chi gui
+  // dung URL bai o dang chuan, tranh truong hop scraper cua ho bi vuong tham so thua.
+  const cleanUrl = `https://www.threads.com/@${extractAuthor(url)}/post/${extractShortcode(url)}`;
+
+  const res = await client.post(PROXY_URL, new URLSearchParams({ url: cleanUrl }).toString(), {
     headers: {
       'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
       origin: BASE_URL,

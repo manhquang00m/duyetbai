@@ -39,6 +39,36 @@ export function setProcessedFile(mediaId: number, processedFile: string): void {
   updateProcessedFile.run(processedFile, mediaId);
 }
 
+const assignAccount = db.prepare(
+  "UPDATE posts SET assigned_account = ?, post_status = 'exported', exported_at = ? WHERE post_id = ?",
+);
+const touchExported = db.prepare(
+  "UPDATE posts SET post_status = CASE WHEN post_status = 'new' THEN 'exported' ELSE post_status END, exported_at = ? WHERE post_id = ?",
+);
+const markPosted = db.prepare("UPDATE posts SET post_status = 'posted', posted_at = ? WHERE post_id = ?");
+const markUnposted = db.prepare(
+  "UPDATE posts SET post_status = 'exported', posted_at = NULL WHERE post_id = ?",
+);
+
+/** Gan account co dinh cho 1 bai khi export lan dau (khong doi lai o cac lan export sau). */
+export function assignAccountAndMarkExported(postId: string, account: string): void {
+  assignAccount.run(account, new Date().toISOString(), postId);
+}
+
+/** Bai da co assigned_account tu truoc -> chi cap nhat lai thoi gian xuat gan nhat. */
+export function touchExportedAt(postId: string): void {
+  touchExported.run(new Date().toISOString(), postId);
+}
+
+/** Danh dau (hoac bo danh dau) da dang bai - nguoi dung tu xac nhan sau khi dang qua tool ben ngoai. */
+export function markPostsPosted(postIds: string[], posted: boolean): void {
+  const now = new Date().toISOString();
+  for (const id of postIds) {
+    if (posted) markPosted.run(now, id);
+    else markUnposted.run(id);
+  }
+}
+
 /** Chi cap nhat comment/postDate cua 1 bai (nut "Lay lai comment"). */
 export function saveScrape(
   postId: string,

@@ -4,6 +4,7 @@ import { savePostResult } from '../db/repository';
 import { withRetry } from '../utils/retry';
 import { extractShortcode } from '../utils/postId';
 import { postExists, getPostBrief } from '../db/queries';
+import { recordCollectAttempt } from '../db/history';
 import { CONCURRENCY } from '../config';
 
 export interface BatchItemResult {
@@ -44,8 +45,9 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
     limit(async (): Promise<BatchItemResult> => {
       const log = (m: string) => onLog?.(url, m);
       let item: BatchItemResult;
+      let postId: string | null = null;
       try {
-        const postId = extractShortcode(url);
+        postId = extractShortcode(url);
         if (!force && postExists(postId)) {
           const brief = getPostBrief(postId);
           item = {
@@ -81,6 +83,25 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
       done++;
       const tag = item.ok ? (item.skipped ? 'SKIP' : 'OK') : 'FAIL';
       console.log(`[${done}/${total}] ${tag} ${url}`);
+
+      // Luu lich su thu thap (upsert theo url) - de co "Lich su thu thap" xem lai + retry
+      // ngay ca khi job trong bo nho da mat (server restart / dong tab).
+      const clean = item.ok && !item.scrapeError && (item.mediaFail ?? 0) === 0;
+      const historyError = !item.ok
+        ? item.error
+        : item.scrapeError
+          ? `Scrape lỗi: ${item.scrapeError}`
+          : (item.mediaFail ?? 0) > 0
+            ? `${item.mediaFail} media tải lỗi`
+            : null;
+      recordCollectAttempt({
+        url,
+        postId,
+        ok: clean || !!item.skipped,
+        skipped: item.skipped,
+        error: historyError,
+      });
+
       onProgress?.(item, done, total);
       return item;
     }),

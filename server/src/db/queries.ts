@@ -18,11 +18,16 @@ export interface PostListItem {
   shopee_comment_count: number | null; // so comment (chu bai) co link shopee - lay tu scrape, co the lech neu re-scrape chua chay
   comment: string | null; // comment shopee dau tien (ngan gon)
   thumb: string | null; // duong dan tuong doi trong /media, vd post_X/img/image.jpg
+  assigned_account: string | null; // account co dinh se dung khi xuat posts.xlsx
+  post_status: string; // 'new' | 'exported' | 'posted'
+  exported_at: string | null;
+  posted_at: string | null;
 }
 
 const SELECT_LIST = `
   SELECT p.post_id, p.url, p.username, p.caption, p.likes, p.comments, p.views,
          p.post_date, p.scraped_at, p.scrape_error, p.shopee_comment_count,
+         p.assigned_account, p.post_status, p.exported_at, p.posted_at,
          (SELECT COUNT(*) FROM media m WHERE m.post_id = p.post_id) AS media_count,
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id) AS shopee_count,
          (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
@@ -45,6 +50,7 @@ export function listPosts(
     noShopee?: boolean;
     notUpdated?: boolean;
     oneShopee?: boolean;
+    postStatus?: 'new' | 'exported' | 'posted';
   } = {},
 ): {
   total: number;
@@ -70,6 +76,10 @@ export function listPosts(
   }
   if (opts.oneShopee) {
     conds.push('p.shopee_comment_count = 1');
+  }
+  if (opts.postStatus) {
+    conds.push('p.post_status = ?');
+    args.push(opts.postStatus);
   }
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
 

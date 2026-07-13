@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -16,11 +16,14 @@ import {
   Trash2,
   Wand2,
   AlertTriangle,
+  Send,
+  Undo2,
 } from 'lucide-react'
 import {
   fetchPosts,
   fetchPost,
   deletePosts,
+  markPostsPosted,
   fetchExportPostsWarnings,
   exportPostsUrl,
   exportShopeeUrl,
@@ -35,41 +38,11 @@ import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
 import { BeautifyDialog } from '@/components/BeautifyDialog'
+import { MultiFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
-const COLSPAN = 6
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-        active
-          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-          : 'border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground',
-      )}
-    >
-      <span
-        className={cn(
-          'h-1.5 w-1.5 rounded-full',
-          active ? 'bg-primary-foreground' : 'bg-muted-foreground/40',
-        )}
-      />
-      {children}
-    </button>
-  )
-}
+const COLSPAN = 7
 
 function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) {
   if (shopee === 0) return <span className="text-muted-foreground">—</span>
@@ -92,6 +65,26 @@ function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) 
   )
 }
 
+function PostStatusBadge({ status }: { status: PostListItem['post_status'] }) {
+  if (status === 'posted')
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
+        <Send className="h-3 w-3" /> Đã đăng
+      </span>
+    )
+  if (status === 'exported')
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+        Đã xuất
+      </span>
+    )
+  return (
+    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      Mới
+    </span>
+  )
+}
+
 export function PostsPage() {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -99,6 +92,7 @@ export function PostsPage() {
   const [noShopee, setNoShopee] = useState(false)
   const [notUpdated, setNotUpdated] = useState(false)
   const [oneShopee, setOneShopee] = useState(false)
+  const [postStatus, setPostStatus] = useState<'new' | 'exported' | 'posted' | undefined>(undefined)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
   const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
@@ -107,9 +101,10 @@ export function PostsPage() {
     null,
   )
   const [checkingExport, setCheckingExport] = useState(false)
+  const [onlyUnposted, setOnlyUnposted] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee],
+    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus],
     queryFn: () =>
       fetchPosts({
         search,
@@ -118,6 +113,7 @@ export function PostsPage() {
         noShopee,
         notUpdated,
         oneShopee,
+        postStatus,
       }),
     placeholderData: keepPreviousData,
   })
@@ -125,7 +121,8 @@ export function PostsPage() {
   const total = data?.total ?? 0
   const items = data?.items ?? []
   const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1)
-  const filterActive = noShopee || notUpdated || oneShopee
+  const activeFilterCount = [noShopee, notUpdated, oneShopee, !!postStatus].filter(Boolean).length
+  const filterActive = activeFilterCount > 0
 
   const allChecked = items.length > 0 && items.every((i) => sel.has(i.post_id))
   const someChecked = items.some((i) => sel.has(i.post_id)) && !allChecked
@@ -164,16 +161,26 @@ export function PostsPage() {
     toast.success(`Đã xoá ${ids.length} bài`)
   }
 
+  const doMarkPosted = async (posted: boolean) => {
+    const ids = [...sel]
+    if (ids.length === 0) return
+    await markPostsPosted(ids, posted)
+    setSel(new Set())
+    invalidateAll()
+    toast.success(posted ? `Đã đánh dấu ${ids.length} bài là đã đăng` : `Đã bỏ đánh dấu ${ids.length} bài`)
+  }
+
   const resetPage = () => setPage(0)
   const clearFilters = () => {
     setNoShopee(false)
     setNotUpdated(false)
     setOneShopee(false)
+    setPostStatus(undefined)
     resetPage()
   }
 
   const doExportPosts = () => {
-    window.location.href = exportPostsUrl
+    window.location.href = onlyUnposted ? `${exportPostsUrl}?onlyUnposted=1` : exportPostsUrl
   }
 
   const onExportPostsClick = async () => {
@@ -199,13 +206,19 @@ export function PostsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Bài viết</h1>
           <p className="text-sm text-muted-foreground">{total} bài</p>
         </div>
-        <div className="flex items-center gap-2">
-          <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-            <FileDown className="h-4 w-4" /> Shopee input
-          </a>
-          <Button size="sm" onClick={onExportPostsClick} disabled={checkingExport}>
-            <Download className="h-4 w-4" /> posts.xlsx
-          </Button>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2">
+            <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              <FileDown className="h-4 w-4" /> Shopee input
+            </a>
+            <Button size="sm" onClick={onExportPostsClick} disabled={checkingExport}>
+              <Download className="h-4 w-4" /> posts.xlsx
+            </Button>
+          </div>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Checkbox checked={onlyUnposted} onCheckedChange={setOnlyUnposted} />
+            Chỉ xuất bài chưa đăng
+          </label>
         </div>
       </div>
 
@@ -223,45 +236,59 @@ export function PostsPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Lọc</span>
-          <FilterChip
-            active={noShopee}
-            onClick={() => {
-              setNoShopee((v) => !v)
-              resetPage()
-            }}
-          >
-            Chưa có link shopee
-          </FilterChip>
-          <FilterChip
-            active={notUpdated}
-            onClick={() => {
-              setNotUpdated((v) => !v)
-              resetPage()
-            }}
-          >
-            Chưa cập nhật link mới
-          </FilterChip>
-          <FilterChip
-            active={oneShopee}
-            onClick={() => {
-              setOneShopee((v) => !v)
-              resetPage()
-            }}
-          >
-            Đúng 1 cmt shopee
-          </FilterChip>
-          {filterActive && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Xóa lọc
-            </button>
-          )}
-        </div>
+        <MultiFilterDropdown
+          activeCount={activeFilterCount}
+          onClearAll={() => {
+            clearFilters()
+          }}
+          groups={[
+            {
+              type: 'checkbox',
+              key: 'noShopee',
+              label: 'Chưa có link shopee',
+              checked: noShopee,
+              onToggle: () => {
+                setNoShopee((v) => !v)
+                resetPage()
+              },
+            },
+            {
+              type: 'checkbox',
+              key: 'notUpdated',
+              label: 'Chưa cập nhật link mới',
+              checked: notUpdated,
+              onToggle: () => {
+                setNotUpdated((v) => !v)
+                resetPage()
+              },
+            },
+            {
+              type: 'checkbox',
+              key: 'oneShopee',
+              label: 'Đúng 1 cmt shopee',
+              checked: oneShopee,
+              onToggle: () => {
+                setOneShopee((v) => !v)
+                resetPage()
+              },
+            },
+            {
+              type: 'radio',
+              key: 'postStatus',
+              label: 'Trạng thái đăng',
+              value: postStatus ?? 'all',
+              onChange: (v: string) => {
+                setPostStatus(v === 'all' ? undefined : (v as 'new' | 'exported' | 'posted'))
+                resetPage()
+              },
+              options: [
+                { value: 'all', label: 'Tất cả' },
+                { value: 'exported', label: 'Đã xuất, chưa đăng' },
+                { value: 'posted', label: 'Đã đăng' },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* Table */}
@@ -285,6 +312,7 @@ export function PostsPage() {
                 <th className="p-2.5 text-right font-medium">Tim</th>
                 <th className="p-2.5 text-center font-medium">Shopee</th>
                 <th className="p-2.5 text-center font-medium">Cập nhật</th>
+                <th className="p-2.5 text-center font-medium">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -346,6 +374,16 @@ export function PostsPage() {
                   <td className="p-2.5 text-center">
                     <UpdateStatus shopee={p.shopee_count} updated={p.new_count} />
                   </td>
+                  <td className="p-2.5 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <PostStatusBadge status={p.post_status} />
+                      {p.assigned_account && (
+                        <span className="text-[11px] text-muted-foreground">
+                          @{p.assigned_account}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
 
@@ -366,6 +404,7 @@ export function PostsPage() {
                     <td className="p-2.5"><Skeleton className="h-3 w-32" /></td>
                     <td className="p-2.5"><Skeleton className="ml-auto h-3 w-16" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-3 w-6" /></td>
+                    <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
                   </tr>
                 ))}
@@ -434,6 +473,12 @@ export function PostsPage() {
           </Button>
           <Button size="sm" variant="outline" onClick={() => setBeautifyIds([...sel])}>
             <Wand2 className="h-4 w-4" /> Làm đẹp video
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => doMarkPosted(true)}>
+            <Send className="h-4 w-4" /> Đánh dấu đã đăng
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => doMarkPosted(false)}>
+            <Undo2 className="h-4 w-4" /> Bỏ đánh dấu
           </Button>
           <Button size="sm" variant="outline" onClick={doDelete}>
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa

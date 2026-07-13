@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
 import { listPosts, getPostDetail, deletePost } from '../db/queries';
+import { markPostsPosted } from '../db/repository';
 import { startRescrapeJob, startBeautifyJob } from '../services/jobs';
 import { BeautifyConfigSchema } from '../services/beautify';
 import { DOWNLOAD_DIR } from '../config';
@@ -21,7 +22,7 @@ const uploadWatermark = multer({
   }),
 });
 
-// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1
+// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=new|exported|posted
 router.get('/', (req, res) => {
   const search = String(req.query.search ?? '');
   const limit = Math.min(Number(req.query.limit ?? 20) || 20, 100);
@@ -29,7 +30,26 @@ router.get('/', (req, res) => {
   const noShopee = req.query.noShopee === '1' || req.query.noShopee === 'true';
   const notUpdated = req.query.notUpdated === '1' || req.query.notUpdated === 'true';
   const oneShopee = req.query.oneShopee === '1' || req.query.oneShopee === 'true';
-  res.json(listPosts({ search, limit, offset, noShopee, notUpdated, oneShopee }));
+  const postStatusRaw = String(req.query.postStatus ?? '');
+  const postStatus =
+    postStatusRaw === 'new' || postStatusRaw === 'exported' || postStatusRaw === 'posted'
+      ? postStatusRaw
+      : undefined;
+  res.json(listPosts({ search, limit, offset, noShopee, notUpdated, oneShopee, postStatus }));
+});
+
+// POST /api/posts/mark-posted { postIds: string[], posted?: boolean } -> danh dau (hoac bo danh dau) da dang
+router.post('/mark-posted', (req, res) => {
+  const postIds = (Array.isArray(req.body?.postIds) ? req.body.postIds : [])
+    .map((s: unknown) => String(s).trim())
+    .filter(Boolean);
+  if (postIds.length === 0) {
+    res.status(400).json({ error: 'thieu postIds' });
+    return;
+  }
+  const posted = req.body?.posted !== false;
+  markPostsPosted(postIds, posted);
+  res.json({ updated: postIds.length, posted });
 });
 
 // POST /api/posts/rescrape { postIds: string[] } -> cao lai comment (job nen)

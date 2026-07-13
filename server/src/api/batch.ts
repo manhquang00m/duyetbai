@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { startBatchJob, getJob, subscribe } from '../services/jobs';
+import { listCollectHistory, removeCollectHistory } from '../db/history';
 
 const router = Router();
 
@@ -14,6 +15,18 @@ router.post('/', (req, res) => {
   const force = Boolean(req.body?.force);
   const job = startBatchJob(urls, force);
   res.status(202).json({ jobId: job.id, total: job.total });
+});
+
+// GET /api/batch/history?onlyFailed=1 -> lich su tat ca URL da tung thu thu thap
+router.get('/history', (req, res) => {
+  const onlyFailed = req.query.onlyFailed === '1' || req.query.onlyFailed === 'true';
+  res.json(listCollectHistory({ onlyFailed }));
+});
+
+// DELETE /api/batch/history/:id -> xoa 1 dong lich su
+router.delete('/history/:id', (req, res) => {
+  removeCollectHistory(Number(req.params.id));
+  res.json({ ok: true });
 });
 
 // GET /api/batch/:id  -> trang thai hien tai

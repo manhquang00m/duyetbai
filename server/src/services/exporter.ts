@@ -2,6 +2,8 @@ import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { db } from '../db';
 import { listActiveAccounts } from '../db/accounts';
+import { assignAccountAndMarkExported, touchExportedAt } from '../db/repository';
+import { getSetting, setSetting } from '../db/settings';
 import { cleanSubId } from '../utils/postId';
 import { DOWNLOAD_DIR } from '../config';
 
@@ -11,19 +13,20 @@ import { DOWNLOAD_DIR } from '../config';
  * cot B->F = Sub_id1..Sub_id5 (Sub_id1 = POST_ID da lam sach ky tu dac biet).
  * Moi link 1 dong (bai co N link -> N dong, cung Sub_id1).
  */
-export async function exportShopeeInput(filePath: string): Promise<number> {
+export async function exportShopeeInput(
+  filePath: string,
+  opts: { onlyMissing?: boolean } = {},
+): Promise<number> {
+  const where = opts.onlyMissing
+    ? "WHERE link IS NOT NULL AND link <> '' AND (new_link IS NULL OR new_link = '')"
+    : "WHERE link IS NOT NULL AND link <> ''";
   const rows = db
-    .prepare(
-      `SELECT DISTINCT link, post_id
-         FROM shopee_entries
-        WHERE link IS NOT NULL AND link <> ''
-        ORDER BY post_id`,
-    )
+    .prepare(`SELECT DISTINCT link, post_id FROM shopee_entries ${where} ORDER BY post_id`)
     .all() as { link: string; post_id: string }[];
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Sheet 1');
-  ws.addRow(['Liên kết chính', 'Sub_id1', 'Sub_id2', 'Sub_id3', 'Sub_id4', 'Sub_id5']);
+  ws.addRow(['Liên kết gốc', 'Sub_id1', 'Sub_id2', 'Sub_id3', 'Sub_id4', 'Sub_id5']);
   for (const r of rows) ws.addRow([r.link, cleanSubId(r.post_id), '', '', '', '']);
 
   await wb.xlsx.writeFile(filePath);
@@ -63,39 +66,84 @@ function buildComment(postId: string): string {
   for (const [text, links] of byComment) {
     const stripped = stripShopeeTokens(text);
     const uniq = [...new Set(links)];
-    blocks.push([stripped, ...uniq].filter(Boolean).join('\n'));
+    // Noi bang " \n" (khong chi "\n") de link luon co dau cach dung truoc,
+    // tranh dinh vao chu truoc do neu noi xuoi doc newline bi mat.
+    blocks.push([stripped, ...uniq].filter(Boolean).join(' \n'));
   }
   return blocks.join('\n\n');
 }
 
+/** Chi lay duong dan THU MUC chua video/anh (thu muc co the co nhieu file), khong liet ke tung file. */
 function mediaPaths(postId: string, type: 'video' | 'image'): string {
   const files = mediaFor.all(postId) as { type: string; file: string }[];
-  return files
-    .filter((f) => f.type === type)
-    .map((f) => path.join(DOWNLOAD_DIR, `post_${postId}`, f.file))
-    .join(';');
+  const match = files.find((f) => f.type === type);
+  if (!match) return '';
+  return path.join(DOWNLOAD_DIR, `post_${postId}`, path.dirname(match.file));
+}
+
+/** Con tro round-robin luu trong app_settings -> gan account tiep theo, tiep tuc vong xoay giua cac lan export. */
+function nextRoundRobinIndex(total: number): number {
+  const cur = Number(getSetting('round_robin_index') ?? '0') || 0;
+  setSetting('round_robin_index', String(cur + 1));
+  return ((cur % total) + total) % total;
 }
 
 /**
  * Buoc 4: xuat file cho tool auto dang.
- * Cot: AccountName | Caption | VideoPath | ImagePath | Comment | Topic | URL | POST_ID
- * AccountName gan round-robin theo danh sach account active; Topic de trong.
+ * Cot: AccountName | Caption | VideoPath | ImagePath | Comment | Topic | URL | POST_ID | TrangThai
+ * AccountName: gan 1 LAN DUY NHAT (round-robin, tiep tuc vong xoay qua cac lan export) roi luu co dinh
+ * vao DB - xuat lai khong doi account nua, tranh 2 lan xuat ra 2 file gan account khac nhau cho cung 1 bai.
+ * Neu account cu bi xoa/tat/proxy Die (khong con trong danh sach active) thi gan lai account moi.
+ * onlyUnposted: chi xuat cac bai chua danh dau "Da dang".
  */
-export async function exportPosts(filePath: string): Promise<number> {
+export async function exportPosts(
+  filePath: string,
+  opts: { onlyUnposted?: boolean } = {},
+): Promise<number> {
+  const where = opts.onlyUnposted ? "WHERE post_status <> 'posted'" : '';
   const posts = db
-    .prepare('SELECT post_id, url, caption FROM posts ORDER BY scraped_at, post_id')
-    .all() as { post_id: string; url: string; caption: string }[];
+    .prepare(
+      `SELECT post_id, url, caption, assigned_account, post_status
+         FROM posts ${where}
+        ORDER BY scraped_at, post_id`,
+    )
+    .all() as {
+    post_id: string;
+    url: string;
+    caption: string;
+    assigned_account: string | null;
+    post_status: string;
+  }[];
 
   const accounts = listActiveAccounts();
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('posts');
-  ws.addRow(['AccountName', 'Caption', 'VideoPath', 'ImagePath', 'Comment', 'Topic', 'URL', 'POST_ID']);
+  ws.addRow([
+    'AccountName',
+    'Caption',
+    'VideoPath',
+    'ImagePath',
+    'Comment',
+    'Topic',
+    'URL',
+    'POST_ID',
+    'TrangThai',
+  ]);
 
-  posts.forEach((p, i) => {
-    const account = accounts.length ? accounts[i % accounts.length] : '';
+  for (const p of posts) {
+    let account = p.assigned_account;
+    if (account && !accounts.includes(account)) account = null; // account cu het active/proxy Die -> gan lai
+
+    if (!account && accounts.length) {
+      account = accounts[nextRoundRobinIndex(accounts.length)];
+      assignAccountAndMarkExported(p.post_id, account);
+    } else if (account) {
+      touchExportedAt(p.post_id);
+    }
+
     ws.addRow([
-      account,
+      account ?? '',
       p.caption,
       mediaPaths(p.post_id, 'video'),
       mediaPaths(p.post_id, 'image'),
@@ -103,8 +151,9 @@ export async function exportPosts(filePath: string): Promise<number> {
       '', // Topic - de trong, dien tay sau
       p.url,
       p.post_id,
+      p.post_status === 'posted' ? 'Đã đăng' : 'Đã xuất',
     ]);
-  });
+  }
 
   ws.getColumn(2).alignment = { wrapText: true, vertical: 'top' }; // Caption
   ws.getColumn(5).alignment = { wrapText: true, vertical: 'top' }; // Comment

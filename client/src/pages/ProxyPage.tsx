@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -206,30 +207,17 @@ export function ProxyPage() {
                 className="h-7 w-40 pl-6 text-xs"
               />
             </div>
-            <div className="flex gap-0.5 rounded-md border p-0.5">
-              {(
-                [
-                  { v: 'all', label: 'Tất cả' },
-                  { v: 'live', label: 'Live' },
-                  { v: 'die', label: 'Die' },
-                  { v: 'unchecked', label: 'Chưa ktra' },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.v}
-                  type="button"
-                  onClick={() => setSavedStatusFilter(opt.v)}
-                  className={cn(
-                    'rounded px-2 py-1 text-[11px] font-medium transition-colors',
-                    savedStatusFilter === opt.v
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent',
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SingleFilterDropdown
+              label="Trạng thái"
+              value={savedStatusFilter}
+              onChange={setSavedStatusFilter}
+              options={[
+                { value: 'all', label: 'Tất cả' },
+                { value: 'live', label: 'Live' },
+                { value: 'die', label: 'Die' },
+                { value: 'unchecked', label: 'Chưa kiểm tra' },
+              ]}
+            />
           </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">

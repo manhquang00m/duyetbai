@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FileDown, Download, Upload, Loader2 } from 'lucide-react'
@@ -11,12 +11,14 @@ import {
 } from '@/lib/api'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 
 export function ShopeePage() {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const { data: links } = useQuery({ queryKey: ['shopee-links'], queryFn: fetchShopeeLinks })
+  const [onlyMissing, setOnlyMissing] = useState(false)
 
   const importMut = useMutation({
     mutationFn: (file: File) => importShopee(file),
@@ -55,9 +57,16 @@ export function ShopeePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              File [Liên kết chính | Sub_id1..Sub_id5] (sheet "Sheet 1") để đưa lên Shopee gen link.
+              File [Liên kết gốc | Sub_id1..Sub_id5] (sheet "Sheet 1") để đưa lên Shopee gen link.
             </p>
-            <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={onlyMissing} onCheckedChange={setOnlyMissing} />
+              Chỉ lấy link chưa có link mới
+            </label>
+            <a
+              href={onlyMissing ? `${exportShopeeUrl}?onlyMissing=1` : exportShopeeUrl}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+            >
               <FileDown className="h-4 w-4" /> shopee_input.xlsx
             </a>
           </CardContent>

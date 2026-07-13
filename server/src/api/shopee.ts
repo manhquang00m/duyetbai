@@ -20,12 +20,13 @@ const parseCol = (v: unknown): string | number | undefined => {
   return /^\d+$/.test(s) ? Number(s) : s;
 };
 
-// GET /api/export/shopee -> tai file link goc + Sub_id
-router.get('/export/shopee', async (_req, res, next) => {
+// GET /api/export/shopee?onlyMissing=1 -> tai file link goc + Sub_id (onlyMissing: bo qua link da co new_link)
+router.get('/export/shopee', async (req, res, next) => {
   try {
+    const onlyMissing = req.query.onlyMissing === '1' || req.query.onlyMissing === 'true';
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'shopee_input.xlsx');
-    await exportShopeeInput(out);
+    await exportShopeeInput(out, { onlyMissing });
     res.download(out, 'shopee_input.xlsx');
   } catch (err) {
     next(err);
@@ -37,12 +38,13 @@ router.get('/export/posts/check', (_req, res) => {
   res.json(getExportWarnings());
 });
 
-// GET /api/export/posts -> tai file cuoi cho tool auto dang
-router.get('/export/posts', async (_req, res, next) => {
+// GET /api/export/posts?onlyUnposted=1 -> tai file cuoi cho tool auto dang
+router.get('/export/posts', async (req, res, next) => {
   try {
+    const onlyUnposted = req.query.onlyUnposted === '1' || req.query.onlyUnposted === 'true';
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'posts.xlsx');
-    await exportPosts(out);
+    await exportPosts(out, { onlyUnposted });
     res.download(out, 'posts.xlsx');
   } catch (err) {
     next(err);

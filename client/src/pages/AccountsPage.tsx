@@ -34,12 +34,10 @@ import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
 import { AccountFormDialog } from '@/components/AccountFormDialog'
 import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
+import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 const COLSPAN = 11
-
-const selectClass =
-  'flex h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 function MaskedCell({ value }: { value: string | null }) {
   const [show, setShow] = useState(false)
@@ -321,35 +319,38 @@ export function AccountsPage() {
             className="h-8 pl-8 text-xs"
           />
         </div>
-        <select
-          className={selectClass}
+        <SingleFilterDropdown
+          label="Banned"
           value={bannedFilter}
-          onChange={(e) => setBannedFilter(e.target.value as typeof bannedFilter)}
-        >
-          <option value="all">Banned: Tất cả</option>
-          <option value="live">Chỉ LIVE</option>
-          <option value="die">Chỉ DIE</option>
-        </select>
-        <select
-          className={selectClass}
+          onChange={setBannedFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            { value: 'live', label: 'Chỉ LIVE' },
+            { value: 'die', label: 'Chỉ DIE' },
+          ]}
+        />
+        <SingleFilterDropdown
+          label="Active"
           value={activeFilter}
-          onChange={(e) => setActiveFilter(e.target.value as typeof activeFilter)}
-        >
-          <option value="all">Active: Tất cả</option>
-          <option value="on">Đang bật</option>
-          <option value="off">Đang tắt</option>
-        </select>
-        <select
-          className={selectClass}
+          onChange={setActiveFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            { value: 'on', label: 'Đang bật' },
+            { value: 'off', label: 'Đang tắt' },
+          ]}
+        />
+        <SingleFilterDropdown
+          label="Proxy"
           value={proxyFilter}
-          onChange={(e) => setProxyFilter(e.target.value as typeof proxyFilter)}
-        >
-          <option value="all">Proxy: Tất cả</option>
-          <option value="none">Chưa có proxy</option>
-          <option value="live">Proxy Live</option>
-          <option value="die">Proxy Die</option>
-          <option value="unchecked">Có proxy, chưa kiểm tra</option>
-        </select>
+          onChange={setProxyFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            { value: 'none', label: 'Chưa có proxy' },
+            { value: 'live', label: 'Proxy Live' },
+            { value: 'die', label: 'Proxy Die' },
+            { value: 'unchecked', label: 'Có proxy, chưa kiểm tra' },
+          ]}
+        />
         <span className="text-xs text-muted-foreground">{items.length}/{allAccounts.length} account</span>
       </div>
 

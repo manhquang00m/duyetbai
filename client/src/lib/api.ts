@@ -35,6 +35,10 @@ export interface PostListItem {
   shopee_comment_count: number | null
   comment: string | null
   thumb: string | null
+  assigned_account: string | null
+  post_status: 'new' | 'exported' | 'posted'
+  exported_at: string | null
+  posted_at: string | null
 }
 
 export interface PostsResponse {
@@ -141,6 +145,7 @@ export async function fetchPosts(params: {
   noShopee?: boolean
   notUpdated?: boolean
   oneShopee?: boolean
+  postStatus?: 'new' | 'exported' | 'posted'
 }) {
   const { data } = await api.get<PostsResponse>('/api/posts', {
     params: {
@@ -150,6 +155,7 @@ export async function fetchPosts(params: {
       noShopee: params.noShopee ? 1 : undefined,
       notUpdated: params.notUpdated ? 1 : undefined,
       oneShopee: params.oneShopee ? 1 : undefined,
+      postStatus: params.postStatus,
     },
   })
   return data
@@ -201,6 +207,14 @@ export async function deletePosts(postIds: string[]) {
   return data
 }
 
+export async function markPostsPosted(postIds: string[], posted = true) {
+  const { data } = await api.post<{ updated: number; posted: boolean }>('/api/posts/mark-posted', {
+    postIds,
+    posted,
+  })
+  return data
+}
+
 export async function fetchPost(id: string) {
   const { data } = await api.get<PostDetail>(`/api/posts/${id}`)
   return data
@@ -249,6 +263,29 @@ export async function startBatch(urls: string[], force = false) {
 
 export function batchStreamUrl(jobId: string) {
   return `/api/batch/${jobId}/stream`
+}
+
+// ===== Lich su thu thap =====
+export interface CollectHistoryRow {
+  id: number
+  url: string
+  post_id: string | null
+  ok: number
+  skipped: number
+  error: string | null
+  attempted_at: string
+}
+
+export async function fetchCollectHistory(onlyFailed = false) {
+  const { data } = await api.get<CollectHistoryRow[]>('/api/batch/history', {
+    params: onlyFailed ? { onlyFailed: 1 } : undefined,
+  })
+  return data
+}
+
+export async function deleteCollectHistory(id: number) {
+  const { data } = await api.delete<{ ok: boolean }>(`/api/batch/history/${id}`)
+  return data
 }
 
 export async function importShopee(file: File) {
