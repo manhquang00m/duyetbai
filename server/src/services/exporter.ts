@@ -4,6 +4,7 @@ import { db } from '../db';
 import { listActiveAccounts } from '../db/accounts';
 import { assignAccountAndMarkExported, touchExportedAt } from '../db/repository';
 import { getSetting, setSetting } from '../db/settings';
+import { HAS_VIDEO, HAS_IMAGE } from '../db/queries';
 import { cleanSubId } from '../utils/postId';
 import { DOWNLOAD_DIR } from '../config';
 
@@ -25,7 +26,7 @@ export async function exportShopeeInput(
     .all() as { link: string; post_id: string }[];
 
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Sheet 1');
+  const ws = wb.addWorksheet('Sheet1');
   ws.addRow(['Liên kết gốc', 'Sub_id1', 'Sub_id2', 'Sub_id3', 'Sub_id4', 'Sub_id5']);
   for (const r of rows) ws.addRow([r.link, cleanSubId(r.post_id), '', '', '', '']);
 
@@ -95,17 +96,21 @@ function nextRoundRobinIndex(total: number): number {
  * vao DB - xuat lai khong doi account nua, tranh 2 lan xuat ra 2 file gan account khac nhau cho cung 1 bai.
  * Neu account cu bi xoa/tat/proxy Die (khong con trong danh sach active) thi gan lai account moi.
  * onlyUnposted: chi xuat cac bai chua danh dau "Da dang".
+ * onlyCompleteMedia: chi xuat bai co du CA video lan anh (bo qua bai thieu 1 trong 2 loai).
  */
 export async function exportPosts(
   filePath: string,
-  opts: { onlyUnposted?: boolean } = {},
+  opts: { onlyUnposted?: boolean; onlyCompleteMedia?: boolean } = {},
 ): Promise<number> {
-  const where = opts.onlyUnposted ? "WHERE post_status <> 'posted'" : '';
+  const conds: string[] = [];
+  if (opts.onlyUnposted) conds.push("p.post_status <> 'posted'");
+  if (opts.onlyCompleteMedia) conds.push(`(${HAS_VIDEO} AND ${HAS_IMAGE})`);
+  const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
   const posts = db
     .prepare(
-      `SELECT post_id, url, caption, assigned_account, post_status
-         FROM posts ${where}
-        ORDER BY scraped_at, post_id`,
+      `SELECT p.post_id, p.url, p.caption, p.assigned_account, p.post_status
+         FROM posts p ${where}
+        ORDER BY p.scraped_at, p.post_id`,
     )
     .all() as {
     post_id: string;

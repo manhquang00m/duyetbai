@@ -4,10 +4,13 @@ import { randomUUID } from 'node:crypto';
 import pLimit from 'p-limit';
 import { runBatch, type BatchItemResult } from './batch';
 import { rescrapeComments } from './pipeline';
-import { closeBrowser } from './browser';
+import { closeBrowser, closeShopeeBrowser } from './browser';
 import { beautifyVideo, type BeautifyConfig } from './beautify';
-import { getPostBrief, getVideoMedia } from '../db/queries';
-import { saveScrape, setProcessedFile } from '../db/repository';
+import { checkProxy } from './proxyCheck';
+import { getPostBrief, getVideoMedia, getShopeeCheckTargets } from '../db/queries';
+import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/repository';
+import { checkShopeeLink } from './shopeeLinkCheck';
+import { withRetry } from '../utils/retry';
 import { DOWNLOAD_DIR } from '../config';
 
 export interface JobLog {
@@ -143,6 +146,113 @@ export function startBeautifyJob(
       job.error = err instanceof Error ? err.message : String(err);
     } finally {
       if (watermarkImagePath) fs.rm(watermarkImagePath, { force: true }, () => {});
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/** Kiem tra Live/Die nhieu proxy, co tien trinh qua SSE (khong tu luu DB - luu la hanh dong rieng). */
+export function startProxyCheckJob(proxies: string[]): JobState {
+  const uniq = [...new Set(proxies.map((p) => p.trim()).filter(Boolean))];
+  const job = newJob(uniq.length);
+  void (async () => {
+    try {
+      const limit = pLimit(5);
+      await Promise.all(
+        uniq.map((proxy) =>
+          limit(async () => {
+            const log = (message: string) => {
+              const l = { url: proxy, message };
+              job.logs.push(l);
+              emit(job.id, { type: 'log', job, log: l });
+            };
+            log('Đang kiểm tra...');
+            const result = await checkProxy(proxy);
+            const item: BatchItemResult = {
+              url: proxy,
+              ok: result.status === 'live',
+              error: result.status === 'die' ? (result.error ?? 'Die') : undefined,
+              ip: result.ip,
+              ms: result.ms,
+            };
+            job.done++;
+            job.items.push(item);
+            emit(job.id, { type: 'progress', job, item });
+          }),
+        ),
+      );
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/**
+ * Kiem tra tinh trang (con hang/het hang/khong ton tai) link Shopee truoc khi xuat file dang bai.
+ * Dedup theo link giong nhau de khong kiem tra lap.
+ * - opts.entryIds: neu truyen -> chi kiem tra cac dong duoc chon (tick chon trong bang), va CHI xet
+ *   new_link (bo qua dong chua co new_link) - dung cho nut "Kiem tra da chon".
+ * - khong truyen entryIds -> kiem tra TOAN BO, uu tien new_link, fallback link goc - nut "Kiem tra tat ca".
+ */
+export function startShopeeLinkCheckJob(opts: { entryIds?: number[] } = {}): JobState {
+  const rows = getShopeeCheckTargets({ entryIds: opts.entryIds, newLinkOnly: !!opts.entryIds });
+  const byTarget = new Map<string, { id: number; post_id: string }[]>();
+  for (const r of rows) {
+    if (!byTarget.has(r.target)) byTarget.set(r.target, []);
+    byTarget.get(r.target)!.push({ id: r.id, post_id: r.post_id });
+  }
+  const targets = [...byTarget.keys()];
+  const job = newJob(targets.length);
+  void (async () => {
+    try {
+      // Dung trinh duyet that (Playwright) -> gioi han thap hon check qua HTTP thuan, giong cac
+      // job Playwright khac (rescrape/beautify dung 2).
+      const limit = pLimit(2);
+      await Promise.all(
+        targets.map((target) =>
+          limit(async () => {
+            const entries = byTarget.get(target)!;
+            const log = (message: string) => {
+              const l = { url: target, message };
+              job.logs.push(l);
+              emit(job.id, { type: 'log', job, log: l });
+            };
+            const result = await withRetry(() => checkShopeeLink(target, log), {
+              retries: 1,
+              label: `shopee-check ${target}`,
+            });
+            for (const e of entries) {
+              setShopeeLinkStatus(e.id, result.status, result.message, result.title, result.image);
+            }
+
+            const item: BatchItemResult = {
+              url: target,
+              ok: result.status === 'available',
+              username: entries[0]?.post_id,
+              error: result.status !== 'available' ? result.message : undefined,
+              shopeeStatus: result.status,
+              shopeeTitle: result.title,
+              shopeeImage: result.image,
+            };
+            job.done++;
+            job.items.push(item);
+            emit(job.id, { type: 'progress', job, item });
+          }),
+        ),
+      );
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      // Dong browser rieng cua Shopee, KHONG dong browser scrape Threads dung chung o cho khac.
+      await closeShopeeBrowser().catch(() => {});
       emit(job.id, { type: 'end', job });
     }
   })();

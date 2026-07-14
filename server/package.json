@@ -11,6 +11,8 @@
     "test:comments": "tsx src/scripts/testComments.ts",
     "test:proxy": "tsx src/scripts/testProxy.ts",
     "test:http": "tsx src/scripts/testHttp.ts",
+    "test:shopee": "tsx src/scripts/testShopeeCheck.ts",
+    "shopee:login": "tsx src/scripts/shopeeLogin.ts",
     "batch": "node --experimental-sqlite --import tsx src/scripts/run.ts",
     "db:show": "node --experimental-sqlite --import tsx src/scripts/dbShow.ts",
     "account:add": "node --experimental-sqlite --import tsx src/scripts/accountAdd.ts",

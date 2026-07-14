@@ -140,6 +140,21 @@ for (const stmt of [
   }
 }
 
+// Migration: trang thai kiem tra link Shopee (con hang/het hang/khong ton tai) truoc khi export.
+for (const stmt of [
+  'ALTER TABLE shopee_entries ADD COLUMN link_status TEXT',
+  'ALTER TABLE shopee_entries ADD COLUMN link_message TEXT',
+  'ALTER TABLE shopee_entries ADD COLUMN link_checked_at TEXT',
+  'ALTER TABLE shopee_entries ADD COLUMN product_title TEXT',
+  'ALTER TABLE shopee_entries ADD COLUMN product_image TEXT',
+]) {
+  try {
+    db.exec(stmt);
+  } catch {
+    // cot da ton tai -> bo qua
+  }
+}
+
 // Backfill cho bai cu (cot NULL): dem so comment distinct co link trong shopee_entries.
 try {
   db.exec(`

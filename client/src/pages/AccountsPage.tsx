@@ -14,15 +14,18 @@ import {
   ShieldCheck,
   RefreshCw,
   Search,
+  Wand2,
 } from 'lucide-react'
 import {
   fetchAccounts,
   updateAccountActive,
+  updateAccount,
   deleteAccount,
   deleteAccounts,
   importAccounts,
   checkProxies,
   saveProxies,
+  fetchProxies,
   type Account,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -118,6 +121,7 @@ function BannedBadge({ banned }: { banned: number }) {
 export function AccountsPage() {
   const qc = useQueryClient()
   const { data: accounts, isLoading } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts })
+  const { data: proxiesData } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
   const [proxyDialogOpen, setProxyDialogOpen] = useState(false)
@@ -230,6 +234,38 @@ export function AccountsPage() {
         .filter((p): p is string => !!p),
     ),
   ]
+
+  const selectedWithoutProxy = items.filter((a) => sel.has(a.id) && !a.proxy)
+
+  const autoAssignProxies = async () => {
+    const targets = selectedWithoutProxy
+    if (targets.length === 0) return
+
+    // Proxy Live va chua bi account nao dung (tinh tren TOAN BO account, khong chi trang dang loc)
+    const taken = new Set(allAccounts.map((a) => a.proxy).filter((p): p is string => !!p))
+    const pool = (proxiesData ?? []).filter((p) => p.status === 'live' && !taken.has(p.proxy))
+
+    if (pool.length === 0) {
+      toast.error('Không có proxy Live nào đang rảnh để gán')
+      return
+    }
+
+    const n = Math.min(targets.length, pool.length)
+    let ok = 0
+    for (let i = 0; i < n; i++) {
+      try {
+        await updateAccount(targets[i].id, { proxy: pool[i].proxy })
+        ok++
+      } catch (err) {
+        toast.error(`"${targets[i].name}": ${err instanceof Error ? err.message : 'lỗi gán proxy'}`)
+      }
+    }
+    setSel(new Set())
+    invalidate()
+    qc.invalidateQueries({ queryKey: ['proxies'] })
+    if (ok === targets.length) toast.success(`Đã tự động gán proxy cho ${ok} account`)
+    else if (ok > 0) toast.warning(`Đã gán ${ok}/${targets.length} account (không đủ proxy Live rảnh)`)
+  }
 
   const openCreate = () => {
     setEditing(null)
@@ -467,6 +503,11 @@ export function AccountsPage() {
       {sel.size > 0 && (
         <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-2 shadow-lg">
           <span className="px-2 text-sm font-medium">{sel.size} đã chọn</span>
+          {selectedWithoutProxy.length > 0 && (
+            <Button size="sm" variant="outline" onClick={autoAssignProxies}>
+              <Wand2 className="h-4 w-4" /> Tự động gán proxy ({selectedWithoutProxy.length})
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setProxyDialogOpen(true)}>
             <ShieldCheck className="h-4 w-4" /> Kiểm tra proxy
           </Button>

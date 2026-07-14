@@ -8,6 +8,7 @@ import {
   type ProxyInput,
 } from '../db/proxies';
 import { checkProxies, checkProxy } from '../services/proxyCheck';
+import { startProxyCheckJob } from '../services/jobs';
 
 const router = Router();
 
@@ -31,6 +32,18 @@ router.post('/check', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// POST /api/proxies/check-job { proxies: string[] } -> chay job nen, xem tien trinh qua
+// GET /api/batch/:id/stream (dung chung 1 job store voi cac job khac trong jobs.ts)
+router.post('/check-job', (req, res) => {
+  const proxies = toList(req.body?.proxies);
+  if (proxies.length === 0) {
+    res.status(400).json({ error: 'thieu proxies' });
+    return;
+  }
+  const job = startProxyCheckJob(proxies);
+  res.status(202).json({ jobId: job.id, total: job.total });
 });
 
 // POST /api/proxies { items: [{proxy,status,ip}] } -> luu

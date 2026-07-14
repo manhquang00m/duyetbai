@@ -69,6 +69,30 @@ export function markPostsPosted(postIds: string[], posted: boolean): void {
   }
 }
 
+const updateLinkStatus = db.prepare(
+  `UPDATE shopee_entries
+   SET link_status = ?, link_message = ?, link_checked_at = ?, product_title = ?, product_image = ?
+   WHERE id = ?`,
+);
+
+/** Luu ket qua kiem tra 1 link Shopee (con hang/het hang/khong ton tai + ten/anh san pham neu co). */
+export function setShopeeLinkStatus(
+  entryId: number,
+  status: string,
+  message: string,
+  productTitle?: string,
+  productImage?: string,
+): void {
+  updateLinkStatus.run(
+    status,
+    message,
+    new Date().toISOString(),
+    productTitle ?? null,
+    productImage ?? null,
+    entryId,
+  );
+}
+
 /** Chi cap nhat comment/postDate cua 1 bai (nut "Lay lai comment"). */
 export function saveScrape(
   postId: string,

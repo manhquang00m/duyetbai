@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Loader2, Save, ShieldOff } from 'lucide-react'
 import {
-  checkProxies,
+  startProxyCheckJob,
+  batchStreamUrl,
   saveProxies,
   fetchProxies,
-  type ProxyCheckResult,
+  type JobState,
 } from '@/lib/api'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,14 @@ interface Props {
   proxies: string[]
   description?: string
   onClose: () => void
+}
+
+interface ProxyResult {
+  proxy: string
+  status: 'live' | 'die'
+  ip?: string
+  ms?: number
+  error?: string
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -34,10 +43,11 @@ function StatusBadge({ status }: { status: string }) {
 
 export function AccountProxyCheckDialog({ open, proxies, description, onClose }: Props) {
   const qc = useQueryClient()
-  const [results, setResults] = useState<ProxyCheckResult[] | null>(null)
+  const [job, setJob] = useState<JobState | null>(null)
   const [checking, setChecking] = useState(false)
   const [savingAll, setSavingAll] = useState(false)
   const [savedProxies, setSavedProxies] = useState<Set<string>>(new Set())
+  const esRef = useRef<EventSource | null>(null)
 
   const { data: existing } = useQuery({
     queryKey: ['proxies'],
@@ -48,29 +58,69 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
 
   useEffect(() => {
     if (!open) return
-    setResults(null)
+    setJob(null)
     setSavedProxies(new Set())
+    esRef.current?.close()
+    esRef.current = null
     if (proxies.length === 0) return
+
     setChecking(true)
-    checkProxies(proxies)
-      .then(setResults)
-      .catch((err) => toast.error(err instanceof Error ? err.message : 'Lỗi kiểm tra proxy'))
-      .finally(() => setChecking(false))
+    startProxyCheckJob(proxies)
+      .then(({ jobId }) => {
+        const es = new EventSource(batchStreamUrl(jobId))
+        esRef.current = es
+        es.onmessage = (e) => {
+          const d = JSON.parse(e.data) as { type: string; job: JobState }
+          setJob(d.job)
+          if (d.type === 'end') {
+            es.close()
+            esRef.current = null
+            setChecking(false)
+          }
+        }
+        es.onerror = () => {
+          es.close()
+          esRef.current = null
+          setChecking(false)
+        }
+      })
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : 'Lỗi kiểm tra proxy')
+        setChecking(false)
+      })
+
+    return () => {
+      esRef.current?.close()
+      esRef.current = null
+    }
   }, [open, proxies])
+
+  const results: ProxyResult[] = (job?.items ?? []).map((it) => ({
+    proxy: it.url,
+    status: it.ok ? 'live' : 'die',
+    ip: it.ip,
+    ms: it.ms,
+    error: it.error,
+  }))
+
+  // Proxy da bat dau kiem tra (co log) nhung chua co ket qua -> dang chay
+  const inFlight = (job?.logs ?? [])
+    .map((l) => l.url)
+    .filter((url) => !results.some((r) => r.proxy === url))
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['proxies'] })
     qc.invalidateQueries({ queryKey: ['accounts'] })
   }
 
-  const saveOne = async (r: ProxyCheckResult) => {
+  const saveOne = async (r: ProxyResult) => {
     await saveProxies([{ proxy: r.proxy, status: r.status, ip: r.ip }])
     setSavedProxies((s) => new Set(s).add(r.proxy))
     invalidate()
   }
 
   const saveAll = async () => {
-    if (!results || results.length === 0) return
+    if (results.length === 0) return
     setSavingAll(true)
     try {
       await saveProxies(results.map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip })))
@@ -83,6 +133,8 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
       setSavingAll(false)
     }
   }
+
+  const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
@@ -98,15 +150,34 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
         </div>
       ) : (
         <>
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              {checking
-                ? 'Đang kiểm tra...'
-                : results
-                  ? `${results.filter((r) => r.status === 'live').length} Live / ${results.filter((r) => r.status === 'die').length} Die`
-                  : ''}
-            </span>
-            {results && results.length > 0 && (
+          {job && (
+            <div className="mt-4">
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  {checking ? 'Đang kiểm tra' : 'Hoàn tất'} {job.done}/{job.total}
+                </span>
+                <span className="text-muted-foreground">
+                  {results.filter((r) => r.status === 'live').length} Live /{' '}
+                  {results.filter((r) => r.status === 'die').length} Die
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              {inFlight.length > 0 && (
+                <div className="mt-1.5 truncate text-xs text-muted-foreground">
+                  <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
+                  Đang kiểm tra: {inFlight.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center justify-end">
+            {results.length > 0 && (
               <Button size="sm" variant="outline" onClick={saveAll} disabled={savingAll}>
                 {savingAll ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -130,42 +201,39 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
                 </tr>
               </thead>
               <tbody>
-                {checking && (
+                {!job && (
                   <tr>
                     <td colSpan={5} className="p-6 text-center text-muted-foreground">
                       <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                     </td>
                   </tr>
                 )}
-                {!checking &&
-                  (results ?? []).map((r) => {
-                    const isSaved = savedProxies.has(r.proxy) || existingSet.has(r.proxy)
-                    return (
-                      <tr key={r.proxy} className="border-b last:border-0">
-                        <td className="max-w-[14rem] truncate p-2.5 font-mono text-xs">
-                          {r.proxy}
-                        </td>
-                        <td className="p-2.5">
-                          <StatusBadge status={r.status} />
-                        </td>
-                        <td className="p-2.5 text-xs text-muted-foreground">
-                          {r.ip ?? r.error ?? '—'}
-                        </td>
-                        <td className="p-2.5 text-right text-xs tabular-nums text-muted-foreground">
-                          {r.ms ?? '—'}
-                        </td>
-                        <td className="p-2.5 text-center">
-                          {isSaved ? (
-                            <span className="text-xs text-muted-foreground">Đã lưu</span>
-                          ) : (
-                            <Button variant="ghost" size="sm" onClick={() => saveOne(r)}>
-                              <Save className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                {results.map((r) => {
+                  const isSaved = savedProxies.has(r.proxy) || existingSet.has(r.proxy)
+                  return (
+                    <tr key={r.proxy} className="border-b last:border-0">
+                      <td className="max-w-[14rem] truncate p-2.5 font-mono text-xs">{r.proxy}</td>
+                      <td className="p-2.5">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="p-2.5 text-xs text-muted-foreground">
+                        {r.ip ?? r.error ?? '—'}
+                      </td>
+                      <td className="p-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                        {r.ms ?? '—'}
+                      </td>
+                      <td className="p-2.5 text-center">
+                        {isSaved ? (
+                          <span className="text-xs text-muted-foreground">Đã lưu</span>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={() => saveOne(r)}>
+                            <Save className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

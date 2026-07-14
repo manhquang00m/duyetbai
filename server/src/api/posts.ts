@@ -22,7 +22,7 @@ const uploadWatermark = multer({
   }),
 });
 
-// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=new|exported|posted
+// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=new|exported|posted&mediaFilter=complete|missing
 router.get('/', (req, res) => {
   const search = String(req.query.search ?? '');
   const limit = Math.min(Number(req.query.limit ?? 20) || 20, 100);
@@ -35,7 +35,12 @@ router.get('/', (req, res) => {
     postStatusRaw === 'new' || postStatusRaw === 'exported' || postStatusRaw === 'posted'
       ? postStatusRaw
       : undefined;
-  res.json(listPosts({ search, limit, offset, noShopee, notUpdated, oneShopee, postStatus }));
+  const mediaFilterRaw = String(req.query.mediaFilter ?? '');
+  const mediaFilter =
+    mediaFilterRaw === 'complete' || mediaFilterRaw === 'missing' ? mediaFilterRaw : undefined;
+  res.json(
+    listPosts({ search, limit, offset, noShopee, notUpdated, oneShopee, postStatus, mediaFilter }),
+  );
 });
 
 // POST /api/posts/mark-posted { postIds: string[], posted?: boolean } -> danh dau (hoac bo danh dau) da dang

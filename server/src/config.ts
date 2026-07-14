@@ -42,3 +42,10 @@ export const ACCOUNTS_FILE = process.env.ACCOUNTS_FILE
  * Doi bang bien moi truong FFMPEG_PATH neu ffmpeg nam o noi khac.
  */
 export const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
+
+/**
+ * File luu session dang nhap Shopee (cookie/localStorage) - tao boi script `npm run shopee:login`,
+ * dung lai khi kiem tra link Shopee de giam bi chan boi he thong chong-bot (khong con la phien an danh).
+ * KHONG commit (da nam trong .gitignore, thu muc .pw-session/).
+ */
+export const SHOPEE_SESSION_PATH = path.join(repoRoot, '.pw-session', 'shopee.json');

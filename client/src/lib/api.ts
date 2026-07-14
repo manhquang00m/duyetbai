@@ -113,6 +113,12 @@ export interface BatchItemResult {
   entries?: number
   scrapeError?: string
   error?: string
+  file?: string
+  ip?: string
+  ms?: number
+  shopeeStatus?: 'available' | 'unavailable' | 'unknown'
+  shopeeTitle?: string
+  shopeeImage?: string
 }
 
 export interface JobLog {
@@ -131,10 +137,16 @@ export interface JobState {
 }
 
 export interface ShopeeLinkRow {
+  id: number
   post_id: string
   comment: string
   link: string
   new_link: string | null
+  link_status: 'available' | 'unavailable' | 'unknown' | null
+  link_message: string | null
+  link_checked_at: string | null
+  product_title: string | null
+  product_image: string | null
 }
 
 // ===== API calls =====
@@ -146,6 +158,7 @@ export async function fetchPosts(params: {
   notUpdated?: boolean
   oneShopee?: boolean
   postStatus?: 'new' | 'exported' | 'posted'
+  mediaFilter?: 'complete' | 'missing'
 }) {
   const { data } = await api.get<PostsResponse>('/api/posts', {
     params: {
@@ -156,6 +169,7 @@ export async function fetchPosts(params: {
       notUpdated: params.notUpdated ? 1 : undefined,
       oneShopee: params.oneShopee ? 1 : undefined,
       postStatus: params.postStatus,
+      mediaFilter: params.mediaFilter,
     },
   })
   return data
@@ -303,12 +317,39 @@ export async function fetchShopeeLinks() {
   return data
 }
 
+/**
+ * Kiem tra tinh trang (con hang/het hang/khong ton tai) link Shopee, chay job nen.
+ * entryIds: chi kiem tra cac dong da chon (chi xet new_link). Bo trong -> kiem tra tat ca.
+ */
+export async function startShopeeLinkCheckJob(entryIds?: number[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>(
+    '/api/shopee/links/check-job',
+    entryIds ? { entryIds } : {},
+  )
+  return data
+}
+
+export interface ShopeeLinkCheckResult {
+  link: string
+  status: 'available' | 'unavailable' | 'unknown'
+  message: string
+  title?: string
+  image?: string
+}
+
+/** Kiem tra nhanh 1 link Shopee bat ky (khong can nam trong DB, khong luu ket qua). */
+export async function checkShopeeLinkOnce(link: string) {
+  const { data } = await api.post<ShopeeLinkCheckResult>('/api/shopee/check-link', { link })
+  return data
+}
+
 export const exportShopeeUrl = '/api/export/shopee'
 export const exportPostsUrl = '/api/export/posts'
 
 export interface ExportPostsWarnings {
   notUpdated: number
   multiComment: number
+  unavailable: number
 }
 
 export async function fetchExportPostsWarnings() {
@@ -349,6 +390,14 @@ export interface SavedProxy {
 
 export async function checkProxies(proxies: string[]) {
   const { data } = await api.post<ProxyCheckResult[]>('/api/proxies/check', { proxies })
+  return data
+}
+
+/** Kiem tra nhieu proxy dang job nen, tra jobId de theo doi tien trinh qua batchStreamUrl(jobId). */
+export async function startProxyCheckJob(proxies: string[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>('/api/proxies/check-job', {
+    proxies,
+  })
   return data
 }
 

@@ -19,6 +19,11 @@ export interface BatchItemResult {
   scrapeError?: string;
   error?: string;
   file?: string; // ten file video (dung cho job "lam dep video")
+  ip?: string; // exit IP (dung cho job "kiem tra proxy")
+  ms?: number; // thoi gian phan hoi ms (dung cho job "kiem tra proxy")
+  shopeeStatus?: 'available' | 'unavailable' | 'unknown'; // dung cho job "kiem tra link Shopee"
+  shopeeTitle?: string; // ten san pham (dung cho job "kiem tra link Shopee")
+  shopeeImage?: string; // anh preview san pham (dung cho job "kiem tra link Shopee")
 }
 
 export type BatchProgress = (item: BatchItemResult, done: number, total: number) => void;

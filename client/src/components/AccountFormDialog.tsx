@@ -9,6 +9,7 @@ import {
   fetchProxies,
   type Account,
   type AccountInput,
+  type SavedProxy,
 } from '@/lib/api'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -75,16 +76,32 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
   const { data: proxies } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies, enabled: open })
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts, enabled: open })
 
-  // Proxy Live nhung dang bi account KHAC (khong phai chinh minh) chiem -> loai khoi danh sach chon nhanh
-  const availableLiveProxies = useMemo(() => {
-    const taken = new Set(
+  // Proxy dropdown: tat ca proxy da luu, tru cai dang bi account KHAC (khong phai chinh minh) chiem.
+  // Neu proxy hien tai cua chinh account nay khong nam trong bang proxies (vd import Excel cu,
+  // chua tung kiem tra) thi van them vao dau danh sach de khong bi mat gia tri dang co.
+  const proxyOptions = useMemo(() => {
+    const takenByOthers = new Set(
       (accounts ?? [])
         .filter((a) => !account || a.id !== account.id)
         .map((a) => a.proxy)
         .filter((p): p is string => !!p),
     )
-    return (proxies ?? []).filter((p) => p.status === 'live' && !taken.has(p.proxy))
-  }, [proxies, accounts, account])
+    const pool = (proxies ?? []).filter((p) => !takenByOthers.has(p.proxy))
+    const current = form.proxy?.trim()
+    if (current && !pool.some((p) => p.proxy === current)) {
+      const synthesized: SavedProxy = {
+        id: -1,
+        proxy: current,
+        status: null,
+        ip: null,
+        checked_at: null,
+        created_at: '',
+        account_names: null,
+      }
+      return [synthesized, ...pool]
+    }
+    return pool
+  }, [proxies, accounts, account, form.proxy])
 
   useEffect(() => {
     if (!open) return
@@ -159,26 +176,23 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Proxy</label>
-            <Input
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={form.proxy ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value }))}
-              placeholder="ip:port hoặc user:pass@ip:port"
-            />
-            {availableLiveProxies.length > 0 && (
-              <select
-                className="mt-1.5 flex h-8 w-full rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) setForm((f) => ({ ...f, proxy: e.target.value }))
-                }}
-              >
-                <option value="">Gán proxy đang Live ({availableLiveProxies.length} chưa dùng)...</option>
-                {availableLiveProxies.map((p) => (
-                  <option key={p.id} value={p.proxy}>
-                    {p.proxy} {p.ip ? `(${p.ip})` : ''}
-                  </option>
-                ))}
-              </select>
+              onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value || null }))}
+            >
+              <option value="">— Không dùng proxy —</option>
+              {proxyOptions.map((p) => (
+                <option key={p.proxy} value={p.proxy}>
+                  {p.proxy}
+                  {p.status === 'live' ? ' · Live' : p.status === 'die' ? ' · Die' : ' · Chưa kiểm tra'}
+                </option>
+              ))}
+            </select>
+            {proxyOptions.length === 0 && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Chưa có proxy nào — thêm và kiểm tra ở trang Proxy trước.
+              </p>
             )}
           </div>
         </div>

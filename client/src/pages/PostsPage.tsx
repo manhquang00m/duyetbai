@@ -25,6 +25,7 @@ import {
   deletePosts,
   markPostsPosted,
   fetchExportPostsWarnings,
+  type ExportPostsWarnings,
   exportPostsUrl,
   exportShopeeUrl,
   type PostListItem,
@@ -93,18 +94,18 @@ export function PostsPage() {
   const [notUpdated, setNotUpdated] = useState(false)
   const [oneShopee, setOneShopee] = useState(false)
   const [postStatus, setPostStatus] = useState<'new' | 'exported' | 'posted' | undefined>(undefined)
+  const [mediaFilter, setMediaFilter] = useState<'complete' | 'missing' | undefined>(undefined)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
   const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
-  const [exportWarn, setExportWarn] = useState<{ notUpdated: number; multiComment: number } | null>(
-    null,
-  )
+  const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
   const [onlyUnposted, setOnlyUnposted] = useState(false)
+  const [onlyCompleteMedia, setOnlyCompleteMedia] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus],
+    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus, mediaFilter],
     queryFn: () =>
       fetchPosts({
         search,
@@ -114,6 +115,7 @@ export function PostsPage() {
         notUpdated,
         oneShopee,
         postStatus,
+        mediaFilter,
       }),
     placeholderData: keepPreviousData,
   })
@@ -121,7 +123,9 @@ export function PostsPage() {
   const total = data?.total ?? 0
   const items = data?.items ?? []
   const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1)
-  const activeFilterCount = [noShopee, notUpdated, oneShopee, !!postStatus].filter(Boolean).length
+  const activeFilterCount = [noShopee, notUpdated, oneShopee, !!postStatus, !!mediaFilter].filter(
+    Boolean,
+  ).length
   const filterActive = activeFilterCount > 0
 
   const allChecked = items.length > 0 && items.every((i) => sel.has(i.post_id))
@@ -176,18 +180,23 @@ export function PostsPage() {
     setNotUpdated(false)
     setOneShopee(false)
     setPostStatus(undefined)
+    setMediaFilter(undefined)
     resetPage()
   }
 
   const doExportPosts = () => {
-    window.location.href = onlyUnposted ? `${exportPostsUrl}?onlyUnposted=1` : exportPostsUrl
+    const params = new URLSearchParams()
+    if (onlyUnposted) params.set('onlyUnposted', '1')
+    if (onlyCompleteMedia) params.set('onlyCompleteMedia', '1')
+    const qs = params.toString()
+    window.location.href = qs ? `${exportPostsUrl}?${qs}` : exportPostsUrl
   }
 
   const onExportPostsClick = async () => {
     setCheckingExport(true)
     try {
       const w = await fetchExportPostsWarnings()
-      if (w.notUpdated > 0 || w.multiComment > 0) {
+      if (w.notUpdated > 0 || w.multiComment > 0 || w.unavailable > 0) {
         setExportWarn(w)
       } else {
         doExportPosts()
@@ -218,6 +227,10 @@ export function PostsPage() {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Checkbox checked={onlyUnposted} onCheckedChange={setOnlyUnposted} />
             Chỉ xuất bài chưa đăng
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Checkbox checked={onlyCompleteMedia} onCheckedChange={setOnlyCompleteMedia} />
+            Chỉ xuất bài đủ cả ảnh & video
           </label>
         </div>
       </div>
@@ -285,6 +298,21 @@ export function PostsPage() {
                 { value: 'all', label: 'Tất cả' },
                 { value: 'exported', label: 'Đã xuất, chưa đăng' },
                 { value: 'posted', label: 'Đã đăng' },
+              ],
+            },
+            {
+              type: 'radio',
+              key: 'mediaFilter',
+              label: 'Media',
+              value: mediaFilter ?? 'all',
+              onChange: (v: string) => {
+                setMediaFilter(v === 'all' ? undefined : (v as 'complete' | 'missing'))
+                resetPage()
+              },
+              options: [
+                { value: 'all', label: 'Tất cả' },
+                { value: 'complete', label: 'Đủ cả ảnh & video' },
+                { value: 'missing', label: 'Thiếu ảnh hoặc video' },
               ],
             },
           ]}
@@ -530,6 +558,12 @@ export function PostsPage() {
                   <strong className="text-foreground">{exportWarn?.multiComment}</strong> bài có nhiều
                   hơn 1 comment Shopee — file chỉ xuất comment sớm nhất, có thể sót link ở các comment
                   còn lại.
+                </li>
+              )}
+              {(exportWarn?.unavailable ?? 0) > 0 && (
+                <li>
+                  <strong className="text-foreground">{exportWarn?.unavailable}</strong> bài có link
+                  Shopee đã kiểm tra và phát hiện hết hàng/không tồn tại (xem chi tiết ở trang Shopee).
                 </li>
               )}
             </ul>
