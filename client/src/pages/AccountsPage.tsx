@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   Wand2,
+  Copy,
 } from 'lucide-react'
 import {
   fetchAccounts,
@@ -90,6 +91,19 @@ function ProxyCell({
           </span>
         )}
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(proxy).then(
+            () => toast.success('Đã copy proxy'),
+            () => toast.error('Không copy được'),
+          )
+        }}
+        title="Copy proxy"
+        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <Copy className="h-3 w-3" />
+      </button>
       <button
         type="button"
         onClick={() => onRecheck(proxy)}

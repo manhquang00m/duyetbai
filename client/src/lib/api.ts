@@ -420,3 +420,18 @@ export async function recheckProxy(id: number) {
   const { data } = await api.post<SavedProxy[]>(`/api/proxies/${id}/recheck`)
   return data
 }
+
+// ===== Cai dat: nen tang mac dinh lay metadata/media bai Threads =====
+export type MediaSourceName = 'savethreads' | 'snapsave'
+
+export async function fetchMediaSourceDefault() {
+  const { data } = await api.get<{ default: MediaSourceName }>('/api/settings/media-source')
+  return data.default
+}
+
+export async function setMediaSourceDefault(value: MediaSourceName) {
+  const { data } = await api.put<{ default: MediaSourceName }>('/api/settings/media-source', {
+    default: value,
+  })
+  return data.default
+}

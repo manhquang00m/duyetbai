@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Play, Save, Trash2, RefreshCw, Search } from 'lucide-react'
+import { Loader2, Play, Save, Trash2, RefreshCw, Search, Copy } from 'lucide-react'
 import {
   checkProxies,
   fetchProxies,
@@ -91,6 +91,24 @@ export function ProxyPage() {
     mutationFn: (id: number) => recheckProxy(id),
     onSuccess: invalidate,
   })
+
+  const copyText = (value: string, successMsg: string) => {
+    navigator.clipboard.writeText(value).then(
+      () => toast.success(successMsg),
+      () => toast.error('Không copy được'),
+    )
+  }
+
+  const copyAllSaved = () => {
+    if (filteredSaved.length === 0) {
+      toast.error('Không có proxy nào để copy')
+      return
+    }
+    copyText(
+      filteredSaved.map((p) => p.proxy).join('\n'),
+      `Đã copy ${filteredSaved.length} proxy`,
+    )
+  }
 
   const runCheck = () => {
     const proxies = text
@@ -218,6 +236,9 @@ export function ProxyPage() {
                 { value: 'unchecked', label: 'Chưa kiểm tra' },
               ]}
             />
+            <Button size="sm" variant="outline" onClick={copyAllSaved}>
+              <Copy className="h-4 w-4" /> Copy tất cả
+            </Button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
@@ -242,6 +263,14 @@ export function ProxyPage() {
                     <td className="p-3 text-muted-foreground">{p.account_names || '—'}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyText(p.proxy, 'Đã copy proxy')}
+                          aria-label="Copy proxy"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

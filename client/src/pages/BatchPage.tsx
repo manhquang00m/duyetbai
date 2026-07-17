@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Play,
@@ -18,9 +18,12 @@ import {
   batchStreamUrl,
   fetchCollectHistory,
   deleteCollectHistory,
+  fetchMediaSourceDefault,
+  setMediaSourceDefault,
   type JobState,
   type BatchItemResult,
   type CollectHistoryRow,
+  type MediaSourceName,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -302,6 +305,19 @@ export function BatchPage() {
   const [job, setJob] = useState<JobState | null>(null)
   const esRef = useRef<EventSource | null>(null)
 
+  const { data: mediaSource } = useQuery({
+    queryKey: ['media-source-default'],
+    queryFn: fetchMediaSourceDefault,
+  })
+  const mediaSourceMut = useMutation({
+    mutationFn: (value: MediaSourceName) => setMediaSourceDefault(value),
+    onSuccess: (value) => {
+      qc.setQueryData(['media-source-default'], value)
+      toast.success('Đã đổi nền tảng mặc định')
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi đổi nền tảng'),
+  })
+
   const runUrls = async (urls: string[], force: boolean) => {
     if (urls.length === 0) {
       toast.error('Không có URL')
@@ -362,7 +378,7 @@ export function BatchPage() {
   const failedCount = (job?.items ?? []).filter(isFailed).length
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Thu thập</h1>
         <p className="text-sm text-muted-foreground">
@@ -410,16 +426,27 @@ export function BatchPage() {
             disabled={running}
           />
 
-          <div className="flex gap-2">
-            <Button onClick={run} disabled={running}>
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {running ? 'Đang chạy...' : 'Chạy'}
-            </Button>
-            {!running && failedCount > 0 && (
-              <Button variant="outline" onClick={retryFailed}>
-                <RotateCcw className="h-4 w-4" /> Retry {failedCount} bài lỗi
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex gap-2">
+              <Button onClick={run} disabled={running}>
+                {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                {running ? 'Đang chạy...' : 'Chạy'}
               </Button>
-            )}
+              {!running && failedCount > 0 && (
+                <Button variant="outline" onClick={retryFailed}>
+                  <RotateCcw className="h-4 w-4" /> Retry {failedCount} bài lỗi
+                </Button>
+              )}
+            </div>
+            <SingleFilterDropdown
+              label="Nền tảng mặc định"
+              value={mediaSource ?? 'savethreads'}
+              onChange={(v) => mediaSourceMut.mutate(v as MediaSourceName)}
+              options={[
+                { value: 'savethreads', label: 'savethreads.io' },
+                { value: 'snapsave', label: 'snapsave.vn' },
+              ]}
+            />
           </div>
 
           {job && <JobProgressCard job={job} />}

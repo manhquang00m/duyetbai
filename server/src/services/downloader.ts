@@ -120,7 +120,13 @@ export async function downloadPost(post: PostMedia, baseDir: string): Promise<Do
     const destPath = path.join(destDir, name);
     const relName = `${subdir}/${name}`;
     try {
-      await downloadFile(item.url, destPath);
+      if (item.download) {
+        // Nguon can POST kem session rieng (vd snapsave.vn) - da tai san bytes, chi ghi ra dia.
+        const buf = await item.download();
+        await writeFile(destPath, buf);
+      } else {
+        await downloadFile(item.url, destPath);
+      }
       files.push({ type: item.type, file: relName, path: destPath, ok: true });
     } catch (err) {
       await rm(destPath, { force: true }); // xoa file tai do

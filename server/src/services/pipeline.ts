@@ -66,8 +66,7 @@ export interface PostResult {
  * voi media + stats de post duoc luu DB, kem scrapeError de biet bai can cao lai.
  */
 export async function processPost(url: string, log?: LogFn): Promise<PostResult> {
-  log?.('Lấy metadata + link media...');
-  const media = await getPostMedia(url);
+  const media = await getPostMedia(url, log);
   log?.(`Tải ${media.media.length} media...`);
   const download = await downloadPost(media, DOWNLOAD_DIR);
   const mediaFail = download.files.filter((f) => !f.ok).length;

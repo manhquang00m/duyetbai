@@ -8,6 +8,7 @@ import accountsRouter from './api/accounts';
 import batchRouter from './api/batch';
 import shopeeRouter from './api/shopee';
 import proxiesRouter from './api/proxies';
+import settingsRouter from './api/settings';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -31,6 +32,7 @@ app.use('/api/posts', postsRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/batch', batchRouter);
 app.use('/api/proxies', proxiesRouter);
+app.use('/api/settings', settingsRouter);
 app.use('/api', shopeeRouter); // /api/export/*, /api/import/*, /api/shopee/*
 
 app.listen(PORT, () => {
