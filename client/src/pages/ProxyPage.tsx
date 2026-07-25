@@ -42,24 +42,35 @@ export function ProxyPage() {
   const { data: saved } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['proxies'] })
 
+  // "Tất cả": xem/quan ly binh thuong (mac dinh Live). "Proxy Die": tab rieng de theo doi + kiem
+  // tra lai dinh ky cac proxy Die - khong xoa di vi sau nay check lai co the da Live tro lai.
+  const [savedTab, setSavedTab] = useState<'all' | 'die'>('all')
   const [savedSearch, setSavedSearch] = useState('')
   const [savedStatusFilter, setSavedStatusFilter] = useState<'all' | 'live' | 'die' | 'unchecked'>(
     'live',
   )
+  const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+
+  const dieProxies = useMemo(() => (saved ?? []).filter((p) => p.status === 'die'), [saved])
 
   const filteredSaved = useMemo(() => {
     const q = savedSearch.trim().toLowerCase()
-    return (saved ?? []).filter((p) => {
-      if (savedStatusFilter === 'live' && p.status !== 'live') return false
-      if (savedStatusFilter === 'die' && p.status !== 'die') return false
-      if (savedStatusFilter === 'unchecked' && p.status) return false
+    const pool = savedTab === 'die' ? dieProxies : (saved ?? [])
+    return pool.filter((p) => {
+      if (savedTab === 'all') {
+        if (savedStatusFilter === 'live' && p.status !== 'live') return false
+        if (savedStatusFilter === 'die' && p.status !== 'die') return false
+        if (savedStatusFilter === 'unchecked' && p.status) return false
+      }
+      if (assignFilter === 'assigned' && !p.account_names) return false
+      if (assignFilter === 'unassigned' && p.account_names) return false
       if (q) {
         const hay = `${p.proxy} ${p.account_names ?? ''}`.toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true
     })
-  }, [saved, savedSearch, savedStatusFilter])
+  }, [saved, dieProxies, savedTab, savedSearch, savedStatusFilter, assignFilter])
 
   const checkMut = useMutation({
     mutationFn: (proxies: string[]) => checkProxies(proxies),
@@ -92,6 +103,27 @@ export function ProxyPage() {
     onSuccess: invalidate,
   })
 
+  // Kiem tra lai HANG LOAT toan bo proxy Die da luu - proxy thue thuong xoay IP nen Die hom nay
+  // co the da Live tro lai, khong nen phai bam kiem tra lai tung dong 1.
+  const recheckAllDieMut = useMutation({
+    mutationFn: async () => {
+      const targets = dieProxies.map((p) => p.proxy)
+      const res = await checkProxies(targets)
+      await saveProxies(res.map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip })))
+      return res
+    },
+    onSuccess: (res) => {
+      invalidate()
+      const backToLive = res.filter((r) => r.status === 'live').length
+      toast.success(
+        backToLive > 0
+          ? `Đã kiểm tra lại ${res.length} proxy Die — ${backToLive} proxy đã Live trở lại`
+          : `Đã kiểm tra lại ${res.length} proxy Die — vẫn chưa proxy nào Live`,
+      )
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi kiểm tra lại'),
+  })
+
   const copyText = (value: string, successMsg: string) => {
     navigator.clipboard.writeText(value).then(
       () => toast.success(successMsg),
@@ -122,12 +154,12 @@ export function ProxyPage() {
     checkMut.mutate(proxies)
   }
 
-  const saveLive = () => {
-    const items = results
-      .filter((r) => r.status === 'live')
-      .map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip }))
+  // Luu TOAN BO ket qua da kiem tra (ca Live lan Die) - proxy Die khong bi bo/xoa vi sau nay kiem
+  // tra lai co the da Live tro lai (xem tab "Proxy Die" ben duoi).
+  const saveAllChecked = () => {
+    const items = results.map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip }))
     if (items.length === 0) {
-      toast.error('Không có proxy Live để lưu')
+      toast.error('Không có proxy để lưu')
       return
     }
     saveMut.mutate(items)
@@ -161,8 +193,8 @@ export function ProxyPage() {
           Kiểm tra
         </Button>
         {results.length > 0 && (
-          <Button variant="outline" onClick={saveLive} disabled={saveMut.isPending}>
-            <Save className="h-4 w-4" /> Lưu proxy Live
+          <Button variant="outline" onClick={saveAllChecked} disabled={saveMut.isPending}>
+            <Save className="h-4 w-4" /> Lưu tất cả kết quả
           </Button>
         )}
       </div>
@@ -208,12 +240,35 @@ export function ProxyPage() {
         </div>
       )}
 
+      <div className="flex gap-0.5 rounded-md border p-0.5 w-fit">
+        <button
+          type="button"
+          onClick={() => setSavedTab('all')}
+          className={cn(
+            'rounded px-3 py-1.5 text-sm font-medium transition-colors',
+            savedTab === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
+          )}
+        >
+          Proxy đã lưu
+        </button>
+        <button
+          type="button"
+          onClick={() => setSavedTab('die')}
+          className={cn(
+            'rounded px-3 py-1.5 text-sm font-medium transition-colors',
+            savedTab === 'die' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
+          )}
+        >
+          Proxy Die{dieProxies.length > 0 ? ` (${dieProxies.length})` : ''}
+        </button>
+      </div>
+
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
             <h2 className="mr-auto shrink-0 text-sm font-semibold">
-              Proxy đã lưu{' '}
+              {savedTab === 'die' ? 'Proxy Die' : 'Proxy đã lưu'}{' '}
               <span className="font-normal text-muted-foreground">
-                ({filteredSaved.length}/{saved?.length ?? 0})
+                ({filteredSaved.length}/{savedTab === 'die' ? dieProxies.length : (saved?.length ?? 0)})
               </span>
             </h2>
             <div className="relative">
@@ -225,17 +280,40 @@ export function ProxyPage() {
                 className="h-7 w-40 pl-6 text-xs"
               />
             </div>
+            {savedTab === 'all' && (
+              <SingleFilterDropdown
+                label="Trạng thái"
+                value={savedStatusFilter}
+                onChange={setSavedStatusFilter}
+                options={[
+                  { value: 'all', label: 'Tất cả' },
+                  { value: 'live', label: 'Live' },
+                  { value: 'die', label: 'Die' },
+                  { value: 'unchecked', label: 'Chưa kiểm tra' },
+                ]}
+              />
+            )}
             <SingleFilterDropdown
-              label="Trạng thái"
-              value={savedStatusFilter}
-              onChange={setSavedStatusFilter}
+              label="Gán account"
+              value={assignFilter}
+              onChange={setAssignFilter}
               options={[
                 { value: 'all', label: 'Tất cả' },
-                { value: 'live', label: 'Live' },
-                { value: 'die', label: 'Die' },
-                { value: 'unchecked', label: 'Chưa kiểm tra' },
+                { value: 'assigned', label: 'Đã gán' },
+                { value: 'unassigned', label: 'Chưa gán' },
               ]}
             />
+            {savedTab === 'die' && dieProxies.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => recheckAllDieMut.mutate()}
+                disabled={recheckAllDieMut.isPending}
+              >
+                <RefreshCw className={cn('h-4 w-4', recheckAllDieMut.isPending && 'animate-spin')} />
+                Kiểm tra lại tất cả
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={copyAllSaved}>
               <Copy className="h-4 w-4" /> Copy tất cả
             </Button>

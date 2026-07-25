@@ -6,6 +6,7 @@ import { exportShopeeInput, exportPosts } from '../services/exporter';
 import { importShopeeLinks } from '../services/importer';
 import { db } from '../db';
 import { getExportWarnings } from '../db/queries';
+import { parsePostFilterQuery } from '../utils/postFilters';
 import { startShopeeLinkCheckJob } from '../services/jobs';
 import { checkShopeeLink } from '../services/shopeeLinkCheck';
 import { EXPORT_DIR } from '../config';
@@ -35,20 +36,20 @@ router.get('/export/shopee', async (req, res, next) => {
   }
 });
 
-// GET /api/export/posts/check -> canh bao truoc khi xuat (chua cap nhat link / >1 comment shopee)
-router.get('/export/posts/check', (_req, res) => {
-  res.json(getExportWarnings());
+// GET /api/export/posts/check?<cac tham so loc giong /api/posts> -> canh bao truoc khi xuat,
+// tinh TRONG PHAM VI dang loc (chua cap nhat link / >1 comment shopee / het hang)
+router.get('/export/posts/check', (req, res) => {
+  res.json(getExportWarnings(parsePostFilterQuery(req.query as Record<string, unknown>)));
 });
 
-// GET /api/export/posts?onlyUnposted=1&onlyCompleteMedia=1 -> tai file cuoi cho tool auto dang
+// GET /api/export/posts?<cac tham so loc giong /api/posts> -> tai file cuoi cho tool auto dang,
+// xuat DUNG bai dang hien thi theo bo loc hien tai tren trang Bai viet
 router.get('/export/posts', async (req, res, next) => {
   try {
-    const onlyUnposted = req.query.onlyUnposted === '1' || req.query.onlyUnposted === 'true';
-    const onlyCompleteMedia =
-      req.query.onlyCompleteMedia === '1' || req.query.onlyCompleteMedia === 'true';
+    const filterOpts = parsePostFilterQuery(req.query as Record<string, unknown>);
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'posts.xlsx');
-    await exportPosts(out, { onlyUnposted, onlyCompleteMedia });
+    await exportPosts(out, filterOpts);
     res.download(out, 'posts.xlsx');
   } catch (err) {
     next(err);

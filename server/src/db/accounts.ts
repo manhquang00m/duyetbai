@@ -21,6 +21,7 @@ export interface Account {
   gmail: string | null;
   gmail_password: string | null;
   proxy: string | null;
+  platform: string | null; // 'Stable' | 'Global'
   created_at: string;
   proxy_status?: string | null; // 'live' | 'die' | null - lay tu bang proxies (chi co trong listAccounts)
   proxy_checked_at?: string | null;
@@ -35,11 +36,12 @@ export interface AccountInput {
   gmail?: string | null;
   gmail_password?: string | null;
   proxy?: string | null;
+  platform?: string | null;
   created_at?: string;
 }
 
 const ACCOUNT_COLUMNS =
-  'id, name, active, banned, device, pass_threads, gmail, gmail_password, proxy, created_at';
+  'id, name, active, banned, device, pass_threads, gmail, gmail_password, proxy, platform, created_at';
 
 const insAccount = db.prepare(
   'INSERT OR IGNORE INTO accounts (name, active, created_at) VALUES (?, 1, ?)',
@@ -75,7 +77,7 @@ export function listAccounts(): Account[] {
   return db
     .prepare(
       `SELECT a.id, a.name, a.active, a.banned, a.device, a.pass_threads, a.gmail,
-              a.gmail_password, a.proxy, a.created_at,
+              a.gmail_password, a.proxy, a.platform, a.created_at,
               p.status AS proxy_status, p.checked_at AS proxy_checked_at
          FROM accounts a
          LEFT JOIN proxies p ON p.proxy = a.proxy
@@ -119,8 +121,8 @@ export function createAccount(input: AccountInput): Account {
     if (conflict) throw new ProxyConflictError(proxy, conflict.name);
   }
   db.prepare(
-    `INSERT INTO accounts (name, active, banned, device, pass_threads, gmail, gmail_password, proxy, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO accounts (name, active, banned, device, pass_threads, gmail, gmail_password, proxy, platform, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     input.name,
     input.active === false ? 0 : 1,
@@ -130,6 +132,7 @@ export function createAccount(input: AccountInput): Account {
     input.gmail ?? null,
     input.gmail_password ?? null,
     proxy,
+    input.platform ?? null,
     input.created_at || new Date().toISOString(),
   );
   return getAccountByName(input.name)!;
@@ -167,6 +170,10 @@ export function updateAccount(id: number, patch: Partial<AccountInput>): Account
   if (patch.gmail_password !== undefined) {
     fields.push('gmail_password = ?');
     args.push(patch.gmail_password);
+  }
+  if (patch.platform !== undefined) {
+    fields.push('platform = ?');
+    args.push(patch.platform);
   }
   if (patch.proxy !== undefined) {
     const proxy = patch.proxy?.trim() || null;
@@ -225,6 +232,7 @@ export function upsertAccount(input: AccountInput): UpsertAccountResult {
       gmail: input.gmail,
       gmail_password: input.gmail_password,
       proxy,
+      platform: input.platform,
       created_at: input.created_at,
     });
     return { action: 'updated', proxyConflictWith };

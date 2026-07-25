@@ -31,6 +31,7 @@ const AccountCreateSchema = z.object({
   gmail: nullableString,
   gmail_password: nullableString,
   proxy: nullableString,
+  platform: z.enum(['Stable', 'Global']).nullable().optional(),
 });
 
 const AccountPatchSchema = AccountCreateSchema.partial();

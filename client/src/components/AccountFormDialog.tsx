@@ -7,6 +7,8 @@ import {
   updateAccount,
   fetchAccounts,
   fetchProxies,
+  checkProxies,
+  saveProxies,
   type Account,
   type AccountInput,
   type SavedProxy,
@@ -15,6 +17,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -33,10 +36,11 @@ function emptyForm(): AccountInput {
     gmail: '',
     gmail_password: '',
     proxy: '',
+    platform: null,
   }
 }
 
-function PasswordField({
+export function PasswordField({
   label,
   value,
   onChange,
@@ -72,13 +76,17 @@ function PasswordField({
 export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
   const [form, setForm] = useState<AccountInput>(emptyForm())
   const [saving, setSaving] = useState(false)
+  const [checkingProxy, setCheckingProxy] = useState(false)
+  const [proxyMode, setProxyMode] = useState<'select' | 'text'>('select')
+  const [proxyText, setProxyText] = useState('')
 
   const { data: proxies } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies, enabled: open })
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts, enabled: open })
 
-  // Proxy dropdown: tat ca proxy da luu, tru cai dang bi account KHAC (khong phai chinh minh) chiem.
-  // Neu proxy hien tai cua chinh account nay khong nam trong bang proxies (vd import Excel cu,
-  // chua tung kiem tra) thi van them vao dau danh sach de khong bi mat gia tri dang co.
+  // Proxy dropdown: CHI proxy Live, tru cai dang bi account KHAC (khong phai chinh minh) chiem.
+  // Neu proxy hien tai cua chinh account nay khong Live (vd import Excel cu, chua tung kiem tra,
+  // hoac da chuyen Die) thi van them vao dau danh sach de khong bi mat gia tri dang co - chi
+  // KHONG cho chon them proxy Die/chua kiem tra nao khac.
   const proxyOptions = useMemo(() => {
     const takenByOthers = new Set(
       (accounts ?? [])
@@ -86,10 +94,11 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         .map((a) => a.proxy)
         .filter((p): p is string => !!p),
     )
-    const pool = (proxies ?? []).filter((p) => !takenByOthers.has(p.proxy))
+    const pool = (proxies ?? []).filter((p) => p.status === 'live' && !takenByOthers.has(p.proxy))
     const current = form.proxy?.trim()
     if (current && !pool.some((p) => p.proxy === current)) {
-      const synthesized: SavedProxy = {
+      const existing = (proxies ?? []).find((p) => p.proxy === current)
+      const synthesized: SavedProxy = existing ?? {
         id: -1,
         proxy: current,
         status: null,
@@ -116,9 +125,12 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
             gmail: account.gmail ?? '',
             gmail_password: account.gmail_password ?? '',
             proxy: account.proxy ?? '',
+            platform: account.platform ?? null,
           }
         : emptyForm(),
     )
+    setProxyMode('select')
+    setProxyText('')
   }, [open, account])
 
   const submit = async () => {
@@ -127,8 +139,31 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
       toast.error('Thiếu Profile (tên account)')
       return
     }
+
+    let finalProxy = form.proxy?.trim() || null
     setSaving(true)
     try {
+      if (proxyMode === 'text') {
+        const typed = proxyText.trim()
+        if (typed) {
+          setCheckingProxy(true)
+          let result
+          try {
+            ;[result] = await checkProxies([typed])
+          } finally {
+            setCheckingProxy(false)
+          }
+          if (result.status !== 'live') {
+            toast.error(`Proxy Die/không kết nối được (${result.error ?? 'không rõ lỗi'}) — chưa lưu account`)
+            return
+          }
+          await saveProxies([{ proxy: result.proxy, status: result.status, ip: result.ip }])
+          finalProxy = result.proxy
+        } else {
+          finalProxy = null
+        }
+      }
+
       const payload: AccountInput = {
         ...form,
         name,
@@ -136,7 +171,8 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         pass_threads: form.pass_threads?.trim() || null,
         gmail: form.gmail?.trim() || null,
         gmail_password: form.gmail_password?.trim() || null,
-        proxy: form.proxy?.trim() || null,
+        proxy: finalProxy,
+        platform: form.platform || null,
       }
       if (account) await updateAccount(account.id, payload)
       else await createAccount(payload)
@@ -166,35 +202,77 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Thiết bị</label>
-            <Input
-              value={form.device ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, device: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Proxy</label>
-            <select
-              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              value={form.proxy ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value || null }))}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Thiết bị</label>
+          <Input
+            value={form.device ?? ''}
+            onChange={(e) => setForm((f) => ({ ...f, device: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Proxy</label>
+          <div className="mb-1.5 flex gap-0.5 rounded-md border p-0.5 w-fit">
+            <button
+              type="button"
+              onClick={() => setProxyMode('select')}
+              className={cn(
+                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                proxyMode === 'select'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent',
+              )}
             >
-              <option value="">— Không dùng proxy —</option>
-              {proxyOptions.map((p) => (
-                <option key={p.proxy} value={p.proxy}>
-                  {p.proxy}
-                  {p.status === 'live' ? ' · Live' : p.status === 'die' ? ' · Die' : ' · Chưa kiểm tra'}
-                </option>
-              ))}
-            </select>
-            {proxyOptions.length === 0 && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Chưa có proxy nào — thêm và kiểm tra ở trang Proxy trước.
-              </p>
-            )}
+              Chọn từ danh sách
+            </button>
+            <button
+              type="button"
+              onClick={() => setProxyMode('text')}
+              className={cn(
+                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                proxyMode === 'text'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent',
+              )}
+            >
+              Nhập proxy mới
+            </button>
           </div>
+
+          {proxyMode === 'select' ? (
+            <>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={form.proxy ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value || null }))}
+              >
+                <option value="">— Không dùng proxy —</option>
+                {proxyOptions.map((p) => (
+                  <option key={p.proxy} value={p.proxy}>
+                    {p.proxy}
+                    {p.status === 'live' ? ' · Live' : p.status === 'die' ? ' · Die' : ' · Chưa kiểm tra'}
+                  </option>
+                ))}
+              </select>
+              {proxyOptions.length === 0 && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Chưa có proxy Live nào rảnh — nhập proxy mới ở tab bên cạnh.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <Input
+                value={proxyText}
+                onChange={(e) => setProxyText(e.target.value)}
+                placeholder="ip:port hoặc ip:port:user:pass"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Sẽ tự kiểm tra Live trước khi lưu — nếu Die sẽ báo lỗi và không lưu. Proxy Live sẽ
+                được lưu vào trang Proxy luôn.
+              </p>
+            </>
+          )}
         </div>
 
         <PasswordField
@@ -216,6 +294,24 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
             value={form.gmail_password ?? ''}
             onChange={(v) => setForm((f) => ({ ...f, gmail_password: v }))}
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Platform</label>
+          <select
+            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={form.platform ?? ''}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                platform: e.target.value ? (e.target.value as 'Stable' | 'Global') : null,
+              }))
+            }
+          >
+            <option value="">— Chưa đặt —</option>
+            <option value="Stable">Stable</option>
+            <option value="Global">Global</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-6 pt-1">
@@ -242,7 +338,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         </Button>
         <Button onClick={submit} disabled={saving}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Lưu
+          {checkingProxy ? 'Đang kiểm tra proxy...' : 'Lưu'}
         </Button>
       </div>
     </Dialog>

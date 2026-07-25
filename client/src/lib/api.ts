@@ -39,6 +39,7 @@ export interface PostListItem {
   post_status: 'new' | 'exported' | 'posted'
   exported_at: string | null
   posted_at: string | null
+  topic: string | null
 }
 
 export interface PostsResponse {
@@ -67,6 +68,8 @@ export interface PostDetail {
   shopee: ShopeeEntry[]
 }
 
+export type AccountPlatform = 'Stable' | 'Global'
+
 export interface Account {
   id: number
   name: string // = Profile
@@ -77,6 +80,7 @@ export interface Account {
   gmail: string | null
   gmail_password: string | null
   proxy: string | null
+  platform: AccountPlatform | null
   created_at: string
   proxy_status?: string | null // 'live' | 'die' | null (chua kiem tra)
   proxy_checked_at?: string | null
@@ -91,6 +95,7 @@ export interface AccountInput {
   gmail?: string | null
   gmail_password?: string | null
   proxy?: string | null
+  platform?: AccountPlatform | null
 }
 
 export interface AccountImportResult {
@@ -150,27 +155,34 @@ export interface ShopeeLinkRow {
 }
 
 // ===== API calls =====
-export async function fetchPosts(params: {
+
+// Bo loc DUNG CHUNG giua danh sach (fetchPosts) va xuat file (exportPostsUrl/fetchExportPostsWarnings)
+// - loc the nao tren UI thi xuat file y nhu the, khong con 2 bo tuy chon rieng biet.
+export interface PostFilterParams {
   search?: string
-  limit?: number
-  offset?: number
   noShopee?: boolean
   notUpdated?: boolean
   oneShopee?: boolean
-  postStatus?: 'new' | 'exported' | 'posted'
+  postStatus?: 'unposted' | 'posted'
   mediaFilter?: 'complete' | 'missing'
-}) {
+  topics?: string[]
+}
+
+function postFilterQueryParams(filters: PostFilterParams) {
+  return {
+    search: filters.search || undefined,
+    noShopee: filters.noShopee ? 1 : undefined,
+    notUpdated: filters.notUpdated ? 1 : undefined,
+    oneShopee: filters.oneShopee ? 1 : undefined,
+    postStatus: filters.postStatus,
+    mediaFilter: filters.mediaFilter,
+    topics: filters.topics && filters.topics.length > 0 ? filters.topics.join(',') : undefined,
+  }
+}
+
+export async function fetchPosts(params: PostFilterParams & { limit?: number; offset?: number }) {
   const { data } = await api.get<PostsResponse>('/api/posts', {
-    params: {
-      search: params.search,
-      limit: params.limit,
-      offset: params.offset,
-      noShopee: params.noShopee ? 1 : undefined,
-      notUpdated: params.notUpdated ? 1 : undefined,
-      oneShopee: params.oneShopee ? 1 : undefined,
-      postStatus: params.postStatus,
-      mediaFilter: params.mediaFilter,
-    },
+    params: { ...postFilterQueryParams(params), limit: params.limit, offset: params.offset },
   })
   return data
 }
@@ -346,14 +358,26 @@ export async function checkShopeeLinkOnce(link: string) {
 export const exportShopeeUrl = '/api/export/shopee'
 export const exportPostsUrl = '/api/export/posts'
 
+/** URL tai posts.xlsx theo DUNG bo loc dang ap dung tren trang Bai viet. */
+export function buildExportPostsUrl(filters: PostFilterParams): string {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(postFilterQueryParams(filters))) {
+    if (v !== undefined && v !== '') params.set(k, String(v))
+  }
+  const qs = params.toString()
+  return qs ? `${exportPostsUrl}?${qs}` : exportPostsUrl
+}
+
 export interface ExportPostsWarnings {
   notUpdated: number
   multiComment: number
   unavailable: number
 }
 
-export async function fetchExportPostsWarnings() {
-  const { data } = await api.get<ExportPostsWarnings>('/api/export/posts/check')
+export async function fetchExportPostsWarnings(filters: PostFilterParams) {
+  const { data } = await api.get<ExportPostsWarnings>('/api/export/posts/check', {
+    params: postFilterQueryParams(filters),
+  })
   return data
 }
 
@@ -434,4 +458,33 @@ export async function setMediaSourceDefault(value: MediaSourceName) {
     default: value,
   })
   return data.default
+}
+
+// ===== Chu de gan theo tac gia (username trich xuat tu URL bai) =====
+export const ACCOUNT_TOPICS = [
+  'Công nghệ',
+  'Sản phẩm',
+  'Makeup',
+  'Chó mèo',
+  'Hút view',
+  'Khác',
+  'Gây war',
+] as const
+
+export type AccountTopic = (typeof ACCOUNT_TOPICS)[number]
+
+export interface AccountTopicRow {
+  username: string
+  topic: string | null
+  post_count: number
+}
+
+export async function fetchAccountTopics() {
+  const { data } = await api.get<AccountTopicRow[]>('/api/account-topics')
+  return data
+}
+
+export async function saveAccountTopics(items: { username: string; topic: string }[]) {
+  const { data } = await api.post<AccountTopicRow[]>('/api/account-topics', { items })
+  return data
 }

@@ -7,8 +7,6 @@ import {
   Users,
   Upload,
   Pencil,
-  Eye,
-  EyeOff,
   Wifi,
   WifiOff,
   ShieldCheck,
@@ -16,6 +14,7 @@ import {
   Search,
   Wand2,
   Copy,
+  CopyPlus,
 } from 'lucide-react'
 import {
   fetchAccounts,
@@ -38,28 +37,11 @@ import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
 import { AccountFormDialog } from '@/components/AccountFormDialog'
 import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
+import { CloneAccountDialog } from '@/components/CloneAccountDialog'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
-const COLSPAN = 11
-
-function MaskedCell({ value }: { value: string | null }) {
-  const [show, setShow] = useState(false)
-  if (!value) return <span className="text-muted-foreground">—</span>
-  return (
-    <button
-      type="button"
-      onClick={() => setShow((v) => !v)}
-      className="inline-flex items-center gap-1 text-xs hover:text-foreground"
-      title={show ? 'Ẩn' : 'Hiện'}
-    >
-      <span className={cn('max-w-[8rem] truncate', !show && 'font-mono tracking-wider')}>
-        {show ? value : '•'.repeat(Math.min(value.length, 10))}
-      </span>
-      {show ? <EyeOff className="h-3 w-3 shrink-0" /> : <Eye className="h-3 w-3 shrink-0" />}
-    </button>
-  )
-}
+const COLSPAN = 9
 
 function ProxyCell({
   proxy,
@@ -138,6 +120,7 @@ export function AccountsPage() {
   const { data: proxiesData } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
+  const [cloningFrom, setCloningFrom] = useState<Account | null>(null)
   const [proxyDialogOpen, setProxyDialogOpen] = useState(false)
   const [recheckAllOpen, setRecheckAllOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -150,6 +133,7 @@ export function AccountsPage() {
   const [proxyFilter, setProxyFilter] = useState<'all' | 'none' | 'live' | 'die' | 'unchecked'>(
     'all',
   )
+  const [platformFilter, setPlatformFilter] = useState<'all' | 'Stable' | 'Global' | 'none'>('all')
 
   const allAccounts = accounts ?? []
 
@@ -169,9 +153,12 @@ export function AccountsPage() {
       if (proxyFilter === 'live' && a.proxy_status !== 'live') return false
       if (proxyFilter === 'die' && a.proxy_status !== 'die') return false
       if (proxyFilter === 'unchecked' && (!a.proxy || a.proxy_status)) return false
+      if (platformFilter === 'none' && a.platform) return false
+      if ((platformFilter === 'Stable' || platformFilter === 'Global') && a.platform !== platformFilter)
+        return false
       return true
     })
-  }, [allAccounts, search, bannedFilter, activeFilter, proxyFilter])
+  }, [allAccounts, search, bannedFilter, activeFilter, proxyFilter, platformFilter])
 
   const allChecked = items.length > 0 && items.every((a) => sel.has(a.id))
   const someChecked = items.some((a) => sel.has(a.id)) && !allChecked
@@ -355,8 +342,9 @@ export function AccountsPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        File import: cột A→H lần lượt là Profile, Thiết bị, Banned, Ngày tạo, Pass_Threads, Gmail,
-        Password, Proxy (dòng 1 là header). Profile trùng sẽ được cập nhật đè.
+        File import: cột A→I lần lượt là Profile, Thiết bị, Banned, Ngày tạo, Pass_Threads, Gmail,
+        Password, Proxy, Platform (Stable/Global) (dòng 1 là header). Profile trùng sẽ được cập
+        nhật đè.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -401,6 +389,17 @@ export function AccountsPage() {
             { value: 'unchecked', label: 'Có proxy, chưa kiểm tra' },
           ]}
         />
+        <SingleFilterDropdown
+          label="Platform"
+          value={platformFilter}
+          onChange={setPlatformFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            { value: 'Stable', label: 'Stable' },
+            { value: 'Global', label: 'Global' },
+            { value: 'none', label: 'Chưa đặt' },
+          ]}
+        />
         <span className="text-xs text-muted-foreground">{items.length}/{allAccounts.length} account</span>
       </div>
 
@@ -416,10 +415,8 @@ export function AccountsPage() {
                 <th className="p-2.5 text-left font-medium">Thiết bị</th>
                 <th className="p-2.5 text-center font-medium">Banned</th>
                 <th className="p-2.5 text-left font-medium">Ngày tạo</th>
-                <th className="p-2.5 text-left font-medium">Pass_Threads</th>
-                <th className="p-2.5 text-left font-medium">Gmail</th>
-                <th className="p-2.5 text-left font-medium">Password</th>
                 <th className="p-2.5 text-left font-medium">Proxy</th>
+                <th className="p-2.5 text-center font-medium">Platform</th>
                 <th className="p-2.5 text-center font-medium">Active</th>
                 <th className="p-2.5 text-right font-medium"></th>
               </tr>
@@ -455,19 +452,28 @@ export function AccountsPage() {
                       {a.created_at ? new Date(a.created_at).toLocaleDateString('vi-VN') : '—'}
                     </td>
                     <td className="p-2.5">
-                      <MaskedCell value={a.pass_threads} />
-                    </td>
-                    <td className="p-2.5 text-xs text-muted-foreground">{a.gmail || '—'}</td>
-                    <td className="p-2.5">
-                      <MaskedCell value={a.gmail_password} />
-                    </td>
-                    <td className="p-2.5">
                       <ProxyCell
                         proxy={a.proxy}
                         status={a.proxy_status}
                         checking={recheckMut.isPending && recheckMut.variables === a.proxy}
                         onRecheck={(proxy) => recheckMut.mutate(proxy)}
                       />
+                    </td>
+                    <td className="p-2.5 text-center">
+                      {a.platform ? (
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+                            a.platform === 'Global'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
+                              : 'bg-muted text-muted-foreground',
+                          )}
+                        >
+                          {a.platform}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="p-2.5 text-center">
                       <Switch
@@ -479,6 +485,15 @@ export function AccountsPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
                           <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setCloningFrom(a)}
+                          aria-label="Clone account"
+                          title="Clone account"
+                        >
+                          <CopyPlus className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -538,6 +553,13 @@ export function AccountsPage() {
         open={formOpen}
         account={editing}
         onClose={() => setFormOpen(false)}
+        onSaved={invalidate}
+      />
+
+      <CloneAccountDialog
+        open={!!cloningFrom}
+        sourceAccount={cloningFrom}
+        onClose={() => setCloningFrom(null)}
         onSaved={invalidate}
       />
 

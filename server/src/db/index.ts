@@ -75,6 +75,14 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  -- Chu de gan theo TAC GIA bai viet (username trich xuat tu URL), khong phai theo tung bai -
+  -- 1 tac gia thuong dang 1 chu de nhat quan nen gan 1 lan la ap dung cho toan bo bai cua ho.
+  CREATE TABLE IF NOT EXISTS account_topics (
+    username    TEXT PRIMARY KEY,
+    topic       TEXT NOT NULL,
+    updated_at  TEXT NOT NULL
+  );
 `);
 
 // Migration: them cot new_link cho shopee_entries neu chua co (DB cu).
@@ -118,6 +126,7 @@ for (const stmt of [
   'ALTER TABLE accounts ADD COLUMN gmail TEXT',
   'ALTER TABLE accounts ADD COLUMN gmail_password TEXT',
   'ALTER TABLE accounts ADD COLUMN proxy TEXT',
+  'ALTER TABLE accounts ADD COLUMN platform TEXT',
 ]) {
   try {
     db.exec(stmt);

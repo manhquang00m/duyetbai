@@ -22,6 +22,7 @@ export interface PostListItem {
   post_status: string; // 'new' | 'exported' | 'posted'
   exported_at: string | null;
   posted_at: string | null;
+  topic: string | null; // chu de gan theo tac gia (username), xem account_topics
 }
 
 // Dieu kien "co it nhat 1 file video/anh tai thanh cong" cho 1 bai - dung chung cho filter danh
@@ -29,45 +30,24 @@ export interface PostListItem {
 export const HAS_VIDEO = "EXISTS (SELECT 1 FROM media m WHERE m.post_id = p.post_id AND m.type = 'video' AND m.ok = 1)";
 export const HAS_IMAGE = "EXISTS (SELECT 1 FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1)";
 
-const SELECT_LIST = `
-  SELECT p.post_id, p.url, p.username, p.caption, p.likes, p.comments, p.views,
-         p.post_date, p.scraped_at, p.scrape_error, p.shopee_comment_count,
-         p.assigned_account, p.post_status, p.exported_at, p.posted_at,
-         (SELECT COUNT(*) FROM media m WHERE m.post_id = p.post_id) AS media_count,
-         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id) AS shopee_count,
-         (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
-         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
-            AND s.new_link IS NOT NULL AND s.new_link <> '') AS new_count,
-         (SELECT comment FROM shopee_entries s WHERE s.post_id = p.post_id
-            ORDER BY id LIMIT 1) AS comment,
-         (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1
-            ORDER BY id LIMIT 1) AS thumb_file,
-         (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.ok = 1
-            ORDER BY id LIMIT 1) AS any_file
-    FROM posts p
-`;
+/**
+ * Bo loc DUNG CHUNG cho danh sach bai (listPosts) VA xuat file (exportPosts/getExportWarnings) -
+ * dam bao "loc the nao, xuat y nhu the" (1 nguon su that duy nhat cho dieu kien loc).
+ */
+export interface PostFilterOpts {
+  search?: string;
+  noShopee?: boolean;
+  notUpdated?: boolean;
+  oneShopee?: boolean;
+  postStatus?: 'unposted' | 'posted';
+  mediaFilter?: 'complete' | 'missing';
+  topics?: string[]; // loc theo chu de gan cho tac gia (account_topics.topic) - chon nhieu (OR)
+}
 
-export function listPosts(
-  opts: {
-    search?: string;
-    limit?: number;
-    offset?: number;
-    noShopee?: boolean;
-    notUpdated?: boolean;
-    oneShopee?: boolean;
-    postStatus?: 'new' | 'exported' | 'posted';
-    mediaFilter?: 'complete' | 'missing';
-  } = {},
-): {
-  total: number;
-  items: PostListItem[];
-} {
-  const search = (opts.search ?? '').trim();
-  const limit = opts.limit ?? 20;
-  const offset = opts.offset ?? 0;
-
+export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; args: unknown[] } {
   const conds: string[] = [];
   const args: unknown[] = [];
+  const search = (opts.search ?? '').trim();
   if (search) {
     conds.push('(p.caption LIKE ? OR p.username LIKE ? OR p.post_id LIKE ?)');
     args.push(`%${search}%`, `%${search}%`, `%${search}%`);
@@ -83,15 +63,54 @@ export function listPosts(
   if (opts.oneShopee) {
     conds.push('p.shopee_comment_count = 1');
   }
-  if (opts.postStatus) {
-    conds.push('p.post_status = ?');
-    args.push(opts.postStatus);
+  if (opts.postStatus === 'posted') {
+    conds.push("p.post_status = 'posted'");
+  } else if (opts.postStatus === 'unposted') {
+    conds.push("p.post_status <> 'posted'");
   }
   if (opts.mediaFilter === 'complete') {
     conds.push(`(${HAS_VIDEO} AND ${HAS_IMAGE})`);
   } else if (opts.mediaFilter === 'missing') {
     conds.push(`NOT (${HAS_VIDEO} AND ${HAS_IMAGE})`);
   }
+  if (opts.topics && opts.topics.length > 0) {
+    // Subquery (khong phai JOIN) de dung duoc ca trong cau COUNT(*) khong co JOIN account_topics.
+    const placeholders = opts.topics.map(() => '?').join(', ');
+    conds.push(`p.username IN (SELECT username FROM account_topics WHERE topic IN (${placeholders}))`);
+    args.push(...opts.topics);
+  }
+  return { conds, args };
+}
+
+const SELECT_LIST = `
+  SELECT p.post_id, p.url, p.username, p.caption, p.likes, p.comments, p.views,
+         p.post_date, p.scraped_at, p.scrape_error, p.shopee_comment_count,
+         p.assigned_account, p.post_status, p.exported_at, p.posted_at, t.topic AS topic,
+         (SELECT COUNT(*) FROM media m WHERE m.post_id = p.post_id) AS media_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id) AS shopee_count,
+         (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
+            AND s.new_link IS NOT NULL AND s.new_link <> '') AS new_count,
+         (SELECT comment FROM shopee_entries s WHERE s.post_id = p.post_id
+            ORDER BY id LIMIT 1) AS comment,
+         (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1
+            ORDER BY id LIMIT 1) AS thumb_file,
+         (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.ok = 1
+            ORDER BY id LIMIT 1) AS any_file
+    FROM posts p
+    LEFT JOIN account_topics t ON t.username = p.username
+`;
+
+export function listPosts(
+  opts: PostFilterOpts & { limit?: number; offset?: number } = {},
+): {
+  total: number;
+  items: PostListItem[];
+} {
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+
+  const { conds, args } = buildPostFilterConds(opts);
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
 
   const total = (
@@ -178,23 +197,25 @@ export function getStats() {
  *   (comment som nhat), co the sot link cua cac comment con lai.
  * - unavailable: bai co link da kiem tra va phat hien het hang/khong ton tai (chua chac da kiem tra het).
  */
-export function getExportWarnings(): { notUpdated: number; multiComment: number; unavailable: number } {
-  const n = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
+export function getExportWarnings(
+  opts: PostFilterOpts = {},
+): { notUpdated: number; multiComment: number; unavailable: number } {
+  const { conds: baseConds, args } = buildPostFilterConds(opts);
+  const withExtra = (extraCond: string) =>
+    `SELECT COUNT(*) AS n FROM posts p WHERE ${[...baseConds, extraCond].join(' AND ')}`;
+  const n = (sql: string) => (db.prepare(sql).get(...args) as { n: number }).n;
   return {
-    notUpdated: n(`
-      SELECT COUNT(*) AS n FROM posts p
-       WHERE EXISTS (
-         SELECT 1 FROM shopee_entries s
-          WHERE s.post_id = p.post_id AND (s.new_link IS NULL OR s.new_link = '')
-       )
-    `),
-    multiComment: n('SELECT COUNT(*) AS n FROM posts WHERE shopee_comment_count > 1'),
-    unavailable: n(`
-      SELECT COUNT(*) AS n FROM posts p
-       WHERE EXISTS (
-         SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND s.link_status = 'unavailable'
-       )
-    `),
+    notUpdated: n(
+      withExtra(
+        "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND (s.new_link IS NULL OR s.new_link = ''))",
+      ),
+    ),
+    multiComment: n(withExtra('p.shopee_comment_count > 1')),
+    unavailable: n(
+      withExtra(
+        "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND s.link_status = 'unavailable')",
+      ),
+    ),
   };
 }
 

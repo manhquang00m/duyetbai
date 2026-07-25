@@ -7,6 +7,7 @@ import { listPosts, getPostDetail, deletePost } from '../db/queries';
 import { markPostsPosted } from '../db/repository';
 import { startRescrapeJob, startBeautifyJob } from '../services/jobs';
 import { BeautifyConfigSchema } from '../services/beautify';
+import { parsePostFilterQuery } from '../utils/postFilters';
 import { DOWNLOAD_DIR } from '../config';
 
 const router = Router();
@@ -22,25 +23,11 @@ const uploadWatermark = multer({
   }),
 });
 
-// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=new|exported|posted&mediaFilter=complete|missing
+// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=unposted|posted&mediaFilter=complete|missing
 router.get('/', (req, res) => {
-  const search = String(req.query.search ?? '');
   const limit = Math.min(Number(req.query.limit ?? 20) || 20, 100);
   const offset = Number(req.query.offset ?? 0) || 0;
-  const noShopee = req.query.noShopee === '1' || req.query.noShopee === 'true';
-  const notUpdated = req.query.notUpdated === '1' || req.query.notUpdated === 'true';
-  const oneShopee = req.query.oneShopee === '1' || req.query.oneShopee === 'true';
-  const postStatusRaw = String(req.query.postStatus ?? '');
-  const postStatus =
-    postStatusRaw === 'new' || postStatusRaw === 'exported' || postStatusRaw === 'posted'
-      ? postStatusRaw
-      : undefined;
-  const mediaFilterRaw = String(req.query.mediaFilter ?? '');
-  const mediaFilter =
-    mediaFilterRaw === 'complete' || mediaFilterRaw === 'missing' ? mediaFilterRaw : undefined;
-  res.json(
-    listPosts({ search, limit, offset, noShopee, notUpdated, oneShopee, postStatus, mediaFilter }),
-  );
+  res.json(listPosts({ ...parsePostFilterQuery(req.query as Record<string, unknown>), limit, offset }));
 });
 
 // POST /api/posts/mark-posted { postIds: string[], posted?: boolean } -> danh dau (hoac bo danh dau) da dang

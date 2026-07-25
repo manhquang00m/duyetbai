@@ -4,7 +4,7 @@ import { db } from '../db';
 import { listActiveAccounts } from '../db/accounts';
 import { assignAccountAndMarkExported, touchExportedAt } from '../db/repository';
 import { getSetting, setSetting } from '../db/settings';
-import { HAS_VIDEO, HAS_IMAGE } from '../db/queries';
+import { buildPostFilterConds, type PostFilterOpts } from '../db/queries';
 import { cleanSubId } from '../utils/postId';
 import { DOWNLOAD_DIR } from '../config';
 
@@ -95,29 +95,27 @@ function nextRoundRobinIndex(total: number): number {
  * AccountName: gan 1 LAN DUY NHAT (round-robin, tiep tuc vong xoay qua cac lan export) roi luu co dinh
  * vao DB - xuat lai khong doi account nua, tranh 2 lan xuat ra 2 file gan account khac nhau cho cung 1 bai.
  * Neu account cu bi xoa/tat/proxy Die (khong con trong danh sach active) thi gan lai account moi.
- * onlyUnposted: chi xuat cac bai chua danh dau "Da dang".
- * onlyCompleteMedia: chi xuat bai co du CA video lan anh (bo qua bai thieu 1 trong 2 loai).
+ * opts: DUNG CHUNG voi bo loc trang Bai viet (search/noShopee/notUpdated/oneShopee/postStatus/
+ * mediaFilter) - loc danh sach the nao tren UI thi xuat ra file dung y nhu the.
  */
-export async function exportPosts(
-  filePath: string,
-  opts: { onlyUnposted?: boolean; onlyCompleteMedia?: boolean } = {},
-): Promise<number> {
-  const conds: string[] = [];
-  if (opts.onlyUnposted) conds.push("p.post_status <> 'posted'");
-  if (opts.onlyCompleteMedia) conds.push(`(${HAS_VIDEO} AND ${HAS_IMAGE})`);
+export async function exportPosts(filePath: string, opts: PostFilterOpts = {}): Promise<number> {
+  const { conds, args } = buildPostFilterConds(opts);
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
   const posts = db
     .prepare(
-      `SELECT p.post_id, p.url, p.caption, p.assigned_account, p.post_status
-         FROM posts p ${where}
+      `SELECT p.post_id, p.url, p.caption, p.assigned_account, p.post_status, t.topic AS topic
+         FROM posts p
+         LEFT JOIN account_topics t ON t.username = p.username
+        ${where}
         ORDER BY p.scraped_at, p.post_id`,
     )
-    .all() as {
+    .all(...args) as {
     post_id: string;
     url: string;
     caption: string;
     assigned_account: string | null;
     post_status: string;
+    topic: string | null;
   }[];
 
   const accounts = listActiveAccounts();
@@ -153,7 +151,7 @@ export async function exportPosts(
       mediaPaths(p.post_id, 'video'),
       mediaPaths(p.post_id, 'image'),
       buildComment(p.post_id),
-      '', // Topic - de trong, dien tay sau
+      p.topic ?? '', // Topic - gan theo tac gia (username), popup "Gan chu de" o trang Bai viet
       p.url,
       p.post_id,
       p.post_status === 'posted' ? 'Đã đăng' : 'Đã xuất',

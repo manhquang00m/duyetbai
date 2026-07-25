@@ -72,6 +72,84 @@ export function SingleFilterDropdown<V extends string>({
   )
 }
 
+interface TopicFilterDropdownProps {
+  label: string
+  options: readonly string[]
+  selected: string[]
+  onToggle: (value: string) => void
+  onClear: () => void
+}
+
+/**
+ * Dropdown chon NHIEU gia tri (chu de), bo layout doc/checkbox thay bang cac nut "pill" nam
+ * ngang trong 1 panel rong hon - de nhin va thao tac hon voi danh sach tags ngan.
+ */
+export function TopicFilterDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: TopicFilterDropdownProps) {
+  const popover = usePopover()
+  const isActive = selected.length > 0
+
+  return (
+    <div className="relative inline-block">
+      <button
+        ref={popover.triggerRef}
+        type="button"
+        onClick={() => popover.setOpen(!popover.open)}
+        aria-expanded={popover.open}
+        aria-haspopup="menu"
+        className={cn(
+          buttonVariants({ variant: 'outline', size: 'sm' }),
+          isActive && 'border-primary text-foreground',
+        )}
+      >
+        {label}
+        {isActive && <span className="font-semibold">: {selected.length}</span>}
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      </button>
+      <PopoverPanel popover={popover} className="w-[26rem] max-w-[90vw] p-3">
+        <div className="flex flex-wrap gap-2">
+          {options.map((opt) => {
+            const active = selected.includes(opt)
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onToggle(opt)}
+                aria-pressed={active}
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                  active
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-input bg-background text-foreground hover:bg-accent',
+                )}
+              >
+                {opt}
+              </button>
+            )
+          })}
+        </div>
+        {isActive && (
+          <>
+            <div className="my-3 border-t" />
+            <button
+              type="button"
+              onClick={onClear}
+              className="w-full rounded-sm px-2 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              Xóa lọc chủ đề
+            </button>
+          </>
+        )}
+      </PopoverPanel>
+    </div>
+  )
+}
+
 export type FilterGroup =
   | { type: 'checkbox'; key: string; label: string; checked: boolean; onToggle: () => void }
   | {

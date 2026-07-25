@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Send,
   Undo2,
+  Tag,
 } from 'lucide-react'
 import {
   fetchPosts,
@@ -25,8 +26,9 @@ import {
   deletePosts,
   markPostsPosted,
   fetchExportPostsWarnings,
+  buildExportPostsUrl,
+  ACCOUNT_TOPICS,
   type ExportPostsWarnings,
-  exportPostsUrl,
   exportShopeeUrl,
   type PostListItem,
 } from '@/lib/api'
@@ -39,11 +41,12 @@ import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
 import { BeautifyDialog } from '@/components/BeautifyDialog'
-import { MultiFilterDropdown } from '@/components/ui/filter-dropdown'
+import { AssignTopicDialog } from '@/components/AssignTopicDialog'
+import { MultiFilterDropdown, TopicFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
-const COLSPAN = 7
+const COLSPAN = 8
 
 function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) {
   if (shopee === 0) return <span className="text-muted-foreground">—</span>
@@ -93,19 +96,21 @@ export function PostsPage() {
   const [noShopee, setNoShopee] = useState(false)
   const [notUpdated, setNotUpdated] = useState(false)
   const [oneShopee, setOneShopee] = useState(false)
-  const [postStatus, setPostStatus] = useState<'new' | 'exported' | 'posted' | undefined>(undefined)
+  const [postStatus, setPostStatus] = useState<'unposted' | 'posted' | undefined>(undefined)
   const [mediaFilter, setMediaFilter] = useState<'complete' | 'missing' | undefined>(undefined)
+  const [topics, setTopics] = useState<string[]>([])
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
   const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
-  const [onlyUnposted, setOnlyUnposted] = useState(false)
-  const [onlyCompleteMedia, setOnlyCompleteMedia] = useState(false)
+  const [topicDialogOpen, setTopicDialogOpen] = useState(false)
+
+  const activeFilters = { search, noShopee, notUpdated, oneShopee, postStatus, mediaFilter, topics }
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus, mediaFilter],
+    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus, mediaFilter, topics],
     queryFn: () =>
       fetchPosts({
         search,
@@ -116,6 +121,7 @@ export function PostsPage() {
         oneShopee,
         postStatus,
         mediaFilter,
+        topics,
       }),
     placeholderData: keepPreviousData,
   })
@@ -123,9 +129,14 @@ export function PostsPage() {
   const total = data?.total ?? 0
   const items = data?.items ?? []
   const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1)
-  const activeFilterCount = [noShopee, notUpdated, oneShopee, !!postStatus, !!mediaFilter].filter(
-    Boolean,
-  ).length
+  const activeFilterCount = [
+    noShopee,
+    notUpdated,
+    oneShopee,
+    !!postStatus,
+    !!mediaFilter,
+    topics.length > 0,
+  ].filter(Boolean).length
   const filterActive = activeFilterCount > 0
 
   const allChecked = items.length > 0 && items.every((i) => sel.has(i.post_id))
@@ -181,21 +192,23 @@ export function PostsPage() {
     setOneShopee(false)
     setPostStatus(undefined)
     setMediaFilter(undefined)
+    setTopics([])
+    resetPage()
+  }
+
+  const toggleTopic = (topic: string) => {
+    setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))
     resetPage()
   }
 
   const doExportPosts = () => {
-    const params = new URLSearchParams()
-    if (onlyUnposted) params.set('onlyUnposted', '1')
-    if (onlyCompleteMedia) params.set('onlyCompleteMedia', '1')
-    const qs = params.toString()
-    window.location.href = qs ? `${exportPostsUrl}?${qs}` : exportPostsUrl
+    window.location.href = buildExportPostsUrl(activeFilters)
   }
 
   const onExportPostsClick = async () => {
     setCheckingExport(true)
     try {
-      const w = await fetchExportPostsWarnings()
+      const w = await fetchExportPostsWarnings(activeFilters)
       if (w.notUpdated > 0 || w.multiComment > 0 || w.unavailable > 0) {
         setExportWarn(w)
       } else {
@@ -217,6 +230,9 @@ export function PostsPage() {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setTopicDialogOpen(true)}>
+              <Tag className="h-4 w-4" /> Gán chủ đề
+            </Button>
             <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
               <FileDown className="h-4 w-4" /> Shopee input
             </a>
@@ -224,14 +240,15 @@ export function PostsPage() {
               <Download className="h-4 w-4" /> posts.xlsx
             </Button>
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Checkbox checked={onlyUnposted} onCheckedChange={setOnlyUnposted} />
-            Chỉ xuất bài chưa đăng
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Checkbox checked={onlyCompleteMedia} onCheckedChange={setOnlyCompleteMedia} />
-            Chỉ xuất bài đủ cả ảnh & video
-          </label>
+          <p className="text-xs text-muted-foreground">
+            {filterActive ? (
+              <>
+                Sẽ xuất <strong className="text-foreground">{total}</strong> bài theo bộ lọc hiện tại
+              </>
+            ) : (
+              <>Sẽ xuất toàn bộ <strong className="text-foreground">{total}</strong> bài (chưa lọc)</>
+            )}
+          </p>
         </div>
       </div>
 
@@ -291,12 +308,12 @@ export function PostsPage() {
               label: 'Trạng thái đăng',
               value: postStatus ?? 'all',
               onChange: (v: string) => {
-                setPostStatus(v === 'all' ? undefined : (v as 'new' | 'exported' | 'posted'))
+                setPostStatus(v === 'all' ? undefined : (v as 'unposted' | 'posted'))
                 resetPage()
               },
               options: [
                 { value: 'all', label: 'Tất cả' },
-                { value: 'exported', label: 'Đã xuất, chưa đăng' },
+                { value: 'unposted', label: 'Chưa đăng' },
                 { value: 'posted', label: 'Đã đăng' },
               ],
             },
@@ -316,6 +333,16 @@ export function PostsPage() {
               ],
             },
           ]}
+        />
+        <TopicFilterDropdown
+          label="Chủ đề"
+          options={ACCOUNT_TOPICS}
+          selected={topics}
+          onToggle={toggleTopic}
+          onClear={() => {
+            setTopics([])
+            resetPage()
+          }}
         />
       </div>
 
@@ -340,6 +367,7 @@ export function PostsPage() {
                 <th className="p-2.5 text-right font-medium">Tim</th>
                 <th className="p-2.5 text-center font-medium">Shopee</th>
                 <th className="p-2.5 text-center font-medium">Cập nhật</th>
+                <th className="p-2.5 text-left font-medium">Chủ đề</th>
                 <th className="p-2.5 text-center font-medium">Trạng thái</th>
               </tr>
             </thead>
@@ -402,6 +430,9 @@ export function PostsPage() {
                   <td className="p-2.5 text-center">
                     <UpdateStatus shopee={p.shopee_count} updated={p.new_count} />
                   </td>
+                  <td className="max-w-[10rem] truncate p-2.5 text-xs text-muted-foreground">
+                    {p.topic || '—'}
+                  </td>
                   <td className="p-2.5 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <PostStatusBadge status={p.post_status} />
@@ -433,6 +464,7 @@ export function PostsPage() {
                     <td className="p-2.5"><Skeleton className="ml-auto h-3 w-16" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-3 w-6" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
+                    <td className="p-2.5"><Skeleton className="h-3 w-16" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
                   </tr>
                 ))}
@@ -539,6 +571,12 @@ export function PostsPage() {
           invalidateAll()
         }}
         onDone={invalidateAll}
+      />
+
+      <AssignTopicDialog
+        open={topicDialogOpen}
+        onClose={() => setTopicDialogOpen(false)}
+        onSaved={invalidateAll}
       />
 
       <Dialog open={!!exportWarn} onClose={() => setExportWarn(null)} className="max-w-md">

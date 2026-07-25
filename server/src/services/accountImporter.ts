@@ -17,6 +17,14 @@ function cellText(value: unknown): string {
 
 const BANNED_TRUE = new Set(['1', 'true', 'x', 'yes', 'banned', 'co', 'da ban', 'ban']);
 
+/** Nhan "stable"/"global" khong phan biet hoa-thuong -> chuan hoa ve 'Stable'|'Global'; khac -> null. */
+function parsePlatform(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (v === 'stable') return 'Stable';
+  if (v === 'global') return 'Global';
+  return null;
+}
+
 function parseBanned(raw: string): boolean {
   const v = raw
     .trim()
@@ -61,8 +69,9 @@ export interface AccountImportResult {
 }
 
 /**
- * Doc file Excel danh sach account, cot A-H theo thu tu co dinh:
- *   A Profile | B Thiet bi | C Banned | D Ngay tao | E Pass_Threads | F Gmail | G Password | H Proxy
+ * Doc file Excel danh sach account, cot A-I theo thu tu co dinh:
+ *   A Profile | B Thiet bi | C Banned | D Ngay tao | E Pass_Threads | F Gmail | G Password
+ *   | H Proxy | I Platform (Stable|Global)
  * Bo qua dong 1 (header). Upsert theo Profile (=name).
  */
 export async function importAccountsExcel(filePath: string): Promise<AccountImportResult> {
@@ -97,6 +106,7 @@ export async function importAccountsExcel(filePath: string): Promise<AccountImpo
         gmail: cellText(row.getCell(6).value) || null,
         gmail_password: cellText(row.getCell(7).value) || null,
         proxy,
+        platform: parsePlatform(cellText(row.getCell(9).value)),
       };
 
       const result = upsertAccount(input);
