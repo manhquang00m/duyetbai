@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +51,7 @@ export function ProxyPage() {
     'live',
   )
   const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+  const [sel, setSel] = useState<Set<number>>(new Set())
 
   const dieProxies = useMemo(() => (saved ?? []).filter((p) => p.status === 'die'), [saved])
 
@@ -123,6 +125,56 @@ export function ProxyPage() {
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi kiểm tra lại'),
   })
+
+  // Xoa hang loat cac proxy da tich chon.
+  const bulkDeleteMut = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map((id) => deleteProxy(id)))
+    },
+    onSuccess: (_data, ids) => {
+      invalidate()
+      setSel(new Set())
+      toast.success(`Đã xoá ${ids.length} proxy`)
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi xoá proxy'),
+  })
+
+  // Kiem tra lai hang loat cac proxy da tich chon (khong phan biet Live/Die).
+  const bulkRecheckMut = useMutation({
+    mutationFn: async (targets: SavedProxy[]) => {
+      const res = await checkProxies(targets.map((p) => p.proxy))
+      await saveProxies(res.map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip })))
+      return res
+    },
+    onSuccess: (res) => {
+      invalidate()
+      setSel(new Set())
+      const live = res.filter((r) => r.status === 'live').length
+      toast.success(`Đã kiểm tra lại ${res.length} proxy: ${live} Live / ${res.length - live} Die`)
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi kiểm tra lại'),
+  })
+
+  const toggleSel = (id: number) => {
+    setSel((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelAll = () => {
+    setSel((prev) => {
+      const next = new Set(prev)
+      if (filteredSaved.length > 0 && filteredSaved.every((p) => next.has(p.id))) {
+        filteredSaved.forEach((p) => next.delete(p.id))
+      } else {
+        filteredSaved.forEach((p) => next.add(p.id))
+      }
+      return next
+    })
+  }
 
   const copyText = (value: string, successMsg: string) => {
     navigator.clipboard.writeText(value).then(
@@ -321,6 +373,16 @@ export function ProxyPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
               <tr>
+                <th className="p-3 text-left font-medium">
+                  <Checkbox
+                    checked={filteredSaved.length > 0 && filteredSaved.every((p) => sel.has(p.id))}
+                    indeterminate={
+                      filteredSaved.some((p) => sel.has(p.id)) &&
+                      !filteredSaved.every((p) => sel.has(p.id))
+                    }
+                    onCheckedChange={toggleSelAll}
+                  />
+                </th>
                 <th className="p-3 text-left font-medium">Proxy</th>
                 <th className="p-3 text-left font-medium">Trạng thái</th>
                 <th className="p-3 text-left font-medium">Exit IP</th>
@@ -332,7 +394,10 @@ export function ProxyPage() {
               {filteredSaved.map((p: SavedProxy) => {
                 const isChecking = recheckMut.isPending && recheckMut.variables === p.id
                 return (
-                  <tr key={p.id} className="border-b last:border-0">
+                  <tr key={p.id} className={cn('border-b last:border-0', sel.has(p.id) && 'bg-primary/5')}>
+                    <td className="p-3">
+                      <Checkbox checked={sel.has(p.id)} onCheckedChange={() => toggleSel(p.id)} />
+                    </td>
                     <td className="max-w-xs truncate p-3 font-mono text-xs">{p.proxy}</td>
                     <td className="p-3">
                       <StatusBadge status={p.status} />
@@ -373,7 +438,7 @@ export function ProxyPage() {
               })}
               {filteredSaved.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
                     {(saved ?? []).length === 0
                       ? 'Chưa lưu proxy nào.'
                       : 'Không có proxy khớp bộ lọc.'}
@@ -383,6 +448,34 @@ export function ProxyPage() {
             </tbody>
           </table>
       </div>
+
+      {sel.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-2 shadow-lg">
+          <span className="px-2 text-sm font-medium">{sel.size} đã chọn</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => bulkRecheckMut.mutate((saved ?? []).filter((p) => sel.has(p.id)))}
+            disabled={bulkRecheckMut.isPending}
+          >
+            <RefreshCw className={cn('h-4 w-4', bulkRecheckMut.isPending && 'animate-spin')} />
+            Re-check
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (confirm(`Xoá ${sel.size} proxy đã chọn?`)) bulkDeleteMut.mutate([...sel])
+            }}
+            disabled={bulkDeleteMut.isPending}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" /> Xóa
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSel(new Set())}>
+            Bỏ chọn
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
