@@ -3,6 +3,7 @@ import { processPost } from './pipeline';
 import { savePostResult } from '../db/repository';
 import { withRetry } from '../utils/retry';
 import { extractShortcode } from '../utils/postId';
+import { resolveThreadsUrl } from './comments';
 import { postExists, getPostBrief } from '../db/queries';
 import { recordCollectAttempt } from '../db/history';
 import { CONCURRENCY } from '../config';
@@ -52,7 +53,8 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
       let item: BatchItemResult;
       let postId: string | null = null;
       try {
-        postId = extractShortcode(url);
+        const resolvedUrl = await resolveThreadsUrl(url);
+        postId = extractShortcode(resolvedUrl);
         if (!force && postExists(postId)) {
           const brief = getPostBrief(postId);
           item = {
@@ -65,7 +67,10 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
           };
           log('Đã tải rồi — bỏ qua');
         } else {
-          const result = await withRetry(() => processPost(url, log), { retries: 2, label: url });
+          const result = await withRetry(() => processPost(resolvedUrl, log), {
+            retries: 2,
+            label: url,
+          });
           savePostResult(result);
           const mediaOk = result.files.filter((f) => f.ok).length;
           item = {

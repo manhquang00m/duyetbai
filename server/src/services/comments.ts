@@ -1,10 +1,52 @@
 import type { Page } from 'playwright';
 import { getBrowser } from './browser';
 import { extractAuthor } from '../utils/postId';
+import { withRetry } from '../utils/retry';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36';
+
+// Link "share" (khong co /post/, khong co @username). Da xac nhan qua test truc tiep: Threads
+// KHONG tra HTTP redirect cho link nay (GET thuong tra 200 + SPA shell rong, khong co og:url/
+// canonical/username o dau ca) - JS phia client moi doi URL bar sang dang chuan @user/post/ID
+// SAU KHI trang load. Vi vay phai dung browser thuc (Playwright, dung chung getBrowser() voi
+// scrape comment) de "cho" JS chay xong roi doc lai URL, khong the resolve bang axios/HTTP thuan.
+const SHARE_LINK_RE = /^https?:\/\/(?:www\.)?threads\.com\/share\//i;
+
+async function resolveOnce(url: string): Promise<string> {
+  const browser = await getBrowser();
+  const context = await browser.newContext({ userAgent: USER_AGENT, locale: 'vi-VN' });
+  const page = await context.newPage();
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // Threads doi URL bang history.pushState (SPA), KHONG phai navigation/frame event thuc su
+    // -> page.waitForURL() khong bat duoc (da kiem chung truc tiep). Phai poll page.url() thay vi
+    // cho event. Da xac nhan qua test truc tiep: URL doi trong ~1s sau khi trang load xong.
+    const deadline = Date.now() + 15_000;
+    while (!/\/post\//.test(page.url()) && Date.now() < deadline) {
+      await page.waitForTimeout(300);
+    }
+    return page.url();
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * Phan giai link "share" ve URL chuan (@username/post/ID) bang cach mo bang browser thuc,
+ * cho JS phia Threads doi URL bar. Link da chuan (co /post/) thi tra nguyen, khong mo browser.
+ * Neu sau khi cho (15s) JS van chua doi URL, hoac mo trang loi -> tra ve URL goc, de
+ * extractShortcode/extractAuthor phia sau bao loi ro rang nhu cu (thay vi nuot loi im lang).
+ */
+export async function resolveThreadsUrl(url: string): Promise<string> {
+  if (!SHARE_LINK_RE.test(url)) return url;
+  try {
+    return await withRetry(() => resolveOnce(url), { retries: 2, label: `resolve share ${url}` });
+  } catch {
+    return url;
+  }
+}
 
 // Bat link shopee: shopee.vn, s.shopee.vn, shp.ee (link rut gon)
 const SHOPEE_RE = /https?:\/\/(?:[\w-]+\.)*(?:shopee\.vn|shp\.ee)[^\s"'<>)\]]*/gi;

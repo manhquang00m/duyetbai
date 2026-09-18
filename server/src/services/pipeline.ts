@@ -1,5 +1,5 @@
 import { getPostMedia, type PostStats } from './mediaSource';
-import { getSellerShopeeEntries, type SellerEntry } from './comments';
+import { getSellerShopeeEntries, resolveThreadsUrl, type SellerEntry } from './comments';
 import { downloadPost, type DownloadedFile } from './downloader';
 import { withRetry } from '../utils/retry';
 import { extractShortcode } from '../utils/postId';
@@ -117,10 +117,11 @@ export interface RescrapeResult {
 
 /** Chi cao lai comment (khong tai media) - dung cho nut "Lay lai comment". */
 export async function rescrapeComments(url: string, log?: LogFn): Promise<RescrapeResult> {
-  const postId = extractShortcode(url);
+  const resolvedUrl = await resolveThreadsUrl(url);
+  const postId = extractShortcode(resolvedUrl);
   try {
     log?.('Scrape comment...');
-    const scrape = await withRetry(() => getSellerShopeeEntries(url), {
+    const scrape = await withRetry(() => getSellerShopeeEntries(resolvedUrl), {
       retries: 2,
       label: `rescrape ${url}`,
     });
