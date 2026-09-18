@@ -27,7 +27,14 @@ async function resolveOnce(url: string): Promise<string> {
     while (!/\/post\//.test(page.url()) && Date.now() < deadline) {
       await page.waitForTimeout(300);
     }
-    return page.url();
+    const finalUrl = page.url();
+    // Neu het thoi gian cho ma URL van chua doi -> phai throw de withRetry con co co hoi
+    // thu lai (lan dau Chromium "cold start" trong 1 process co the cham hon 15s). Neu chi
+    // return nguyen url cu, withRetry se coi la "thanh cong" va bo qua retry oan uong.
+    if (!/\/post\//.test(finalUrl)) {
+      throw new Error(`Threads chua doi URL sang dang chuan sau khi cho: ${url}`);
+    }
+    return finalUrl;
   } finally {
     await context.close();
   }
@@ -43,7 +50,9 @@ export async function resolveThreadsUrl(url: string): Promise<string> {
   if (!SHARE_LINK_RE.test(url)) return url;
   try {
     return await withRetry(() => resolveOnce(url), { retries: 2, label: `resolve share ${url}` });
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[resolveThreadsUrl] khong resolve duoc sau khi da retry (${msg}) - giu URL goc: ${url}`);
     return url;
   }
 }
