@@ -20,6 +20,7 @@ export function parsePostFilterQuery(query: Record<string, unknown>): PostFilter
     : undefined;
   return {
     search: query.search != null ? String(query.search) : undefined,
+    username: query.username != null ? String(query.username) : undefined,
     noShopee: truthy(query.noShopee),
     notUpdated: truthy(query.notUpdated),
     oneShopee: truthy(query.oneShopee),

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getSetting, setSetting } from '../db/settings';
+import { DEFAULT_REWRITE_PROMPT, getRewritePrompt } from '../services/rewrite';
 
 const router = Router();
 
@@ -27,6 +28,22 @@ router.put('/media-source', (req, res) => {
   }
   setSetting(MEDIA_SOURCE_KEY, value);
   res.json({ default: value });
+});
+
+// GET /api/settings/rewrite-prompt -> prompt dang dung cho tinh nang viet lai caption bang AI
+router.get('/rewrite-prompt', (_req, res) => {
+  res.json({ prompt: getRewritePrompt(), default: DEFAULT_REWRITE_PROMPT });
+});
+
+// PUT /api/settings/rewrite-prompt { prompt } -> doi giong van AI (de trong = ve mac dinh)
+router.put('/rewrite-prompt', (req, res) => {
+  const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : null;
+  if (prompt == null) {
+    res.status(400).json({ error: 'thieu prompt' });
+    return;
+  }
+  setSetting('rewrite_prompt', prompt || DEFAULT_REWRITE_PROMPT);
+  res.json({ prompt: getRewritePrompt() });
 });
 
 export default router;

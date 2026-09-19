@@ -22,9 +22,15 @@ function waitTimeFor(err: unknown, attempt: number, baseMs: number): number {
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  opts: { retries?: number; baseMs?: number; label?: string } = {},
+  opts: {
+    retries?: number;
+    baseMs?: number;
+    label?: string;
+    /** Tra false de dung thu lai ngay (vd loi cau hinh - thu lai bao nhieu lan cung the). */
+    shouldRetry?: (err: unknown) => boolean;
+  } = {},
 ): Promise<T> {
-  const { retries = 2, baseMs = 1000, label = '' } = opts;
+  const { retries = 2, baseMs = 1000, label = '', shouldRetry } = opts;
   let lastErr: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -32,6 +38,7 @@ export async function withRetry<T>(
       return await fn();
     } catch (err) {
       lastErr = err;
+      if (shouldRetry && !shouldRetry(err)) break;
       if (attempt < retries) {
         const wait = waitTimeFor(err, attempt, baseMs);
         const msg = err instanceof Error ? err.message : String(err);

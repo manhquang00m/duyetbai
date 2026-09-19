@@ -36,6 +36,7 @@ export const HAS_IMAGE = "EXISTS (SELECT 1 FROM media m WHERE m.post_id = p.post
  */
 export interface PostFilterOpts {
   search?: string;
+  username?: string; // dung CHINH XAC 1 tac gia (khac search: search la LIKE nen de dinh nham)
   noShopee?: boolean;
   notUpdated?: boolean;
   oneShopee?: boolean;
@@ -51,6 +52,11 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
   if (search) {
     conds.push('(p.caption LIKE ? OR p.username LIKE ? OR p.post_id LIKE ?)');
     args.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+  const username = (opts.username ?? '').trim();
+  if (username) {
+    conds.push('p.username = ?');
+    args.push(username);
   }
   if (opts.noShopee) {
     conds.push('NOT EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id)');

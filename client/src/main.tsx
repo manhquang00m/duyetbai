@@ -13,6 +13,7 @@ import { BatchPage } from '@/pages/BatchPage'
 import { AccountsPage } from '@/pages/AccountsPage'
 import { ProxyPage } from '@/pages/ProxyPage'
 import { ShopeePage } from '@/pages/ShopeePage'
+import { RewritePage } from '@/pages/RewritePage'
 
 initTheme()
 
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: 'accounts', element: <AccountsPage /> },
       { path: 'proxy', element: <ProxyPage /> },
       { path: 'shopee', element: <ShopeePage /> },
+      { path: 'rewrite', element: <RewritePage /> },
     ],
   },
 ])

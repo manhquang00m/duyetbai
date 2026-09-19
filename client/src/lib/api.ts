@@ -160,6 +160,7 @@ export interface ShopeeLinkRow {
 // - loc the nao tren UI thi xuat file y nhu the, khong con 2 bo tuy chon rieng biet.
 export interface PostFilterParams {
   search?: string
+  username?: string // loc dung 1 tac gia (khac search: search la LIKE)
   noShopee?: boolean
   notUpdated?: boolean
   oneShopee?: boolean
@@ -171,6 +172,7 @@ export interface PostFilterParams {
 function postFilterQueryParams(filters: PostFilterParams) {
   return {
     search: filters.search || undefined,
+    username: filters.username || undefined,
     noShopee: filters.noShopee ? 1 : undefined,
     notUpdated: filters.notUpdated ? 1 : undefined,
     oneShopee: filters.oneShopee ? 1 : undefined,
@@ -352,6 +354,70 @@ export interface ShopeeLinkCheckResult {
 /** Kiem tra nhanh 1 link Shopee bat ky (khong can nam trong DB, khong luu ket qua). */
 export async function checkShopeeLinkOnce(link: string) {
   const { data } = await api.post<ShopeeLinkCheckResult>('/api/shopee/check-link', { link })
+  return data
+}
+
+// ===== Viet lai caption bang AI =====
+export interface RewriteRow {
+  id: number
+  batch_id: string
+  row_index: number
+  original: string
+  rewritten: string | null
+  error: string | null
+}
+
+export interface RewriteBatchDetail {
+  batchId: string
+  fileName: string
+  srcCol: number
+  destCol: number
+  rows: RewriteRow[]
+}
+
+/** Upload file Excel -> tao batch. srcCol mac dinh 2 (cot B = Caption). */
+export async function uploadRewriteFile(file: File, srcCol?: number) {
+  const form = new FormData()
+  form.append('file', file)
+  if (srcCol) form.append('srcCol', String(srcCol))
+  const { data } = await api.post<{ batchId: string; total: number }>('/api/rewrite/upload', form)
+  return data
+}
+
+export async function fetchRewriteBatch(batchId: string) {
+  const { data } = await api.get<RewriteBatchDetail>(`/api/rewrite/${batchId}`)
+  return data
+}
+
+/** Chay AI cho ca batch - theo doi tien trinh qua batchStreamUrl(jobId). */
+export async function startRewriteJob(batchId: string) {
+  const { data } = await api.post<{ jobId: string; total: number }>(`/api/rewrite/${batchId}/run`)
+  return data
+}
+
+export async function rewriteRowAgain(rowId: number) {
+  const { data } = await api.post<{ rewritten: string }>(`/api/rewrite/rows/${rowId}/run`)
+  return data
+}
+
+export async function saveRewriteRow(rowId: number, rewritten: string) {
+  const { data } = await api.patch<{ ok: boolean }>(`/api/rewrite/rows/${rowId}`, { rewritten })
+  return data
+}
+
+export function rewriteExportUrl(batchId: string) {
+  return `/api/rewrite/${batchId}/export`
+}
+
+export async function fetchRewritePrompt() {
+  const { data } = await api.get<{ prompt: string; default: string }>(
+    '/api/settings/rewrite-prompt',
+  )
+  return data
+}
+
+export async function saveRewritePrompt(prompt: string) {
+  const { data } = await api.put<{ prompt: string }>('/api/settings/rewrite-prompt', { prompt })
   return data
 }
 

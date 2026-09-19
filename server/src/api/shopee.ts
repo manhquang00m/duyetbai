@@ -7,6 +7,7 @@ import { importShopeeLinks } from '../services/importer';
 import { db } from '../db';
 import { getExportWarnings } from '../db/queries';
 import { parsePostFilterQuery } from '../utils/postFilters';
+import { fileStamp } from '../utils/fileStamp';
 import { startShopeeLinkCheckJob } from '../services/jobs';
 import { checkShopeeLink } from '../services/shopeeLinkCheck';
 import { EXPORT_DIR } from '../config';
@@ -30,7 +31,7 @@ router.get('/export/shopee', async (req, res, next) => {
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'shopee_input.xlsx');
     await exportShopeeInput(out, { onlyMissing });
-    res.download(out, 'shopee_input.xlsx');
+    res.download(out, `shopee_input_${fileStamp()}.xlsx`);
   } catch (err) {
     next(err);
   }
@@ -50,7 +51,7 @@ router.get('/export/posts', async (req, res, next) => {
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'posts.xlsx');
     await exportPosts(out, filterOpts);
-    res.download(out, 'posts.xlsx');
+    res.download(out, `posts_${fileStamp()}.xlsx`);
   } catch (err) {
     next(err);
   }

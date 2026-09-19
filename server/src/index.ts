@@ -10,6 +10,7 @@ import shopeeRouter from './api/shopee';
 import proxiesRouter from './api/proxies';
 import settingsRouter from './api/settings';
 import accountTopicsRouter from './api/accountTopics';
+import rewriteRouter from './api/rewrite';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -35,6 +36,7 @@ app.use('/api/batch', batchRouter);
 app.use('/api/proxies', proxiesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/account-topics', accountTopicsRouter);
+app.use('/api/rewrite', rewriteRouter);
 app.use('/api', shopeeRouter); // /api/export/*, /api/import/*, /api/shopee/*
 
 app.listen(PORT, () => {

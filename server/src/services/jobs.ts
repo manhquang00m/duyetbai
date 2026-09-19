@@ -10,8 +10,9 @@ import { checkProxy } from './proxyCheck';
 import { getPostBrief, getVideoMedia, getShopeeCheckTargets } from '../db/queries';
 import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/repository';
 import { checkShopeeLink } from './shopeeLinkCheck';
+import { listRows, rewriteRow } from './rewrite';
 import { withRetry } from '../utils/retry';
-import { DOWNLOAD_DIR } from '../config';
+import { DOWNLOAD_DIR, LLM_CONCURRENCY } from '../config';
 
 export interface JobLog {
   url: string;
@@ -253,6 +254,41 @@ export function startShopeeLinkCheckJob(opts: { entryIds?: number[] } = {}): Job
     } finally {
       // Dong browser rieng cua Shopee, KHONG dong browser scrape Threads dung chung o cho khac.
       await closeShopeeBrowser().catch(() => {});
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/** Viet lai caption bang AI cho toan bo dong cua 1 batch (trang "Viet lai caption"). */
+export function startRewriteJob(batchId: string): JobState {
+  const rows = listRows(batchId);
+  const job = newJob(rows.length);
+  void (async () => {
+    try {
+      const limit = pLimit(LLM_CONCURRENCY);
+      await Promise.all(
+        rows.map((row) =>
+          limit(async () => {
+            const label = `Dòng ${row.row_index}`;
+            const r = await rewriteRow(row.id);
+            const item: BatchItemResult = r.ok
+              ? { url: label, ok: true, caption: r.text }
+              : { url: label, ok: false, error: r.error };
+            const l = { url: label, message: r.ok ? 'Đã viết lại' : `LỖI: ${r.error}` };
+            job.logs.push(l);
+            emit(job.id, { type: 'log', job, log: l });
+            job.done++;
+            job.items.push(item);
+            emit(job.id, { type: 'progress', job, item });
+          }),
+        ),
+      );
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
       emit(job.id, { type: 'end', job });
     }
   })();

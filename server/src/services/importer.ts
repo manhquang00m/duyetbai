@@ -3,7 +3,7 @@ import { db } from '../db';
 import { cleanSubId } from '../utils/postId';
 
 /** Lay text tu cell exceljs (co the la hyperlink/richtext/object). */
-function cellText(value: unknown): string {
+export function cellText(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'object') {
     const o = value as { text?: unknown; hyperlink?: unknown; result?: unknown };

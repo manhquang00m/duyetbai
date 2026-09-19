@@ -83,6 +83,29 @@ db.exec(`
     topic       TEXT NOT NULL,
     updated_at  TEXT NOT NULL
   );
+
+  -- Mot lan chay "viet lai caption bang AI": giu lai file Excel goc de luc xuat con ghi
+  -- de dung o va giu nguyen cac cot khac.
+  CREATE TABLE IF NOT EXISTS rewrite_batches (
+    batch_id    TEXT PRIMARY KEY,
+    file_name   TEXT NOT NULL,
+    file_path   TEXT NOT NULL,
+    src_col     INTEGER NOT NULL,
+    dest_col    INTEGER NOT NULL,
+    created_at  TEXT NOT NULL
+  );
+
+  -- Luu DB (khong giu trong RAM) de sua tay dang do khong mat khi server restart.
+  CREATE TABLE IF NOT EXISTS rewrite_rows (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id   TEXT NOT NULL,
+    row_index  INTEGER NOT NULL,
+    original   TEXT NOT NULL,
+    rewritten  TEXT,
+    error      TEXT,
+    UNIQUE (batch_id, row_index),
+    FOREIGN KEY (batch_id) REFERENCES rewrite_batches(batch_id) ON DELETE CASCADE
+  );
 `);
 
 // Migration: them cot new_link cho shopee_entries neu chua co (DB cu).

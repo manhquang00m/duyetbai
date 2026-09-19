@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Network,
   Sparkles,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -18,6 +19,7 @@ const nav = [
   { to: '/accounts', label: 'Accounts', icon: Users, end: false },
   { to: '/proxy', label: 'Proxy', icon: Network, end: false },
   { to: '/shopee', label: 'Shopee & Export', icon: ShoppingBag, end: false },
+  { to: '/rewrite', label: 'Viết lại caption', icon: Wand2, end: false },
 ]
 
 export function AppLayout() {

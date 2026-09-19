@@ -44,6 +44,29 @@ export const ACCOUNTS_FILE = process.env.ACCOUNTS_FILE
 export const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
 
 /**
+ * ===== AI viet lai caption =====
+ * Goi qua chuan OpenAI /chat/completions nen doi nha cung cap chi can sua .env, khong sua code:
+ *   Gemini (free)  https://generativelanguage.googleapis.com/v1beta/openai  + model gemini-*
+ *   DeepSeek       https://api.deepseek.com/v1                              + model deepseek-chat
+ *   Groq (free)    https://api.groq.com/openai/v1                           + model llama-*
+ *   OpenRouter     https://openrouter.ai/api/v1                             + model <hang>/<model>:free
+ */
+export const LLM_BASE_URL =
+  process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
+
+/**
+ * Ten model. Google khai tu model kha nhanh (ban 2.5-flash da ngung cap cho key moi) - neu
+ * bao 404 kem cau "no longer available" thi trong chinh thong bao loi co ten model thay the.
+ */
+export const LLM_MODEL = process.env.LLM_MODEL || 'gemini-3.6-flash';
+
+/** KHONG hardcode key o day - dien trong .env (da nam trong .gitignore). */
+export const LLM_API_KEY = process.env.LLM_API_KEY || '';
+
+/** So request AI chay song song. De thap vi free tier siet so request/phut. */
+export const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 2;
+
+/**
  * File luu session dang nhap Shopee (cookie/localStorage) - tao boi script `npm run shopee:login`,
  * dung lai khi kiem tra link Shopee de giam bi chan boi he thong chong-bot (khong con la phien an danh).
  * KHONG commit (da nam trong .gitignore, thu muc .pw-session/).
