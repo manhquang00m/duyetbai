@@ -8,6 +8,7 @@ import {
   Network,
   Sparkles,
   Wand2,
+  CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -18,6 +19,7 @@ const nav = [
   { to: '/batch', label: 'Thu thập', icon: Download, end: false },
   { to: '/accounts', label: 'Accounts', icon: Users, end: false },
   { to: '/proxy', label: 'Proxy', icon: Network, end: false },
+  { to: '/distribution', label: 'Phân phối bài', icon: CalendarDays, end: false },
   { to: '/shopee', label: 'Shopee & Export', icon: ShoppingBag, end: false },
   { to: '/rewrite', label: 'Viết lại caption', icon: Wand2, end: false },
 ]

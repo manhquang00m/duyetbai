@@ -8,7 +8,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Heart,
   MessageCircle,
   Inbox,
   RefreshCw,
@@ -19,6 +18,7 @@ import {
   Send,
   Undo2,
   Tag,
+  ShieldCheck,
 } from 'lucide-react'
 import {
   fetchPosts,
@@ -27,9 +27,11 @@ import {
   markPostsPosted,
   fetchExportPostsWarnings,
   buildExportPostsUrl,
+  fetchCaptionVariants,
   ACCOUNT_TOPICS,
   type ExportPostsWarnings,
   exportShopeeUrl,
+  type LinkStatusFilter,
   type PostListItem,
 } from '@/lib/api'
 import { Input } from '@/components/ui/input'
@@ -42,11 +44,12 @@ import { EmptyState } from '@/components/EmptyState'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
 import { BeautifyDialog } from '@/components/BeautifyDialog'
 import { AssignTopicDialog } from '@/components/AssignTopicDialog'
+import { ShopeeLinkCheckDialog } from '@/components/ShopeeLinkCheckDialog'
 import { MultiFilterDropdown, TopicFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
-const COLSPAN = 8
+const COLSPAN = 9
 
 function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) {
   if (shopee === 0) return <span className="text-muted-foreground">—</span>
@@ -67,6 +70,78 @@ function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) 
       Chưa
     </span>
   )
+}
+
+/** So ban caption AI da viet lai cho bai (xem trang "Phân phối bài" > "Viết lại caption kho bài"). */
+function RewriteStatus({ count }: { count: number }) {
+  if (count >= 3)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
+        <Wand2 className="h-3 w-3" /> Đã viết lại
+      </span>
+    )
+  if (count > 0)
+    return (
+      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+        {count}/3
+      </span>
+    )
+  return (
+    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      Chưa
+    </span>
+  )
+}
+
+/**
+ * Nhan suc khoe link Shopee cua 1 BAI (tong hop tu tung link trong bai).
+ * Uu tien hien cai nghiem trong nhat: link chet > het hang > can xem lai > on.
+ */
+function LinkHealthBadge({ post }: { post: PostListItem }) {
+  const { shopee_count, dead_link_count, oos_link_count, unknown_link_count, checked_link_count } =
+    post
+  if (shopee_count === 0) return <span className="text-muted-foreground">—</span>
+  if (checked_link_count === 0)
+    return (
+      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        Chưa KT
+      </span>
+    )
+
+  const title = [
+    dead_link_count > 0 && `${dead_link_count} link chết`,
+    oos_link_count > 0 && `${oos_link_count} link hết hàng`,
+    unknown_link_count > 0 && `${unknown_link_count} link chưa xác định được`,
+    `đã kiểm tra ${checked_link_count}/${shopee_count} link`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  const pill = (cls: string, text: string) => (
+    <span
+      className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium', cls)}
+      title={title}
+    >
+      {text}
+    </span>
+  )
+
+  if (dead_link_count > 0)
+    return pill(
+      'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+      dead_link_count > 1 ? `Link chết (${dead_link_count})` : 'Link chết',
+    )
+  if (oos_link_count > 0)
+    return pill(
+      'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
+      oos_link_count > 1 ? `Hết hàng (${oos_link_count})` : 'Hết hàng',
+    )
+  if (unknown_link_count > 0)
+    return pill(
+      'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+      'Cần xem lại',
+    )
+  return pill('bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', 'Link OK')
 }
 
 function PostStatusBadge({ status }: { status: PostListItem['post_status'] }) {
@@ -98,19 +173,50 @@ export function PostsPage() {
   const [oneShopee, setOneShopee] = useState(false)
   const [postStatus, setPostStatus] = useState<'unposted' | 'posted' | undefined>(undefined)
   const [mediaFilter, setMediaFilter] = useState<'complete' | 'missing' | undefined>(undefined)
+  const [linkStatus, setLinkStatus] = useState<LinkStatusFilter | undefined>(undefined)
+  const [rewritten, setRewritten] = useState<'yes' | 'no' | undefined>(undefined)
+  const [scrapedFrom, setScrapedFrom] = useState('')
+  const [scrapedTo, setScrapedTo] = useState('')
   const [topics, setTopics] = useState<string[]>([])
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
   const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
+  const [checkLinkIds, setCheckLinkIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
   const [topicDialogOpen, setTopicDialogOpen] = useState(false)
 
-  const activeFilters = { search, noShopee, notUpdated, oneShopee, postStatus, mediaFilter, topics }
+  const activeFilters = {
+    search,
+    noShopee,
+    notUpdated,
+    oneShopee,
+    postStatus,
+    mediaFilter,
+    linkStatus,
+    rewritten,
+    scrapedFrom,
+    scrapedTo,
+    topics,
+  }
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['posts', search, page, noShopee, notUpdated, oneShopee, postStatus, mediaFilter, topics],
+    queryKey: [
+      'posts',
+      search,
+      page,
+      noShopee,
+      notUpdated,
+      oneShopee,
+      postStatus,
+      mediaFilter,
+      linkStatus,
+      rewritten,
+      scrapedFrom,
+      scrapedTo,
+      topics,
+    ],
     queryFn: () =>
       fetchPosts({
         search,
@@ -121,6 +227,10 @@ export function PostsPage() {
         oneShopee,
         postStatus,
         mediaFilter,
+        linkStatus,
+        rewritten,
+        scrapedFrom: scrapedFrom || undefined,
+        scrapedTo: scrapedTo || undefined,
         topics,
       }),
     placeholderData: keepPreviousData,
@@ -135,6 +245,9 @@ export function PostsPage() {
     oneShopee,
     !!postStatus,
     !!mediaFilter,
+    !!linkStatus,
+    !!rewritten,
+    !!scrapedFrom || !!scrapedTo,
     topics.length > 0,
   ].filter(Boolean).length
   const filterActive = activeFilterCount > 0
@@ -146,6 +259,11 @@ export function PostsPage() {
     qc.invalidateQueries({ queryKey: ['posts'] })
     qc.invalidateQueries({ queryKey: ['stats'] })
     qc.invalidateQueries({ queryKey: ['post'] })
+    // Xoá bài / lấy lại comment / kiểm tra link Shopee đều có thể đổi kho "bài sạch" (Phân phối
+    // bài) và số bài chưa viết lại caption - cac trang do dung query rieng, lam moi luon o day.
+    qc.invalidateQueries({ queryKey: ['dist-pool'] })
+    qc.invalidateQueries({ queryKey: ['caption-variant-status'] })
+    qc.invalidateQueries({ queryKey: ['account-topics'] })
   }
 
   const toggle = (id: string) => {
@@ -192,6 +310,10 @@ export function PostsPage() {
     setOneShopee(false)
     setPostStatus(undefined)
     setMediaFilter(undefined)
+    setLinkStatus(undefined)
+    setRewritten(undefined)
+    setScrapedFrom('')
+    setScrapedTo('')
     setTopics([])
     resetPage()
   }
@@ -209,7 +331,7 @@ export function PostsPage() {
     setCheckingExport(true)
     try {
       const w = await fetchExportPostsWarnings(activeFilters)
-      if (w.notUpdated > 0 || w.multiComment > 0 || w.unavailable > 0) {
+      if (w.notUpdated > 0 || w.multiComment > 0 || w.badLink > 0 || w.unknownLink > 0) {
         setExportWarn(w)
       } else {
         doExportPosts()
@@ -266,6 +388,28 @@ export function PostsPage() {
             className="pl-9"
           />
         </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Thu thập</span>
+          <Input
+            type="date"
+            value={scrapedFrom}
+            onChange={(e) => {
+              setScrapedFrom(e.target.value)
+              resetPage()
+            }}
+            className="w-[9.5rem]"
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <Input
+            type="date"
+            value={scrapedTo}
+            onChange={(e) => {
+              setScrapedTo(e.target.value)
+              resetPage()
+            }}
+            className="w-[9.5rem]"
+          />
+        </div>
         <MultiFilterDropdown
           activeCount={activeFilterCount}
           onClearAll={() => {
@@ -319,6 +463,24 @@ export function PostsPage() {
             },
             {
               type: 'radio',
+              key: 'linkStatus',
+              label: 'Tình trạng link Shopee',
+              value: linkStatus ?? 'all',
+              onChange: (v: string) => {
+                setLinkStatus(v === 'all' ? undefined : (v as LinkStatusFilter))
+                resetPage()
+              },
+              options: [
+                { value: 'all', label: 'Tất cả' },
+                { value: 'bad', label: 'Link chết hoặc hết hàng' },
+                { value: 'dead', label: 'Link chết' },
+                { value: 'out_of_stock', label: 'Hết hàng' },
+                { value: 'review', label: 'Cần xem lại' },
+                { value: 'unchecked', label: 'Chưa kiểm tra' },
+              ],
+            },
+            {
+              type: 'radio',
               key: 'mediaFilter',
               label: 'Media',
               value: mediaFilter ?? 'all',
@@ -330,6 +492,21 @@ export function PostsPage() {
                 { value: 'all', label: 'Tất cả' },
                 { value: 'complete', label: 'Đủ cả ảnh & video' },
                 { value: 'missing', label: 'Thiếu ảnh hoặc video' },
+              ],
+            },
+            {
+              type: 'radio',
+              key: 'rewritten',
+              label: 'Viết lại caption AI',
+              value: rewritten ?? 'all',
+              onChange: (v: string) => {
+                setRewritten(v === 'all' ? undefined : (v as 'yes' | 'no'))
+                resetPage()
+              },
+              options: [
+                { value: 'all', label: 'Tất cả' },
+                { value: 'yes', label: 'Đã viết lại (đủ 3 bản)' },
+                { value: 'no', label: 'Chưa viết lại' },
               ],
             },
           ]}
@@ -363,10 +540,11 @@ export function PostsPage() {
                   </div>
                 </th>
                 <th className="p-2.5 text-left font-medium">Ngày</th>
+                <th className="p-2.5 text-left font-medium">Thu thập</th>
                 <th className="p-2.5 text-left font-medium">Comment</th>
-                <th className="p-2.5 text-right font-medium">Tim</th>
-                <th className="p-2.5 text-center font-medium">Shopee</th>
+                <th className="p-2.5 text-center font-medium">Viết lại</th>
                 <th className="p-2.5 text-center font-medium">Cập nhật</th>
+                <th className="p-2.5 text-center font-medium">Link</th>
                 <th className="p-2.5 text-left font-medium">Chủ đề</th>
                 <th className="p-2.5 text-center font-medium">Trạng thái</th>
               </tr>
@@ -405,6 +583,9 @@ export function PostsPage() {
                   <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
                     {p.post_date || '—'}
                   </td>
+                  <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
+                    {p.scraped_at ? new Date(p.scraped_at).toLocaleDateString('vi-VN') : '—'}
+                  </td>
                   <td className="max-w-[16rem] p-2.5">
                     <span
                       className={cn(
@@ -420,15 +601,14 @@ export function PostsPage() {
                     </span>
                     <div className="truncate text-xs text-muted-foreground">{p.comment || '—'}</div>
                   </td>
-                  <td className="whitespace-nowrap p-2.5 text-right text-xs tabular-nums text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      {p.likes || '0'}
-                    </span>
+                  <td className="p-2.5 text-center">
+                    <RewriteStatus count={p.variant_count} />
                   </td>
-                  <td className="p-2.5 text-center tabular-nums font-medium">{p.shopee_count}</td>
                   <td className="p-2.5 text-center">
                     <UpdateStatus shopee={p.shopee_count} updated={p.new_count} />
+                  </td>
+                  <td className="p-2.5 text-center">
+                    <LinkHealthBadge post={p} />
                   </td>
                   <td className="max-w-[10rem] truncate p-2.5 text-xs text-muted-foreground">
                     {p.topic || '—'}
@@ -460,10 +640,11 @@ export function PostsPage() {
                       </div>
                     </td>
                     <td className="p-2.5"><Skeleton className="h-3 w-14" /></td>
+                    <td className="p-2.5"><Skeleton className="h-3 w-14" /></td>
                     <td className="p-2.5"><Skeleton className="h-3 w-32" /></td>
-                    <td className="p-2.5"><Skeleton className="ml-auto h-3 w-16" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-3 w-6" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
+                    <td className="p-2.5"><Skeleton className="mx-auto h-5 w-16 rounded-full" /></td>
                     <td className="p-2.5"><Skeleton className="h-3 w-16" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-5 w-14 rounded-full" /></td>
                   </tr>
@@ -534,6 +715,9 @@ export function PostsPage() {
           <Button size="sm" variant="outline" onClick={() => setBeautifyIds([...sel])}>
             <Wand2 className="h-4 w-4" /> Làm đẹp video
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setCheckLinkIds([...sel])}>
+            <ShieldCheck className="h-4 w-4" /> Kiểm tra link Shopee
+          </Button>
           <Button size="sm" variant="outline" onClick={() => doMarkPosted(true)}>
             <Send className="h-4 w-4" /> Đánh dấu đã đăng
           </Button>
@@ -573,6 +757,16 @@ export function PostsPage() {
         onDone={invalidateAll}
       />
 
+      <ShopeeLinkCheckDialog
+        open={!!checkLinkIds}
+        postIds={checkLinkIds ?? []}
+        onClose={() => {
+          setCheckLinkIds(null)
+          invalidateAll()
+        }}
+        onDone={invalidateAll}
+      />
+
       <AssignTopicDialog
         open={topicDialogOpen}
         onClose={() => setTopicDialogOpen(false)}
@@ -598,10 +792,16 @@ export function PostsPage() {
                   còn lại.
                 </li>
               )}
-              {(exportWarn?.unavailable ?? 0) > 0 && (
+              {(exportWarn?.badLink ?? 0) > 0 && (
                 <li>
-                  <strong className="text-foreground">{exportWarn?.unavailable}</strong> bài có link
-                  Shopee đã kiểm tra và phát hiện hết hàng/không tồn tại (xem chi tiết ở trang Shopee).
+                  <strong className="text-foreground">{exportWarn?.badLink}</strong> bài có link
+                  Shopee đã chết hoặc hết hàng — lọc "Link chết hoặc hết hàng" để xem và xử lý trước.
+                </li>
+              )}
+              {(exportWarn?.unknownLink ?? 0) > 0 && (
+                <li>
+                  <strong className="text-foreground">{exportWarn?.unknownLink}</strong> bài có link
+                  chưa xác định được tình trạng (lọc "Cần xem lại").
                 </li>
               )}
             </ul>
@@ -627,6 +827,10 @@ export function PostsPage() {
 
 function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]) => void }) {
   const { data, isLoading } = useQuery({ queryKey: ['post', id], queryFn: () => fetchPost(id) })
+  const variants = useQuery({
+    queryKey: ['caption-variants', id],
+    queryFn: () => fetchCaptionVariants(id),
+  })
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Đang tải...</p>
   if (!data) return <p className="text-sm text-destructive">Không tìm thấy.</p>
@@ -695,8 +899,33 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
       </div>
 
       <div>
-        <div className="mb-1 text-sm font-medium">Caption</div>
+        <div className="mb-1 text-sm font-medium">Caption gốc</div>
         <p className="whitespace-pre-wrap text-sm text-muted-foreground">{caption}</p>
+      </div>
+
+      <div>
+        <div className="mb-2 text-sm font-medium">
+          Caption viết lại bằng AI
+          {(variants.data?.length ?? 0) > 0 && ` (${variants.data!.length}/3)`}
+        </div>
+        {variants.isLoading && <p className="text-sm text-muted-foreground">Đang tải...</p>}
+        {!variants.isLoading && (variants.data?.length ?? 0) === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Chưa có bản nào — chạy ở trang "Phân phối bài" &gt; "Viết lại caption kho bài".
+          </p>
+        )}
+        {!variants.isLoading && (variants.data?.length ?? 0) > 0 && (
+          <ul className="space-y-2">
+            {variants.data!.map((v) => (
+              <li key={v.variant_index} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <span className="mr-1.5 font-medium text-muted-foreground">
+                  Bản {v.variant_index}:
+                </span>
+                <span className="whitespace-pre-wrap">{v.caption}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div>

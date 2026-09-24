@@ -15,6 +15,7 @@ import {
   Wand2,
   Copy,
   CopyPlus,
+  Tag,
 } from 'lucide-react'
 import {
   fetchAccounts,
@@ -26,6 +27,9 @@ import {
   checkProxies,
   saveProxies,
   fetchProxies,
+  fetchPostingAccounts,
+  PROXY_TYPES,
+  APPEAL_STATUSES,
   type Account,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -37,11 +41,13 @@ import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
 import { AccountFormDialog } from '@/components/AccountFormDialog'
 import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
+import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
+import { PostingTopicsCell } from '@/components/PostingTopicsCell'
 import { CloneAccountDialog } from '@/components/CloneAccountDialog'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
-const COLSPAN = 9
+const COLSPAN = 13
 
 function ProxyCell({
   proxy,
@@ -114,10 +120,39 @@ function BannedBadge({ banned }: { banned: number }) {
   )
 }
 
+/** Mau theo muc do nghiem trong: Die (do) > Dang khang/ngam (vang) > Chua khang/tao (xam) > Thanh cong/Live (xanh). */
+const APPEAL_CLASS: Record<string, string> = {
+  'Kháng thành công': 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  Live: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  'Chưa kháng': 'bg-muted text-muted-foreground',
+  'Chưa tạo nick': 'bg-muted text-muted-foreground',
+  'Đang kháng': 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  'Đang ngâm': 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  Die: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+}
+
+function AppealBadge({ status }: { status: string | null }) {
+  if (!status) return <span className="text-muted-foreground">—</span>
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+        APPEAL_CLASS[status] ?? 'bg-muted text-muted-foreground',
+      )}
+    >
+      {status}
+    </span>
+  )
+}
+
 export function AccountsPage() {
   const qc = useQueryClient()
   const { data: accounts, isLoading } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts })
   const { data: proxiesData } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
+  const { data: postingAccounts } = useQuery({
+    queryKey: ['posting-accounts'],
+    queryFn: fetchPostingAccounts,
+  })
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
   const [cloningFrom, setCloningFrom] = useState<Account | null>(null)
@@ -125,6 +160,7 @@ export function AccountsPage() {
   const [recheckAllOpen, setRecheckAllOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
+  const [postingTopicOpen, setPostingTopicOpen] = useState(false)
   const [sel, setSel] = useState<Set<number>>(new Set())
 
   const [search, setSearch] = useState('')
@@ -134,8 +170,15 @@ export function AccountsPage() {
     'all',
   )
   const [platformFilter, setPlatformFilter] = useState<'all' | 'Stable' | 'Global' | 'none'>('all')
+  const [proxyTypeFilter, setProxyTypeFilter] = useState<string>('all')
+  const [appealFilter, setAppealFilter] = useState<string>('all')
 
   const allAccounts = accounts ?? []
+  // Chu de cua TAI KHOAN DANG (posting_account_topics) - khac chu de cua bai o cot duoi.
+  const topicsById = useMemo(
+    () => new Map((postingAccounts ?? []).map((a) => [a.id, a.topics])),
+    [postingAccounts],
+  )
 
   const items = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -156,9 +199,26 @@ export function AccountsPage() {
       if (platformFilter === 'none' && a.platform) return false
       if ((platformFilter === 'Stable' || platformFilter === 'Global') && a.platform !== platformFilter)
         return false
+      if (proxyTypeFilter !== 'all') {
+        if (proxyTypeFilter === 'none' ? !!a.proxy_type : a.proxy_type !== proxyTypeFilter)
+          return false
+      }
+      if (appealFilter !== 'all') {
+        if (appealFilter === 'none' ? !!a.appeal_status : a.appeal_status !== appealFilter)
+          return false
+      }
       return true
     })
-  }, [allAccounts, search, bannedFilter, activeFilter, proxyFilter, platformFilter])
+  }, [
+    allAccounts,
+    search,
+    bannedFilter,
+    activeFilter,
+    proxyFilter,
+    platformFilter,
+    proxyTypeFilter,
+    appealFilter,
+  ])
 
   const allChecked = items.length > 0 && items.every((a) => sel.has(a.id))
   const someChecked = items.some((a) => sel.has(a.id)) && !allChecked
@@ -177,13 +237,44 @@ export function AccountsPage() {
     onError: (err: unknown) => toast.error(err instanceof Error ? err.message : 'Lỗi kiểm tra proxy'),
   })
 
-  const allProxies = [
-    ...new Set(allAccounts.map((a) => a.proxy?.trim()).filter((p): p is string => !!p)),
+  /**
+   * Proxy ghi "Local" la proxy chay ngay tren may cua account do -> server khong the ket noi toi,
+   * kiem tra chac chan ra Die va lam ban ket qua. Bo qua khi kiem tra.
+   * 1 proxy co the dung chung nhieu account nen chi bo khi TAT CA account dung no deu la Local;
+   * con 1 account khong phai Local thi proxy do van la proxy that, van phai kiem tra.
+   */
+  const localOnlyProxies = useMemo(() => {
+    const byProxy = new Map<string, { total: number; local: number }>()
+    for (const a of allAccounts) {
+      const p = a.proxy?.trim()
+      if (!p) continue
+      const e = byProxy.get(p) ?? { total: 0, local: 0 }
+      e.total++
+      if (a.proxy_type === 'Local') e.local++
+      byProxy.set(p, e)
+    }
+    return new Set(
+      [...byProxy.entries()].filter(([, e]) => e.local === e.total).map(([proxy]) => proxy),
+    )
+  }, [allAccounts])
+
+  const checkableProxies = (list: (string | null | undefined)[]) => [
+    ...new Set(
+      list
+        .map((p) => p?.trim())
+        .filter((p): p is string => !!p && !localOnlyProxies.has(p)),
+    ),
   ]
+
+  const allProxies = checkableProxies(allAccounts.map((a) => a.proxy))
+  const skippedLocalAll = localOnlyProxies.size
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['accounts'] })
     qc.invalidateQueries({ queryKey: ['stats'] })
+    // Chu de dang (K trong file import) hien thi tu query rieng - thieu dong nay thi import
+    // xong van thay chu de rong cho toi khi co thao tac khac vo tinh lam moi cache.
+    qc.invalidateQueries({ queryKey: ['posting-accounts'] })
   }
 
   const toggle = (id: number) => {
@@ -227,14 +318,7 @@ export function AccountsPage() {
     toast.success(`Đã xoá ${ids.length} account`)
   }
 
-  const selectedProxies = [
-    ...new Set(
-      items
-        .filter((a) => sel.has(a.id))
-        .map((a) => a.proxy?.trim())
-        .filter((p): p is string => !!p),
-    ),
-  ]
+  const selectedProxies = checkableProxies(items.filter((a) => sel.has(a.id)).map((a) => a.proxy))
 
   const selectedWithoutProxy = items.filter((a) => sel.has(a.id) && !a.proxy)
 
@@ -291,14 +375,10 @@ export function AccountsPage() {
       toast.success(
         `Import xong: ${r.inserted} thêm mới, ${r.updated} cập nhật` +
           (r.skipped ? `, ${r.skipped} dòng bỏ qua (thiếu Profile)` : '') +
-          (r.proxyConflicts
-            ? `, ${r.proxyConflicts} dòng bỏ qua proxy (đã gán cho account khác)`
-            : ''),
+          (r.invalidValues ? `, ${r.invalidValues} ô sai giá trị (để trống)` : ''),
       )
-      if (r.proxyConflicts) {
-        for (const c of r.proxyConflictDetails.slice(0, 5)) {
-          toast.warning(`"${c.name}": proxy ${c.proxy} đang thuộc "${c.heldBy}" — chưa gán`)
-        }
+      for (const c of r.invalidValueDetails.slice(0, 5)) {
+        toast.warning(`"${c.name}": cột ${c.column} không nhận giá trị "${c.value}"`)
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Import lỗi')
@@ -342,9 +422,11 @@ export function AccountsPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        File import: cột A→I lần lượt là Profile, Thiết bị, Banned, Ngày tạo, Pass_Threads, Gmail,
-        Password, Proxy, Platform (Stable/Global) (dòng 1 là header). Profile trùng sẽ được cập
-        nhật đè.
+        File import: cột A→L lần lượt là Profile, Thiết bị, Trạng thái, Ngày tạo, Pass_Threads,
+        Gmail, Password, Proxy, Platform (Stable/Global), Loại proxy, Chủ đề đăng, Ghi chú (dòng 1
+        là header). Profile trùng sẽ được cập nhật đè. Cột C chỉ nhận: {APPEAL_STATUSES.join(' / ')}
+        (chọn "Die" sẽ tự đánh dấu banned). Cột J chỉ nhận: {PROXY_TYPES.join(' / ')}. Cột K là các
+        chủ đề, cách nhau bằng dấu phẩy. Giá trị khác sẽ để trống và báo lại.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -400,6 +482,26 @@ export function AccountsPage() {
             { value: 'none', label: 'Chưa đặt' },
           ]}
         />
+        <SingleFilterDropdown
+          label="Loại proxy"
+          value={proxyTypeFilter}
+          onChange={setProxyTypeFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            ...PROXY_TYPES.map((t) => ({ value: t, label: t })),
+            { value: 'none', label: 'Chưa đặt' },
+          ]}
+        />
+        <SingleFilterDropdown
+          label="Trạng thái"
+          value={appealFilter}
+          onChange={setAppealFilter}
+          options={[
+            { value: 'all', label: 'Tất cả' },
+            ...APPEAL_STATUSES.map((t) => ({ value: t, label: t })),
+            { value: 'none', label: 'Chưa đặt' },
+          ]}
+        />
         <span className="text-xs text-muted-foreground">{items.length}/{allAccounts.length} account</span>
       </div>
 
@@ -417,6 +519,10 @@ export function AccountsPage() {
                 <th className="p-2.5 text-left font-medium">Ngày tạo</th>
                 <th className="p-2.5 text-left font-medium">Proxy</th>
                 <th className="p-2.5 text-center font-medium">Platform</th>
+                <th className="p-2.5 text-left font-medium">Loại proxy</th>
+                <th className="p-2.5 text-center font-medium">Trạng thái</th>
+                <th className="p-2.5 text-left font-medium">Chủ đề đăng (bấm để sửa)</th>
+                <th className="p-2.5 text-left font-medium">Ghi chú</th>
                 <th className="p-2.5 text-center font-medium">Active</th>
                 <th className="p-2.5 text-right font-medium"></th>
               </tr>
@@ -474,6 +580,26 @@ export function AccountsPage() {
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
+                    </td>
+                    <td className="max-w-[10rem] p-2.5 text-xs text-muted-foreground">
+                      <span className="block truncate" title={a.proxy_type ?? undefined}>
+                        {a.proxy_type || '—'}
+                      </span>
+                    </td>
+                    <td className="p-2.5 text-center">
+                      <AppealBadge status={a.appeal_status} />
+                    </td>
+                    <td className="max-w-[13rem] p-2.5">
+                      <PostingTopicsCell
+                        accountId={a.id}
+                        topics={topicsById.get(a.id) ?? []}
+                        onChanged={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
+                      />
+                    </td>
+                    <td className="max-w-[12rem] p-2.5 text-xs text-muted-foreground">
+                      <span className="block truncate" title={a.note ?? undefined}>
+                        {a.note || '—'}
+                      </span>
                     </td>
                     <td className="p-2.5 text-center">
                       <Switch
@@ -537,6 +663,9 @@ export function AccountsPage() {
               <Wand2 className="h-4 w-4" /> Tự động gán proxy ({selectedWithoutProxy.length})
             </Button>
           )}
+          <Button size="sm" variant="outline" onClick={() => setPostingTopicOpen(true)}>
+            <Tag className="h-4 w-4" /> Gán chủ đề đăng
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setProxyDialogOpen(true)}>
             <ShieldCheck className="h-4 w-4" /> Kiểm tra proxy
           </Button>
@@ -548,6 +677,13 @@ export function AccountsPage() {
           </Button>
         </div>
       )}
+
+      <AssignPostingTopicsDialog
+        open={postingTopicOpen}
+        accountIds={[...sel]}
+        onClose={() => setPostingTopicOpen(false)}
+        onSaved={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
+      />
 
       <AccountFormDialog
         open={formOpen}
@@ -572,7 +708,10 @@ export function AccountsPage() {
       <AccountProxyCheckDialog
         open={recheckAllOpen}
         proxies={allProxies}
-        description={`${allProxies.length} proxy (đã bỏ trùng) trên toàn bộ account`}
+        description={
+          `${allProxies.length} proxy (đã bỏ trùng) trên toàn bộ account` +
+          (skippedLocalAll ? ` · bỏ qua ${skippedLocalAll} proxy Local` : '')
+        }
         onClose={() => setRecheckAllOpen(false)}
       />
     </div>

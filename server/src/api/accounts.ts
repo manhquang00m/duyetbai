@@ -9,9 +9,9 @@ import {
   updateAccount,
   removeAccount,
   getAccountByName,
-  ProxyConflictError,
 } from '../db/accounts';
 import { importAccountsExcel } from '../services/accountImporter';
+import { PROXY_TYPES, APPEAL_STATUSES } from '../db/accountEnums';
 import { EXPORT_DIR } from '../config';
 
 const router = Router();
@@ -32,6 +32,9 @@ const AccountCreateSchema = z.object({
   gmail_password: nullableString,
   proxy: nullableString,
   platform: z.enum(['Stable', 'Global']).nullable().optional(),
+  proxy_type: z.enum(PROXY_TYPES).nullable().optional(),
+  appeal_status: z.enum(APPEAL_STATUSES).nullable().optional(),
+  note: z.string().trim().nullable().optional(),
 });
 
 const AccountPatchSchema = AccountCreateSchema.partial();
@@ -51,16 +54,8 @@ router.post('/', (req, res) => {
     res.status(409).json({ error: `Profile "${parsed.data.name}" đã tồn tại` });
     return;
   }
-  try {
-    createAccount(parsed.data);
-    res.status(201).json(listAccounts());
-  } catch (err) {
-    if (err instanceof ProxyConflictError) {
-      res.status(409).json({ error: err.message });
-      return;
-    }
-    throw err;
-  }
+  createAccount(parsed.data);
+  res.status(201).json(listAccounts());
 });
 
 // PATCH /api/accounts/:id -> cap nhat tung phan (active/banned/device/pass_threads/gmail/...)
@@ -70,19 +65,11 @@ router.patch('/:id', (req, res) => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  try {
-    updateAccount(Number(req.params.id), parsed.data);
-    res.json(listAccounts());
-  } catch (err) {
-    if (err instanceof ProxyConflictError) {
-      res.status(409).json({ error: err.message });
-      return;
-    }
-    throw err;
-  }
+  updateAccount(Number(req.params.id), parsed.data);
+  res.json(listAccounts());
 });
 
-// POST /api/accounts/import (multipart: file .xlsx, cot A-H: Profile/Thiet bi/Banned/Ngay tao/Pass_Threads/Gmail/Password/Proxy)
+// POST /api/accounts/import (multipart: file .xlsx, cot A-L - xem chu thich o accountImporter.ts)
 router.post('/import', upload.single('file'), async (req, res, next) => {
   if (!req.file) {
     res.status(400).json({ error: 'thieu file' });

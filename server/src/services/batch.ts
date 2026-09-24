@@ -6,6 +6,7 @@ import { extractShortcode } from '../utils/postId';
 import { resolveThreadsUrl } from './comments';
 import { postExists, getPostBrief } from '../db/queries';
 import { recordCollectAttempt } from '../db/history';
+import type { ShopeeLinkStatus } from './shopeeLinkCheck';
 import { CONCURRENCY } from '../config';
 
 export interface BatchItemResult {
@@ -22,7 +23,7 @@ export interface BatchItemResult {
   file?: string; // ten file video (dung cho job "lam dep video")
   ip?: string; // exit IP (dung cho job "kiem tra proxy")
   ms?: number; // thoi gian phan hoi ms (dung cho job "kiem tra proxy")
-  shopeeStatus?: 'available' | 'unavailable' | 'unknown'; // dung cho job "kiem tra link Shopee"
+  shopeeStatus?: ShopeeLinkStatus; // dung cho job "kiem tra link Shopee"
   shopeeTitle?: string; // ten san pham (dung cho job "kiem tra link Shopee")
   shopeeImage?: string; // anh preview san pham (dung cho job "kiem tra link Shopee")
 }

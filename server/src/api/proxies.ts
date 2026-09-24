@@ -4,9 +4,12 @@ import {
   saveProxies,
   removeProxy,
   getProxy,
+  updateProxy,
   updateProxyStatus,
+  ProxyDuplicateError,
   type ProxyInput,
 } from '../db/proxies';
+import { PROXY_TYPES } from '../db/accountEnums';
 import { checkProxies, checkProxy } from '../services/proxyCheck';
 import { startProxyCheckJob } from '../services/jobs';
 
@@ -46,7 +49,14 @@ router.post('/check-job', (req, res) => {
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 
-// POST /api/proxies { items: [{proxy,status,ip}] } -> luu
+const parseProxyTypeValue = (v: unknown): string | null | undefined => {
+  if (v === undefined) return undefined;
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  return (PROXY_TYPES as readonly string[]).includes(s) ? s : undefined; // gia tri la -> bo qua
+};
+
+// POST /api/proxies { items: [{proxy,status,ip,proxy_type?,note?}] } -> luu
 router.post('/', (req, res) => {
   const items = (Array.isArray(req.body?.items) ? req.body.items : []) as ProxyInput[];
   if (items.length === 0) {
@@ -55,6 +65,40 @@ router.post('/', (req, res) => {
   }
   saveProxies(items);
   res.status(201).json(listProxies());
+});
+
+// PATCH /api/proxies/:id { proxy?, proxy_type?, note? } -> sua 1 proxy da luu
+router.patch('/:id', (req, res) => {
+  const body = req.body ?? {};
+  const nextProxy = body.proxy === undefined ? undefined : String(body.proxy).trim();
+  if (nextProxy !== undefined && !nextProxy) {
+    res.status(400).json({ error: 'proxy khong duoc de trong' });
+    return;
+  }
+  const proxyType = parseProxyTypeValue(body.proxy_type);
+  if (body.proxy_type !== undefined && proxyType === undefined) {
+    res.status(400).json({ error: `proxy_type phai thuoc: ${PROXY_TYPES.join(' | ')}` });
+    return;
+  }
+
+  try {
+    const updated = updateProxy(Number(req.params.id), {
+      proxy: nextProxy,
+      proxy_type: proxyType,
+      note: body.note === undefined ? undefined : String(body.note ?? '').trim() || null,
+    });
+    if (!updated) {
+      res.status(404).json({ error: 'khong tim thay' });
+      return;
+    }
+    res.json(listProxies());
+  } catch (err) {
+    if (err instanceof ProxyDuplicateError) {
+      res.status(409).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
 });
 
 // POST /api/proxies/:id/recheck -> check lai 1 proxy da luu

@@ -1,6 +1,8 @@
-import type { PostFilterOpts } from '../db/queries';
+import type { LinkStatusFilter, PostFilterOpts } from '../db/queries';
 
 const truthy = (v: unknown): boolean => v === '1' || v === 'true';
+
+const LINK_STATUS_VALUES: LinkStatusFilter[] = ['bad', 'dead', 'out_of_stock', 'review', 'unchecked'];
 
 /**
  * Doc bo loc bai viet tu query string - DUNG CHUNG giua GET /api/posts (danh sach) va
@@ -9,6 +11,8 @@ const truthy = (v: unknown): boolean => v === '1' || v === 'true';
 export function parsePostFilterQuery(query: Record<string, unknown>): PostFilterOpts {
   const postStatusRaw = String(query.postStatus ?? '');
   const mediaFilterRaw = String(query.mediaFilter ?? '');
+  const linkStatusRaw = String(query.linkStatus ?? '') as LinkStatusFilter;
+  const rewrittenRaw = String(query.rewritten ?? '');
   // topics gui dang chuoi noi bang dau phay (vd "Công nghệ,Makeup") - don gian, khong phu thuoc
   // quy uoc serialize mang cua axios/qs.
   const topicsRaw = query.topics != null ? String(query.topics) : '';
@@ -28,6 +32,11 @@ export function parsePostFilterQuery(query: Record<string, unknown>): PostFilter
       postStatusRaw === 'unposted' || postStatusRaw === 'posted' ? postStatusRaw : undefined,
     mediaFilter:
       mediaFilterRaw === 'complete' || mediaFilterRaw === 'missing' ? mediaFilterRaw : undefined,
+    linkStatus: LINK_STATUS_VALUES.includes(linkStatusRaw) ? linkStatusRaw : undefined,
+    cleanOnly: truthy(query.cleanOnly),
+    rewritten: rewrittenRaw === 'yes' || rewrittenRaw === 'no' ? rewrittenRaw : undefined,
+    scrapedFrom: query.scrapedFrom != null ? String(query.scrapedFrom) : undefined,
+    scrapedTo: query.scrapedTo != null ? String(query.scrapedTo) : undefined,
     topics,
   };
 }

@@ -9,6 +9,8 @@ import {
   fetchProxies,
   checkProxies,
   saveProxies,
+  PROXY_TYPES,
+  APPEAL_STATUSES,
   type Account,
   type AccountInput,
   type SavedProxy,
@@ -37,6 +39,9 @@ function emptyForm(): AccountInput {
     gmail_password: '',
     proxy: '',
     platform: null,
+    proxy_type: null,
+    appeal_status: null,
+    note: '',
   }
 }
 
@@ -83,18 +88,21 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
   const { data: proxies } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies, enabled: open })
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts, enabled: open })
 
-  // Proxy dropdown: CHI proxy Live, tru cai dang bi account KHAC (khong phai chinh minh) chiem.
+  // Proxy dropdown: CHI proxy Live. 1 proxy DUOC PHEP dung chung cho nhieu account nen khong
+  // loai proxy da co nguoi dung nua - thay vao do hien so account dang dung de nguoi chon biet.
   // Neu proxy hien tai cua chinh account nay khong Live (vd import Excel cu, chua tung kiem tra,
-  // hoac da chuyen Die) thi van them vao dau danh sach de khong bi mat gia tri dang co - chi
-  // KHONG cho chon them proxy Die/chua kiem tra nao khac.
+  // hoac da chuyen Die) thi van them vao dau danh sach de khong bi mat gia tri dang co.
+  const usageByProxy = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const a of accounts ?? []) {
+      const p = a.proxy?.trim()
+      if (p) m.set(p, (m.get(p) ?? 0) + 1)
+    }
+    return m
+  }, [accounts])
+
   const proxyOptions = useMemo(() => {
-    const takenByOthers = new Set(
-      (accounts ?? [])
-        .filter((a) => !account || a.id !== account.id)
-        .map((a) => a.proxy)
-        .filter((p): p is string => !!p),
-    )
-    const pool = (proxies ?? []).filter((p) => p.status === 'live' && !takenByOthers.has(p.proxy))
+    const pool = (proxies ?? []).filter((p) => p.status === 'live')
     const current = form.proxy?.trim()
     if (current && !pool.some((p) => p.proxy === current)) {
       const existing = (proxies ?? []).find((p) => p.proxy === current)
@@ -105,12 +113,15 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         ip: null,
         checked_at: null,
         created_at: '',
+        proxy_type: null,
+        note: null,
         account_names: null,
+        account_count: 0,
       }
       return [synthesized, ...pool]
     }
     return pool
-  }, [proxies, accounts, account, form.proxy])
+  }, [proxies, form.proxy])
 
   useEffect(() => {
     if (!open) return
@@ -126,6 +137,9 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
             gmail_password: account.gmail_password ?? '',
             proxy: account.proxy ?? '',
             platform: account.platform ?? null,
+            proxy_type: account.proxy_type ?? null,
+            appeal_status: account.appeal_status ?? null,
+            note: account.note ?? '',
           }
         : emptyForm(),
     )
@@ -173,6 +187,9 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         gmail_password: form.gmail_password?.trim() || null,
         proxy: finalProxy,
         platform: form.platform || null,
+        proxy_type: form.proxy_type || null,
+        appeal_status: form.appeal_status || null,
+        note: form.note?.trim() || null,
       }
       if (account) await updateAccount(account.id, payload)
       else await createAccount(payload)
@@ -251,12 +268,15 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
                   <option key={p.proxy} value={p.proxy}>
                     {p.proxy}
                     {p.status === 'live' ? ' · Live' : p.status === 'die' ? ' · Die' : ' · Chưa kiểm tra'}
+                    {usageByProxy.get(p.proxy)
+                      ? ` · ${usageByProxy.get(p.proxy)} account đang dùng`
+                      : ''}
                   </option>
                 ))}
               </select>
               {proxyOptions.length === 0 && (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Chưa có proxy Live nào rảnh — nhập proxy mới ở tab bên cạnh.
+                  Chưa có proxy Live nào — nhập proxy mới ở tab bên cạnh.
                 </p>
               )}
             </>
@@ -312,6 +332,64 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
             <option value="Stable">Stable</option>
             <option value="Global">Global</option>
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Loại proxy
+            </label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={form.proxy_type ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  proxy_type: e.target.value ? (e.target.value as (typeof PROXY_TYPES)[number]) : null,
+                }))
+              }
+            >
+              <option value="">— Chưa đặt —</option>
+              {PROXY_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Trạng thái
+            </label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={form.appeal_status ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  appeal_status: e.target.value
+                    ? (e.target.value as (typeof APPEAL_STATUSES)[number])
+                    : null,
+                }))
+              }
+            >
+              <option value="">— Chưa đặt —</option>
+              {APPEAL_STATUSES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Ghi chú</label>
+          <Input
+            value={form.note ?? ''}
+            onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+            placeholder="Ghi chú tự do"
+          />
         </div>
 
         <div className="flex items-center gap-6 pt-1">

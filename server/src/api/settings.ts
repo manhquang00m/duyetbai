@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { getSetting, setSetting } from '../db/settings';
 import { DEFAULT_REWRITE_PROMPT, getRewritePrompt } from '../services/rewrite';
+import {
+  DEFAULT_VARIANT_PROMPT,
+  getVariantRewritePrompt,
+  saveVariantRewritePrompt,
+} from '../services/postCaptionVariants';
 
 const router = Router();
 
@@ -44,6 +49,22 @@ router.put('/rewrite-prompt', (req, res) => {
   }
   setSetting('rewrite_prompt', prompt || DEFAULT_REWRITE_PROMPT);
   res.json({ prompt: getRewritePrompt() });
+});
+
+// GET /api/settings/variant-rewrite-prompt -> prompt dung cho "Viet lai caption kho bai" (Phan phoi bai)
+router.get('/variant-rewrite-prompt', (_req, res) => {
+  res.json({ prompt: getVariantRewritePrompt(), default: DEFAULT_VARIANT_PROMPT });
+});
+
+// PUT /api/settings/variant-rewrite-prompt { prompt } -> doi giong van (de trong = ve mac dinh)
+router.put('/variant-rewrite-prompt', (req, res) => {
+  const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : null;
+  if (prompt == null) {
+    res.status(400).json({ error: 'thieu prompt' });
+    return;
+  }
+  saveVariantRewritePrompt(prompt);
+  res.json({ prompt: getVariantRewritePrompt() });
 });
 
 export default router;

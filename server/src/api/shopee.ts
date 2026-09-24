@@ -92,7 +92,7 @@ router.get('/shopee/links', (_req, res) => {
 
 // POST /api/shopee/links/check-job { entryIds?: number[] } -> kiem tra link Shopee (con hang/het
 // hang/khong ton tai), chay job nen, xem tien trinh qua GET /api/batch/:id/stream (dung chung job store).
-// Co entryIds -> chi kiem tra cac dong da chon (chi xet new_link). Khong co -> kiem tra tat ca.
+// Luon kiem tra link GOC. Co entryIds -> chi kiem tra cac dong da chon. Khong co -> kiem tra tat ca.
 router.post('/shopee/links/check-job', (req, res) => {
   const raw = req.body?.entryIds;
   const entryIds = Array.isArray(raw)
@@ -106,7 +106,7 @@ router.post('/shopee/links/check-job', (req, res) => {
   if (job.total === 0) {
     res.status(400).json({
       error: entryIds
-        ? 'Các dòng đã chọn chưa có link mới (new_link) để kiểm tra'
+        ? 'Các dòng đã chọn không có link gốc để kiểm tra'
         : 'Không có link Shopee nào để kiểm tra',
     });
     return;

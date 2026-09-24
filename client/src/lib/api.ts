@@ -32,6 +32,10 @@ export interface PostListItem {
   shopee_count: number
   distinct_comment_count: number
   new_count: number
+  dead_link_count: number
+  oos_link_count: number
+  unknown_link_count: number
+  checked_link_count: number
   shopee_comment_count: number | null
   comment: string | null
   thumb: string | null
@@ -40,6 +44,7 @@ export interface PostListItem {
   exported_at: string | null
   posted_at: string | null
   topic: string | null
+  variant_count: number // so ban caption AI da viet lai (0..3)
 }
 
 export interface PostsResponse {
@@ -70,6 +75,30 @@ export interface PostDetail {
 
 export type AccountPlatform = 'Stable' | 'Global'
 
+// Gia tri cot J/K cua file import account. PHAI khop server/src/db/accountEnums.ts.
+export const PROXY_TYPES = [
+  'Tạp hóa mmo',
+  'Proxy trung gian - proxy.vn',
+  'Local',
+  'Proxy gốc - proxy.vn',
+  'Data center - proxy.vn',
+] as const
+
+// Y nghia GIO LA "trang thai chung" cua account (khong con rieng ve khang) - xem
+// server/src/db/accountEnums.ts. 'Die' la gia tri duy nhat tu dong danh dau banned luc import.
+export const APPEAL_STATUSES = [
+  'Kháng thành công',
+  'Chưa kháng',
+  'Die',
+  'Đang kháng',
+  'Live',
+  'Chưa tạo nick',
+  'Đang ngâm',
+] as const
+
+export type ProxyType = (typeof PROXY_TYPES)[number]
+export type AppealStatus = (typeof APPEAL_STATUSES)[number]
+
 export interface Account {
   id: number
   name: string // = Profile
@@ -81,6 +110,9 @@ export interface Account {
   gmail_password: string | null
   proxy: string | null
   platform: AccountPlatform | null
+  proxy_type: ProxyType | null
+  appeal_status: AppealStatus | null
+  note: string | null
   created_at: string
   proxy_status?: string | null // 'live' | 'die' | null (chua kiem tra)
   proxy_checked_at?: string | null
@@ -96,6 +128,9 @@ export interface AccountInput {
   gmail_password?: string | null
   proxy?: string | null
   platform?: AccountPlatform | null
+  proxy_type?: ProxyType | null
+  appeal_status?: AppealStatus | null
+  note?: string | null
 }
 
 export interface AccountImportResult {
@@ -103,8 +138,8 @@ export interface AccountImportResult {
   updated: number
   skipped: number
   total: number
-  proxyConflicts: number
-  proxyConflictDetails: { name: string; proxy: string; heldBy: string }[]
+  invalidValues: number
+  invalidValueDetails: { name: string; column: string; value: string }[]
 }
 
 export interface BatchItemResult {
@@ -121,7 +156,7 @@ export interface BatchItemResult {
   file?: string
   ip?: string
   ms?: number
-  shopeeStatus?: 'available' | 'unavailable' | 'unknown'
+  shopeeStatus?: ShopeeLinkStatus
   shopeeTitle?: string
   shopeeImage?: string
 }
@@ -141,13 +176,24 @@ export interface JobState {
   error?: string
 }
 
+/** Trang thai kiem tra 1 link Shopee - khop voi ShopeeLinkStatus ben server. */
+export type ShopeeLinkStatus = 'available' | 'dead' | 'out_of_stock' | 'unknown'
+
+/** Nhan tieng Viet dung chung o moi cho hien trang thai link. */
+export const SHOPEE_LINK_STATUS_LABEL: Record<ShopeeLinkStatus, string> = {
+  available: 'Còn hàng',
+  dead: 'Link chết',
+  out_of_stock: 'Hết hàng',
+  unknown: 'Cần xem lại',
+}
+
 export interface ShopeeLinkRow {
   id: number
   post_id: string
   comment: string
   link: string
   new_link: string | null
-  link_status: 'available' | 'unavailable' | 'unknown' | null
+  link_status: ShopeeLinkStatus | null
   link_message: string | null
   link_checked_at: string | null
   product_title: string | null
@@ -158,6 +204,9 @@ export interface ShopeeLinkRow {
 
 // Bo loc DUNG CHUNG giua danh sach (fetchPosts) va xuat file (exportPostsUrl/fetchExportPostsWarnings)
 // - loc the nao tren UI thi xuat file y nhu the, khong con 2 bo tuy chon rieng biet.
+/** Loc bai theo ket qua kiem tra link Shopee (bai co IT NHAT 1 link o trang thai do). */
+export type LinkStatusFilter = 'bad' | 'dead' | 'out_of_stock' | 'review' | 'unchecked'
+
 export interface PostFilterParams {
   search?: string
   username?: string // loc dung 1 tac gia (khac search: search la LIKE)
@@ -166,6 +215,11 @@ export interface PostFilterParams {
   oneShopee?: boolean
   postStatus?: 'unposted' | 'posted'
   mediaFilter?: 'complete' | 'missing'
+  linkStatus?: LinkStatusFilter
+  cleanOnly?: boolean
+  rewritten?: 'yes' | 'no'
+  scrapedFrom?: string // 'YYYY-MM-DD' - loc theo scraped_at (thoi diem thu thap), khong phai post_date
+  scrapedTo?: string // 'YYYY-MM-DD', bao gom ca ngay nay
   topics?: string[]
 }
 
@@ -178,6 +232,11 @@ function postFilterQueryParams(filters: PostFilterParams) {
     oneShopee: filters.oneShopee ? 1 : undefined,
     postStatus: filters.postStatus,
     mediaFilter: filters.mediaFilter,
+    linkStatus: filters.linkStatus,
+    cleanOnly: filters.cleanOnly ? 1 : undefined,
+    rewritten: filters.rewritten,
+    scrapedFrom: filters.scrapedFrom || undefined,
+    scrapedTo: filters.scrapedTo || undefined,
     topics: filters.topics && filters.topics.length > 0 ? filters.topics.join(',') : undefined,
   }
 }
@@ -227,6 +286,15 @@ export async function beautifyVideos(
   form.append('config', JSON.stringify(config))
   if (watermarkImage) form.append('watermarkImage', watermarkImage)
   const { data } = await api.post<{ jobId: string; total: number }>('/api/posts/beautify', form)
+  return data
+}
+
+/** Kiem tra tinh trang link Shopee cua cac bai da chon (job nen + SSE). */
+export async function checkShopeePostLinks(postIds: string[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>(
+    '/api/posts/check-shopee-links',
+    { postIds },
+  )
   return data
 }
 
@@ -284,8 +352,13 @@ export async function importAccounts(file: File) {
   return data
 }
 
-export async function startBatch(urls: string[], force = false) {
-  const { data } = await api.post<{ jobId: string; total: number }>('/api/batch', { urls, force })
+/** urlTopics: url (dung nguyen ban da trim, khop 1-1 voi urls) -> chu de gan cho tac gia cua url do. */
+export async function startBatch(urls: string[], force = false, urlTopics?: Record<string, string>) {
+  const { data } = await api.post<{ jobId: string; total: number }>('/api/batch', {
+    urls,
+    force,
+    urlTopics,
+  })
   return data
 }
 
@@ -345,7 +418,7 @@ export async function startShopeeLinkCheckJob(entryIds?: number[]) {
 
 export interface ShopeeLinkCheckResult {
   link: string
-  status: 'available' | 'unavailable' | 'unknown'
+  status: ShopeeLinkStatus
   message: string
   title?: string
   image?: string
@@ -437,7 +510,8 @@ export function buildExportPostsUrl(filters: PostFilterParams): string {
 export interface ExportPostsWarnings {
   notUpdated: number
   multiComment: number
-  unavailable: number
+  badLink: number
+  unknownLink: number
 }
 
 export async function fetchExportPostsWarnings(filters: PostFilterParams) {
@@ -475,7 +549,10 @@ export interface SavedProxy {
   ip: string | null
   checked_at: string | null
   created_at: string
+  proxy_type: ProxyType | null
+  note: string | null
   account_names: string | null
+  account_count: number
 }
 
 export async function checkProxies(proxies: string[]) {
@@ -496,8 +573,25 @@ export async function fetchProxies() {
   return data
 }
 
-export async function saveProxies(items: { proxy: string; status?: string; ip?: string }[]) {
+export interface SaveProxyItem {
+  proxy: string
+  status?: string
+  ip?: string
+  proxy_type?: ProxyType | null
+  note?: string | null
+}
+
+export async function saveProxies(items: SaveProxyItem[]) {
   const { data } = await api.post<SavedProxy[]>('/api/proxies', { items })
+  return data
+}
+
+/** Sua 1 proxy da luu. Doi chuoi proxy se doi luon o cac account dang dung no. */
+export async function updateProxy(
+  id: number,
+  patch: { proxy?: string; proxy_type?: ProxyType | null; note?: string | null },
+) {
+  const { data } = await api.patch<SavedProxy[]>(`/api/proxies/${id}`, patch)
   return data
 }
 
@@ -552,5 +646,211 @@ export async function fetchAccountTopics() {
 
 export async function saveAccountTopics(items: { username: string; topic: string }[]) {
   const { data } = await api.post<AccountTopicRow[]>('/api/account-topics', { items })
+  return data
+}
+
+// ===== Phan phoi bai =====
+// LUU Y: chu de o day la chu de cua TAI KHOAN DANG (posting_account_topics), khac han
+// ACCOUNT_TOPICS gan cho TAC GIA bai (account_topics) - chi dung chung bo 7 gia tri.
+
+export interface PostingAccount {
+  id: number
+  name: string
+  platform: AccountPlatform | null
+  active: number
+  banned: number
+  appeal_status: string | null
+  proxy: string | null
+  proxy_status: string | null
+  topics: AccountTopic[]
+}
+
+export interface AccountCapacity {
+  id: number
+  name: string
+  topics: string[]
+  poolSize: number
+  demand: number
+  deficit: number
+}
+
+export interface PlanShortage {
+  accountName: string
+  date: string
+  dayIndex: number
+  missing: number
+}
+
+export interface PlanPreview {
+  accounts: AccountCapacity[]
+  poolByTopic: Record<string, number>
+  poolTotal: number
+  totalSlots: number
+  assignableSlots: number
+  shortages: PlanShortage[]
+  emptyTopics: string[]
+  warnings: string[]
+}
+
+export interface DistributionPlan {
+  id: string
+  name: string | null
+  start_date: string
+  days: number
+  per_day: number
+  topics: string | null
+  account_count: number
+  planned: number
+  assigned: number
+  shortage: number
+  seed: string
+  status: string
+  created_at: string
+  exported_at: string | null
+}
+
+export interface PlanItem {
+  id: number
+  plan_id: string
+  day_index: number
+  slot_index: number
+  post_date: string
+  account_id: number | null
+  account_name: string
+  post_id: string | null
+  topic: string | null
+  caption_variant: number | null // ban caption da dung (1..VARIANT_COUNT), null = dung caption goc
+}
+
+export interface PlanOptions {
+  days: number
+  perDay: number
+  startDate: string
+  accountIds?: number[]
+  topics?: string[]
+  scrapedFrom?: string // 'YYYY-MM-DD' - chi lay bai co thoi diem thu thap trong khoang nay
+  scrapedTo?: string // 'YYYY-MM-DD', bao gom ca ngay nay
+  seed?: string
+  name?: string
+}
+
+export interface DistributionPool {
+  total: number
+  byTopic: Record<string, number>
+  emptyTopics: string[]
+  excluded: Record<string, number>
+}
+
+export async function fetchPostingAccounts() {
+  const { data } = await api.get<PostingAccount[]>('/api/distribution/accounts')
+  return data
+}
+
+export async function bulkPostingTopics(
+  accountIds: number[],
+  topics: string[],
+  mode: 'add' | 'remove' | 'replace',
+) {
+  const { data } = await api.post<PostingAccount[]>('/api/distribution/accounts/topics/bulk', {
+    accountIds,
+    topics,
+    mode,
+  })
+  return data
+}
+
+export async function fetchDistributionPool() {
+  const { data } = await api.get<DistributionPool>('/api/distribution/pool')
+  return data
+}
+
+export async function previewDistribution(opts: PlanOptions) {
+  const { data } = await api.post<PlanPreview>('/api/distribution/preview', opts)
+  return data
+}
+
+export async function createDistributionPlan(opts: PlanOptions) {
+  const { data } = await api.post<{
+    planId: string
+    assigned: number
+    shortage: number
+    shortages: PlanShortage[]
+  }>('/api/distribution/plans', opts)
+  return data
+}
+
+export async function fetchDistributionPlans() {
+  const { data } = await api.get<DistributionPlan[]>('/api/distribution/plans')
+  return data
+}
+
+export async function fetchDistributionPlan(id: string) {
+  const { data } = await api.get<{ plan: DistributionPlan; items: PlanItem[] }>(
+    `/api/distribution/plans/${id}`,
+  )
+  return data
+}
+
+export async function deleteDistributionPlan(id: string) {
+  const { data } = await api.delete<{ ok: boolean }>(`/api/distribution/plans/${id}`)
+  return data
+}
+
+export function distributionExportUrl(id: string) {
+  return `/api/distribution/plans/${id}/export`
+}
+
+// ===== Viet lai caption kho bai (cung cho vao Phan phoi bai de tranh nhieu tai khoan
+// dang y het 1 caption khi dung lai cung 1 bai) =====
+
+export interface CaptionVariantStatus {
+  post_id: string
+  caption: string
+  topic: string
+  variant_count: number
+}
+
+export async function fetchCaptionVariantStatus() {
+  const { data } = await api.get<CaptionVariantStatus[]>('/api/post-caption-variants/status')
+  return data
+}
+
+export interface CaptionVariant {
+  variant_index: number
+  caption: string
+}
+
+export async function fetchCaptionVariants(postId: string) {
+  const { data } = await api.get<CaptionVariant[]>(
+    `/api/post-caption-variants/${encodeURIComponent(postId)}`,
+  )
+  return data
+}
+
+/** Chay hang loat - postIds bo trong = mac dinh chi lam bai chua du ban. Theo doi qua batchStreamUrl(jobId). */
+export async function runCaptionVariantJob(postIds?: string[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>(
+    '/api/post-caption-variants/run',
+    { postIds },
+  )
+  return data
+}
+
+export async function runCaptionVariantForPost(postId: string) {
+  const { data } = await api.post<{ ok: boolean }>(`/api/post-caption-variants/${postId}/run`)
+  return data
+}
+
+export async function fetchVariantRewritePrompt() {
+  const { data } = await api.get<{ prompt: string; default: string }>(
+    '/api/settings/variant-rewrite-prompt',
+  )
+  return data
+}
+
+export async function saveVariantRewritePrompt(prompt: string) {
+  const { data } = await api.put<{ prompt: string }>('/api/settings/variant-rewrite-prompt', {
+    prompt,
+  })
   return data
 }

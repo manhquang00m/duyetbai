@@ -7,9 +7,6 @@ import {
   Upload,
   Loader2,
   ShieldCheck,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
 } from 'lucide-react'
 import {
   importShopee,
@@ -19,59 +16,27 @@ import {
   batchStreamUrl,
   exportShopeeUrl,
   exportPostsUrl,
+  SHOPEE_LINK_STATUS_LABEL,
   type ShopeeLinkRow,
   type JobState,
   type ShopeeLinkCheckResult,
+  type ShopeeLinkStatus,
 } from '@/lib/api'
+import { LinkStatusBadge, ShopeeItemIcon } from '@/components/LinkStatusBadge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
-
-function LinkStatusBadge({ status, message }: { status: ShopeeLinkRow['link_status']; message: string | null }) {
-  if (status === 'available')
-    return (
-      <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        Còn hàng
-      </span>
-    )
-  if (status === 'unavailable')
-    return (
-      <span
-        className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400"
-        title={message ?? undefined}
-      >
-        Hết hàng/lỗi
-      </span>
-    )
-  if (status === 'unknown')
-    return (
-      <span
-        className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
-        title={message ?? undefined}
-      >
-        Không rõ
-      </span>
-    )
-  return (
-    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      Chưa kiểm tra
-    </span>
-  )
-}
-
-function ShopeeItemIcon({ status }: { status?: 'available' | 'unavailable' | 'unknown' }) {
-  if (status === 'available') return <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-  if (status === 'unavailable') return <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-  return <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-}
 
 /** Panel tien trinh kiem tra link Shopee: progress bar + tung link kem log chi tiet tung buoc. */
 function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boolean }) {
   const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
-  const availableCount = job.items.filter((it) => it.shopeeStatus === 'available').length
-  const doneCount = job.items.length
+  const badCount = job.items.filter(
+    (it) => it.shopeeStatus === 'dead' || it.shopeeStatus === 'out_of_stock',
+  ).length
+  const reviewCount = job.items.filter((it) => it.shopeeStatus === 'unknown').length
   const pendingUrls = [...new Set(job.logs.map((l) => l.url))].filter(
     (url) => !job.items.some((it) => it.url === url),
   )
@@ -84,7 +49,7 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
             {checking ? 'Đang kiểm tra' : 'Hoàn tất'} {job.done}/{job.total}
           </span>
           <span className="text-muted-foreground">
-            {availableCount} còn hàng / {doneCount - availableCount} hết hàng-không rõ
+            {badCount} link hỏng / {reviewCount} cần xem lại
           </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -166,6 +131,8 @@ export function ShopeePage() {
   const [checkJob, setCheckJob] = useState<JobState | null>(null)
   const [checking, setChecking] = useState(false)
   const [sel, setSel] = useState<Set<number>>(new Set())
+  // 'unchecked' = chua kiem tra bao gio (link_status con trong)
+  const [statusFilter, setStatusFilter] = useState<ShopeeLinkStatus | 'all' | 'unchecked'>('all')
   const esRef = useRef<EventSource | null>(null)
 
   const [adhocLink, setAdhocLink] = useState('')
@@ -194,9 +161,11 @@ export function ShopeePage() {
             es.close()
             esRef.current = null
             setChecking(false)
-            const failed = d.job.items.filter((it) => !it.ok).length
-            if (failed > 0) toast.warning(`Kiểm tra xong: ${failed} link hết hàng/lỗi`)
-            else toast.success('Tất cả link còn hàng')
+            const bad = d.job.items.filter(
+              (it) => it.shopeeStatus === 'dead' || it.shopeeStatus === 'out_of_stock',
+            ).length
+            if (bad > 0) toast.warning(`Kiểm tra xong: ${bad} link chết/hết hàng`)
+            else toast.success('Kiểm tra xong, không thấy link hỏng')
           }
         }
         es.onerror = () => {
@@ -229,8 +198,16 @@ export function ShopeePage() {
     e.target.value = ''
   }
 
-  const rows = links ?? []
-  const updated = rows.filter((r) => r.new_link).length
+  const allRows = links ?? []
+  const updated = allRows.filter((r) => r.new_link).length
+  const uncheckedCount = allRows.filter((r) => !r.link_status).length
+
+  const rows =
+    statusFilter === 'all'
+      ? allRows
+      : allRows.filter((r) =>
+          statusFilter === 'unchecked' ? !r.link_status : r.link_status === statusFilter,
+        )
 
   const allChecked = rows.length > 0 && rows.every((r) => sel.has(r.id))
   const someChecked = rows.some((r) => sel.has(r.id)) && !allChecked
@@ -250,14 +227,11 @@ export function ShopeePage() {
       return next
     })
   }
-  const selectedNewLinkIds = rows.filter((r) => sel.has(r.id) && r.new_link).map((r) => r.id)
+  const selectedIds = rows.filter((r) => sel.has(r.id)).map((r) => r.id)
 
   const runSelectedCheck = () => {
-    if (selectedNewLinkIds.length === 0) {
-      toast.error('Các dòng đã chọn chưa có link mới để kiểm tra')
-      return
-    }
-    runLinkCheck(selectedNewLinkIds)
+    if (selectedIds.length === 0) return
+    runLinkCheck(selectedIds)
   }
 
   const runAdhocCheck = async () => {
@@ -351,22 +325,41 @@ export function ShopeePage() {
           <h2 className="text-lg font-semibold">Link Shopee</h2>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              {updated}/{rows.length} đã có link mới
+              {updated}/{allRows.length} đã có link mới
+              {uncheckedCount > 0 && ` · ${uncheckedCount} chưa kiểm tra`}
             </span>
-            {selectedNewLinkIds.length > 0 && (
+            <SingleFilterDropdown
+              label="Tình trạng"
+              value={statusFilter}
+              onChange={(v) => {
+                setStatusFilter(v as ShopeeLinkStatus | 'all' | 'unchecked')
+                setSel(new Set()) // bo chon cu de khong lo kiem tra nham dong da bi loc di
+              }}
+              options={[
+                { value: 'all', label: 'Tất cả' },
+                { value: 'unchecked', label: 'Chưa kiểm tra' },
+                { value: 'available', label: SHOPEE_LINK_STATUS_LABEL.available },
+                { value: 'dead', label: SHOPEE_LINK_STATUS_LABEL.dead },
+                { value: 'out_of_stock', label: SHOPEE_LINK_STATUS_LABEL.out_of_stock },
+                { value: 'unknown', label: SHOPEE_LINK_STATUS_LABEL.unknown },
+              ]}
+            />
+            {selectedIds.length > 0 && (
               <Button size="sm" variant="outline" onClick={runSelectedCheck} disabled={checking}>
                 {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                Kiểm tra đã chọn ({selectedNewLinkIds.length})
+                Kiểm tra đã chọn ({selectedIds.length})
               </Button>
             )}
             <Button
               size="sm"
               variant="outline"
-              onClick={() => runLinkCheck()}
+              onClick={() => runLinkCheck(statusFilter === 'all' ? undefined : rows.map((r) => r.id))}
               disabled={checking || rows.length === 0}
             >
               {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              Kiểm tra tất cả
+              {statusFilter === 'all'
+                ? 'Kiểm tra tất cả'
+                : `Kiểm tra ${rows.length} link đang lọc`}
             </Button>
           </div>
         </div>
@@ -473,7 +466,9 @@ export function ShopeePage() {
                 {rows.length === 0 && (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Chưa có link shopee nào.
+                      {allRows.length === 0
+                        ? 'Chưa có link shopee nào.'
+                        : 'Không có link nào khớp bộ lọc.'}
                     </td>
                   </tr>
                 )}

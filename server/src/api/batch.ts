@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { startBatchJob, getJob, subscribe } from '../services/jobs';
 import { listCollectHistory, removeCollectHistory } from '../db/history';
+import { ACCOUNT_TOPICS } from '../db/accountTopics';
 
 const router = Router();
 
-// POST /api/batch  { urls: string[] }
+const ACCOUNT_TOPICS_SET = new Set<string>(ACCOUNT_TOPICS);
+
+// POST /api/batch  { urls: string[], urlTopics?: Record<string, string> }
 router.post('/', (req, res) => {
   const raw = Array.isArray(req.body?.urls) ? req.body.urls : [];
   const urls = raw.map((u: unknown) => String(u).trim()).filter((u: string) => u && !u.startsWith('#'));
@@ -13,7 +16,20 @@ router.post('/', (req, res) => {
     return;
   }
   const force = Boolean(req.body?.force);
-  const job = startBatchJob(urls, force);
+
+  // url (da trim, khop dung key trong `urls` o tren) -> chu de gan cho TAC GIA cua url do khi
+  // cao xong. Loc bo gia tri khong nam trong ACCOUNT_TOPICS - an toan du client co gui sai.
+  const rawTopics = req.body?.urlTopics;
+  let urlTopics: Record<string, string> | undefined;
+  if (rawTopics && typeof rawTopics === 'object') {
+    urlTopics = {};
+    for (const [url, topic] of Object.entries(rawTopics as Record<string, unknown>)) {
+      const t = String(topic ?? '').trim();
+      if (t && ACCOUNT_TOPICS_SET.has(t)) urlTopics[url.trim()] = t;
+    }
+  }
+
+  const job = startBatchJob(urls, force, urlTopics);
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 

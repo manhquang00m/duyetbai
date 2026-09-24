@@ -1,15 +1,5 @@
 import { db } from './index';
-
-/** 1 proxy chi duoc gan cho toi da 1 account. */
-export class ProxyConflictError extends Error {
-  constructor(
-    public proxy: string,
-    public accountName: string,
-  ) {
-    super(`Proxy "${proxy}" đã được gán cho account "${accountName}"`);
-    this.name = 'ProxyConflictError';
-  }
-}
+import { renameInDistributionHistory } from './postingTopics';
 
 export interface Account {
   id: number;
@@ -22,6 +12,9 @@ export interface Account {
   gmail_password: string | null;
   proxy: string | null;
   platform: string | null; // 'Stable' | 'Global'
+  proxy_type: string | null; // cot J file import, xem db/accountEnums.ts
+  appeal_status: string | null; // cot K file import
+  note: string | null; // cot L file import
   created_at: string;
   proxy_status?: string | null; // 'live' | 'die' | null - lay tu bang proxies (chi co trong listAccounts)
   proxy_checked_at?: string | null;
@@ -37,11 +30,14 @@ export interface AccountInput {
   gmail_password?: string | null;
   proxy?: string | null;
   platform?: string | null;
+  proxy_type?: string | null;
+  appeal_status?: string | null;
+  note?: string | null;
   created_at?: string;
 }
 
 const ACCOUNT_COLUMNS =
-  'id, name, active, banned, device, pass_threads, gmail, gmail_password, proxy, platform, created_at';
+  'id, name, active, banned, device, pass_threads, gmail, gmail_password, proxy, platform, proxy_type, appeal_status, note, created_at';
 
 const insAccount = db.prepare(
   'INSERT OR IGNORE INTO accounts (name, active, created_at) VALUES (?, 1, ?)',
@@ -77,8 +73,8 @@ export function listAccounts(): Account[] {
   return db
     .prepare(
       `SELECT a.id, a.name, a.active, a.banned, a.device, a.pass_threads, a.gmail,
-              a.gmail_password, a.proxy, a.platform, a.created_at,
-              p.status AS proxy_status, p.checked_at AS proxy_checked_at
+              a.gmail_password, a.proxy, a.platform, a.proxy_type, a.appeal_status, a.note,
+              a.created_at, p.status AS proxy_status, p.checked_at AS proxy_checked_at
          FROM accounts a
          LEFT JOIN proxies p ON p.proxy = a.proxy
         ORDER BY a.id`,
@@ -102,27 +98,13 @@ export function getAccountByName(name: string): Account | null {
   );
 }
 
-/** Account khac (neu co) dang gan proxy nay. */
-export function getAccountByProxy(proxy: string, excludeId?: number): Account | null {
-  const row =
-    excludeId != null
-      ? db
-          .prepare(`SELECT ${ACCOUNT_COLUMNS} FROM accounts WHERE proxy = ? AND id <> ?`)
-          .get(proxy, excludeId)
-      : db.prepare(`SELECT ${ACCOUNT_COLUMNS} FROM accounts WHERE proxy = ?`).get(proxy);
-  return (row as Account | undefined) ?? null;
-}
-
-/** Tao 1 account day du (dung cho form "Them" tren UI). Loi neu name da ton tai hoac proxy da bi chiem. */
+/** Tao 1 account day du (dung cho form "Them" tren UI). Loi neu name da ton tai. */
 export function createAccount(input: AccountInput): Account {
   const proxy = input.proxy?.trim() || null;
-  if (proxy) {
-    const conflict = getAccountByProxy(proxy);
-    if (conflict) throw new ProxyConflictError(proxy, conflict.name);
-  }
   db.prepare(
-    `INSERT INTO accounts (name, active, banned, device, pass_threads, gmail, gmail_password, proxy, platform, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO accounts (name, active, banned, device, pass_threads, gmail, gmail_password, proxy,
+                           platform, proxy_type, appeal_status, note, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     input.name,
     input.active === false ? 0 : 1,
@@ -133,17 +115,27 @@ export function createAccount(input: AccountInput): Account {
     input.gmail_password ?? null,
     proxy,
     input.platform ?? null,
+    input.proxy_type ?? null,
+    input.appeal_status ?? null,
+    input.note ?? null,
     input.created_at || new Date().toISOString(),
   );
   return getAccountByName(input.name)!;
 }
 
-/** Cap nhat tung phan (chi ghi de field co mat trong patch). Loi neu doi sang proxy da bi account khac gan. */
+/** Cap nhat tung phan (chi ghi de field co mat trong patch). */
 export function updateAccount(id: number, patch: Partial<AccountInput>): Account | null {
   const fields: string[] = [];
   const args: unknown[] = [];
 
+  // Lich su chong trung cua "Phan phoi bai" khoa theo TEN account (snapshot). Doi ten ma khong
+  // keo theo la account do duoc phat lai toan bo bai cu -> pha luat "1 account khong nhan lai
+  // 1 bai". Phai lam TRUOC khi UPDATE de con doc duoc ten cu.
   if (patch.name !== undefined) {
+    const before = getAccount(id);
+    if (before && before.name !== patch.name) {
+      renameInDistributionHistory(before.name, patch.name);
+    }
     fields.push('name = ?');
     args.push(patch.name);
   }
@@ -175,14 +167,22 @@ export function updateAccount(id: number, patch: Partial<AccountInput>): Account
     fields.push('platform = ?');
     args.push(patch.platform);
   }
+  if (patch.proxy_type !== undefined) {
+    fields.push('proxy_type = ?');
+    args.push(patch.proxy_type);
+  }
+  if (patch.appeal_status !== undefined) {
+    fields.push('appeal_status = ?');
+    args.push(patch.appeal_status);
+  }
+  if (patch.note !== undefined) {
+    fields.push('note = ?');
+    args.push(patch.note);
+  }
   if (patch.proxy !== undefined) {
-    const proxy = patch.proxy?.trim() || null;
-    if (proxy) {
-      const conflict = getAccountByProxy(proxy, id);
-      if (conflict) throw new ProxyConflictError(proxy, conflict.name);
-    }
+    // 1 proxy duoc phep dung chung cho nhieu account -> khong con kiem tra trung.
     fields.push('proxy = ?');
-    args.push(proxy);
+    args.push(patch.proxy?.trim() || null);
   }
   if (patch.created_at !== undefined) {
     fields.push('created_at = ?');
@@ -202,27 +202,15 @@ export function removeAccount(id: number): void {
 
 export interface UpsertAccountResult {
   action: 'inserted' | 'updated';
-  /** Neu proxy trong file bi 1 account KHAC dang gan -> bo qua proxy dong nay, tra ten account dang giu. */
-  proxyConflictWith?: string;
 }
 
 /**
  * Upsert theo "name" (= Profile) - dung cho import Excel.
  * Profile da co -> ghi de toan bo field cung cap; chua co -> them moi.
- * Proxy trung voi account khac -> KHONG gan (bo qua field proxy dong nay), khong lam hong ca dong.
  */
 export function upsertAccount(input: AccountInput): UpsertAccountResult {
   const existing = getAccountByName(input.name);
-  let proxy = input.proxy?.trim() || null;
-  let proxyConflictWith: string | undefined;
-
-  if (proxy) {
-    const conflict = getAccountByProxy(proxy, existing?.id);
-    if (conflict) {
-      proxyConflictWith = conflict.name;
-      proxy = null;
-    }
-  }
+  const proxy = input.proxy?.trim() || null;
 
   if (existing) {
     updateAccount(existing.id, {
@@ -233,10 +221,13 @@ export function upsertAccount(input: AccountInput): UpsertAccountResult {
       gmail_password: input.gmail_password,
       proxy,
       platform: input.platform,
+      proxy_type: input.proxy_type,
+      appeal_status: input.appeal_status,
+      note: input.note,
       created_at: input.created_at,
     });
-    return { action: 'updated', proxyConflictWith };
+    return { action: 'updated' };
   }
   createAccount({ ...input, proxy });
-  return { action: 'inserted', proxyConflictWith };
+  return { action: 'inserted' };
 }

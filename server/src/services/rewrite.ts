@@ -50,7 +50,8 @@ export function getRewritePrompt(): string {
 const URL_RE = /https?:\/\/\S+/gi;
 const PLACEHOLDER_RE = /\[\[\s*LINK\s*(\d+)\s*\]\]/gi;
 
-function maskLinks(text: string): { masked: string; links: string[] } {
+// Dung chung boi services/postCaptionVariants.ts (viet lai caption theo bai trong DB).
+export function maskLinks(text: string): { masked: string; links: string[] } {
   const links: string[] = [];
   const masked = text.replace(URL_RE, (m) => {
     links.push(m);
@@ -59,7 +60,7 @@ function maskLinks(text: string): { masked: string; links: string[] } {
   return { masked, links };
 }
 
-function unmaskLinks(text: string, links: string[]): string {
+export function unmaskLinks(text: string, links: string[]): string {
   const restored = text.replace(PLACEHOLDER_RE, (m, idx: string) => links[Number(idx) - 1] ?? m);
   // AI co the lam rot han placeholder -> noi lai link bi thieu xuong cuoi, tha thua con hon mat link.
   const missing = links.filter((l) => !restored.includes(l));

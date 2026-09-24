@@ -55,16 +55,28 @@ export const LLM_BASE_URL =
   process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
 
 /**
- * Ten model. Google khai tu model kha nhanh (ban 2.5-flash da ngung cap cho key moi) - neu
- * bao 404 kem cau "no longer available" thi trong chinh thong bao loi co ten model thay the.
+ * Danh sach model xep theo thu tu uu tien, ngan cach bang dau phay.
+ * Het quota ngay o model dau -> tu chuyen sang model ke tiep (xem services/llm.ts).
+ * Ca hai mac dinh deu la ban Lite: 500 request/ngay, trong khi cac ban Flash chi 20/ngay.
+ * Google khai tu model kha nhanh (2.0-flash va 2.5-flash-lite da ngung) - neu bao 404 kem cau
+ * "no longer available" thi trong chinh thong bao loi co ten model thay the.
  */
-export const LLM_MODEL = process.env.LLM_MODEL || 'gemini-3.6-flash';
+export const LLM_MODELS = (process.env.LLM_MODEL || 'gemini-3.5-flash-lite,gemini-3.1-flash-lite')
+  .split(',')
+  .map((m) => m.trim())
+  .filter(Boolean);
 
 /** KHONG hardcode key o day - dien trong .env (da nam trong .gitignore). */
 export const LLM_API_KEY = process.env.LLM_API_KEY || '';
 
 /** So request AI chay song song. De thap vi free tier siet so request/phut. */
 export const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 2;
+
+/**
+ * Tran so request LLM moi phut - tu gioi han o phia minh cho khop quota nha cung cap.
+ * Ban Flash Lite hien cho 15 request/phut; de mac dinh 12 cho co bien an toan.
+ */
+export const LLM_RPM = Number(process.env.LLM_RPM) || 12;
 
 /**
  * File luu session dang nhap Shopee (cookie/localStorage) - tao boi script `npm run shopee:login`,

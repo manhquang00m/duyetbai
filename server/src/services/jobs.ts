@@ -7,10 +7,13 @@ import { rescrapeComments } from './pipeline';
 import { closeBrowser, closeShopeeBrowser } from './browser';
 import { beautifyVideo, type BeautifyConfig } from './beautify';
 import { checkProxy } from './proxyCheck';
+import { saveProxies } from '../db/proxies';
 import { getPostBrief, getVideoMedia, getShopeeCheckTargets } from '../db/queries';
 import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/repository';
 import { checkShopeeLink } from './shopeeLinkCheck';
 import { listRows, rewriteRow } from './rewrite';
+import { listMissingPostIds, generateVariantsForPost } from './postCaptionVariants';
+import { setAccountTopics } from '../db/accountTopics';
 import { withRetry } from '../utils/retry';
 import { DOWNLOAD_DIR, LLM_CONCURRENCY } from '../config';
 
@@ -62,8 +65,17 @@ function newJob(total: number): JobState {
   return job;
 }
 
-/** Batch tai media + scrape. force=true de cao lai ca bai da co. */
-export function startBatchJob(urls: string[], force = false): JobState {
+/**
+ * Batch tai media + scrape. force=true de cao lai ca bai da co.
+ * urlTopics (url -> chu de): gan chu de theo TAC GIA ngay khi bai cua url do cao xong thanh cong
+ * (ke ca khi item.skipped vi da tai roi - van biet duoc username qua getPostBrief trong batch.ts).
+ * Dung lai nguyen setAccountTopics() (da tu validate topic + upsert) - xem db/accountTopics.ts.
+ */
+export function startBatchJob(
+  urls: string[],
+  force = false,
+  urlTopics?: Record<string, string>,
+): JobState {
   const job = newJob(urls.length);
   void (async () => {
     try {
@@ -72,6 +84,10 @@ export function startBatchJob(urls: string[], force = false): JobState {
         onProgress: (item, done) => {
           job.done = done;
           job.items.push(item);
+          const topic = urlTopics?.[item.url];
+          if (item.ok && item.username && topic) {
+            setAccountTopics([{ username: item.username, topic }]);
+          }
           emit(job.id, { type: 'progress', job, item });
         },
         onLog: (url, message) => {
@@ -170,6 +186,9 @@ export function startProxyCheckJob(proxies: string[]): JobState {
             };
             log('Đang kiểm tra...');
             const result = await checkProxy(proxy);
+            // Luu thang vao kho proxy: truoc day job chi bao ket qua len UI, nguoi dung phai bam
+            // "Luu tat ca" thi moi vao DB - dong popup giua chung la mat sach ket qua vua cho.
+            saveProxies([{ proxy, status: result.status, ip: result.ip }]);
             const item: BatchItemResult = {
               url: proxy,
               ok: result.status === 'live',
@@ -197,12 +216,15 @@ export function startProxyCheckJob(proxies: string[]): JobState {
 /**
  * Kiem tra tinh trang (con hang/het hang/khong ton tai) link Shopee truoc khi xuat file dang bai.
  * Dedup theo link giong nhau de khong kiem tra lap.
- * - opts.entryIds: neu truyen -> chi kiem tra cac dong duoc chon (tick chon trong bang), va CHI xet
- *   new_link (bo qua dong chua co new_link) - dung cho nut "Kiem tra da chon".
- * - khong truyen entryIds -> kiem tra TOAN BO, uu tien new_link, fallback link goc - nut "Kiem tra tat ca".
+ * Luon kiem tra LINK GOC (xem getShopeeCheckTargets).
+ * - opts.entryIds: chi kiem tra cac dong duoc tick chon trong bang - nut "Kiem tra da chon".
+ * - opts.postIds: chi kiem tra link cua cac bai da chon - nut "Kiem tra link Shopee" o trang Bai viet.
+ * - khong truyen gi -> kiem tra TOAN BO - nut "Kiem tra tat ca".
  */
-export function startShopeeLinkCheckJob(opts: { entryIds?: number[] } = {}): JobState {
-  const rows = getShopeeCheckTargets({ entryIds: opts.entryIds, newLinkOnly: !!opts.entryIds });
+export function startShopeeLinkCheckJob(
+  opts: { entryIds?: number[]; postIds?: string[] } = {},
+): JobState {
+  const rows = getShopeeCheckTargets({ entryIds: opts.entryIds, postIds: opts.postIds });
   const byTarget = new Map<string, { id: number; post_id: string }[]>();
   for (const r of rows) {
     if (!byTarget.has(r.target)) byTarget.set(r.target, []);
@@ -276,6 +298,43 @@ export function startRewriteJob(batchId: string): JobState {
               ? { url: label, ok: true, caption: r.text }
               : { url: label, ok: false, error: r.error };
             const l = { url: label, message: r.ok ? 'Đã viết lại' : `LỖI: ${r.error}` };
+            job.logs.push(l);
+            emit(job.id, { type: 'log', job, log: l });
+            job.done++;
+            job.items.push(item);
+            emit(job.id, { type: 'progress', job, item });
+          }),
+        ),
+      );
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/**
+ * Viet lai VARIANT_COUNT ban caption cho tung bai trong danh sach (mac dinh: bai chua du ban trong
+ * kho phan phoi). Dung cho the "Viet lai caption kho bai" o trang Phan phoi bai.
+ */
+export function startCaptionVariantJob(postIds?: string[]): JobState {
+  const ids = postIds && postIds.length > 0 ? postIds : listMissingPostIds();
+  const job = newJob(ids.length);
+  void (async () => {
+    try {
+      const limit = pLimit(LLM_CONCURRENCY);
+      await Promise.all(
+        ids.map((postId) =>
+          limit(async () => {
+            const r = await generateVariantsForPost(postId, true);
+            const item: BatchItemResult = r.ok
+              ? { url: postId, ok: true }
+              : { url: postId, ok: false, error: r.error };
+            const l = { url: postId, message: r.ok ? 'Đã viết lại' : `LỖI: ${r.error}` };
             job.logs.push(l);
             emit(job.id, { type: 'log', job, log: l });
             job.done++;

@@ -1,22 +1,25 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Play, Save, Trash2, RefreshCw, Search, Copy } from 'lucide-react'
+import { Loader2, Play, Save, Trash2, RefreshCw, Search, Copy, Pencil } from 'lucide-react'
 import {
   checkProxies,
   fetchProxies,
   saveProxies,
   deleteProxy,
   recheckProxy,
+  PROXY_TYPES,
+  type SaveProxyItem,
   type ProxyCheckResult,
+  type ProxyType,
   type SavedProxy,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { ProxyEditDialog } from '@/components/ProxyEditDialog'
 import { cn } from '@/lib/utils'
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -39,6 +42,10 @@ export function ProxyPage() {
   const qc = useQueryClient()
   const [text, setText] = useState('')
   const [results, setResults] = useState<ProxyCheckResult[]>([])
+  // Loai proxy + ghi chu ap cho CA LO vua dan (nhap 1 lan thay vi go lai tung dong).
+  const [importType, setImportType] = useState<ProxyType | ''>('')
+  const [importNote, setImportNote] = useState('')
+  const [editing, setEditing] = useState<SavedProxy | null>(null)
 
   const { data: saved } = useQuery({ queryKey: ['proxies'], queryFn: fetchProxies })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['proxies'] })
@@ -64,10 +71,10 @@ export function ProxyPage() {
         if (savedStatusFilter === 'die' && p.status !== 'die') return false
         if (savedStatusFilter === 'unchecked' && p.status) return false
       }
-      if (assignFilter === 'assigned' && !p.account_names) return false
-      if (assignFilter === 'unassigned' && p.account_names) return false
+      if (assignFilter === 'assigned' && p.account_count === 0) return false
+      if (assignFilter === 'unassigned' && p.account_count > 0) return false
       if (q) {
-        const hay = `${p.proxy} ${p.account_names ?? ''}`.toLowerCase()
+        const hay = `${p.proxy} ${p.account_names ?? ''} ${p.proxy_type ?? ''} ${p.note ?? ''}`.toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true
@@ -85,7 +92,7 @@ export function ProxyPage() {
   })
 
   const saveMut = useMutation({
-    mutationFn: (items: { proxy: string; status?: string; ip?: string }[]) => saveProxies(items),
+    mutationFn: (items: SaveProxyItem[]) => saveProxies(items),
     onSuccess: () => {
       invalidate()
       toast.success('Đã lưu')
@@ -209,7 +216,13 @@ export function ProxyPage() {
   // Luu TOAN BO ket qua da kiem tra (ca Live lan Die) - proxy Die khong bi bo/xoa vi sau nay kiem
   // tra lai co the da Live tro lai (xem tab "Proxy Die" ben duoi).
   const saveAllChecked = () => {
-    const items = results.map((r) => ({ proxy: r.proxy, status: r.status, ip: r.ip }))
+    const items = results.map((r) => ({
+      proxy: r.proxy,
+      status: r.status,
+      ip: r.ip,
+      proxy_type: importType || null,
+      note: importNote.trim() || null,
+    }))
     if (items.length === 0) {
       toast.error('Không có proxy để lưu')
       return
@@ -234,6 +247,36 @@ export function ProxyPage() {
         rows={5}
         disabled={checkMut.isPending}
       />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Loại proxy (áp cho cả lô vừa dán)
+          </label>
+          <select
+            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={importType}
+            onChange={(e) => setImportType(e.target.value as ProxyType | '')}
+          >
+            <option value="">— Không đặt —</option>
+            {PROXY_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Ghi chú (áp cho cả lô)
+          </label>
+          <Input
+            value={importNote}
+            onChange={(e) => setImportNote(e.target.value)}
+            placeholder="vd: mua ngày 20/09, hạn 1 tháng"
+          />
+        </div>
+      </div>
 
       <div className="flex gap-2">
         <Button onClick={runCheck} disabled={checkMut.isPending}>
@@ -386,6 +429,8 @@ export function ProxyPage() {
                 <th className="p-3 text-left font-medium">Proxy</th>
                 <th className="p-3 text-left font-medium">Trạng thái</th>
                 <th className="p-3 text-left font-medium">Exit IP</th>
+                <th className="p-3 text-left font-medium">Loại proxy</th>
+                <th className="p-3 text-left font-medium">Ghi chú</th>
                 <th className="p-3 text-left font-medium">Account đang dùng</th>
                 <th className="p-3 text-center font-medium"></th>
               </tr>
@@ -403,9 +448,50 @@ export function ProxyPage() {
                       <StatusBadge status={p.status} />
                     </td>
                     <td className="p-3 text-muted-foreground">{p.ip ?? '—'}</td>
-                    <td className="p-3 text-muted-foreground">{p.account_names || '—'}</td>
+                    <td className="max-w-[11rem] p-3 text-xs text-muted-foreground">
+                      <span className="block truncate" title={p.proxy_type ?? undefined}>
+                        {p.proxy_type || '—'}
+                      </span>
+                    </td>
+                    <td className="max-w-[12rem] p-3 text-xs text-muted-foreground">
+                      <span className="block truncate" title={p.note ?? undefined}>
+                        {p.note || '—'}
+                      </span>
+                    </td>
+                    <td className="max-w-[18rem] p-3">
+                      {p.account_count > 0 ? (
+                        <div className="space-y-0.5">
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+                              p.account_count > 1
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+                                : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            {p.account_count} account
+                          </span>
+                          <div
+                            className="truncate text-xs text-muted-foreground"
+                            title={p.account_names ?? undefined}
+                          >
+                            {p.account_names}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Chưa gán</span>
+                      )}
+                    </td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditing(p)}
+                          title="Sửa proxy"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -438,7 +524,7 @@ export function ProxyPage() {
               })}
               {filteredSaved.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
                     {(saved ?? []).length === 0
                       ? 'Chưa lưu proxy nào.'
                       : 'Không có proxy khớp bộ lọc.'}
@@ -476,6 +562,12 @@ export function ProxyPage() {
           </Button>
         </div>
       )}
+      <ProxyEditDialog
+        proxy={editing}
+        onClose={() => setEditing(null)}
+        onSaved={invalidate}
+      />
+
     </div>
   )
 }

@@ -15,6 +15,10 @@ export interface PostListItem {
   shopee_count: number; // so link da luu (1 comment nhieu link -> nhieu dong)
   distinct_comment_count: number; // so comment THUC su khac nhau (dung de hien thi "X cmt shopee")
   new_count: number; // so link shopee da co new_link (da update)
+  dead_link_count: number; // so link da kiem tra va thay khong con ton tai
+  oos_link_count: number; // so link con song nhung san pham het hang
+  unknown_link_count: number; // so link kiem tra khong ra ket luan (Shopee chan) -> can xem lai
+  checked_link_count: number; // so link da kiem tra (bat ke ket qua)
   shopee_comment_count: number | null; // so comment (chu bai) co link shopee - lay tu scrape, co the lech neu re-scrape chua chay
   comment: string | null; // comment shopee dau tien (ngan gon)
   thumb: string | null; // duong dan tuong doi trong /media, vd post_X/img/image.jpg
@@ -23,12 +27,31 @@ export interface PostListItem {
   exported_at: string | null;
   posted_at: string | null;
   topic: string | null; // chu de gan theo tac gia (username), xem account_topics
+  variant_count: number; // so ban caption AI da viet lai (0..3), xem post_caption_variants
 }
 
 // Dieu kien "co it nhat 1 file video/anh tai thanh cong" cho 1 bai - dung chung cho filter danh
 // sach (listPosts) va filter khi xuat file (exporter.ts).
 export const HAS_VIDEO = "EXISTS (SELECT 1 FROM media m WHERE m.post_id = p.post_id AND m.type = 'video' AND m.ok = 1)";
 export const HAS_IMAGE = "EXISTS (SELECT 1 FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1)";
+
+/**
+ * Bai "SACH" - du dieu kien dem di phan phoi: co it nhat 1 link Shopee, VA moi link deu vua
+ * (a) da kiem tra ra 'available' vua (b) da co new_link.
+ *
+ * Ve (b) BAT BUOC phai co, dung bo di cho gon: buildComment() fallback ve link GOC khi thieu
+ * new_link (services/postExportFields.ts), nen bai lot qua se duoc dang bang link KHONG CO
+ * affiliate - mat tien ma khong ai biet.
+ */
+export const CLEAN_POST_COND = `(
+  EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id)
+  AND NOT EXISTS (
+    SELECT 1 FROM shopee_entries s
+     WHERE s.post_id = p.post_id
+       AND (s.link_status IS NULL OR s.link_status <> 'available'
+            OR s.new_link IS NULL OR s.new_link = '')
+  )
+)`;
 
 /**
  * Bo loc DUNG CHUNG cho danh sach bai (listPosts) VA xuat file (exportPosts/getExportWarnings) -
@@ -43,7 +66,26 @@ export interface PostFilterOpts {
   postStatus?: 'unposted' | 'posted';
   mediaFilter?: 'complete' | 'missing';
   topics?: string[]; // loc theo chu de gan cho tac gia (account_topics.topic) - chon nhieu (OR)
+  linkStatus?: LinkStatusFilter; // loc theo tinh trang link Shopee da kiem tra
+  cleanOnly?: boolean; // chi bai du dieu kien phan phoi, xem CLEAN_POST_COND
+  rewritten?: 'yes' | 'no'; // da/chua du 3 ban caption AI, xem post_caption_variants
+  scrapedFrom?: string; // 'YYYY-MM-DD' - loc theo scraped_at (thoi diem THU THAP), khong phai post_date
+  scrapedTo?: string; // 'YYYY-MM-DD', bao gom ca ngay nay
 }
+
+/**
+ * Loc bai theo ket qua kiem tra link Shopee. Deu la "co IT NHAT 1 link o trang thai do",
+ * vi 1 bai co the co nhieu link - chi can 1 link hong la bai do can xem lai.
+ */
+export type LinkStatusFilter = 'bad' | 'dead' | 'out_of_stock' | 'review' | 'unchecked';
+
+const LINK_STATUS_CONDS: Record<LinkStatusFilter, string> = {
+  bad: "s.link_status IN ('dead', 'out_of_stock')",
+  dead: "s.link_status = 'dead'",
+  out_of_stock: "s.link_status = 'out_of_stock'",
+  review: "s.link_status = 'unknown'",
+  unchecked: 's.link_status IS NULL',
+};
 
 export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; args: unknown[] } {
   const conds: string[] = [];
@@ -79,11 +121,38 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
   } else if (opts.mediaFilter === 'missing') {
     conds.push(`NOT (${HAS_VIDEO} AND ${HAS_IMAGE})`);
   }
+  if (opts.linkStatus) {
+    conds.push(
+      `EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND ${LINK_STATUS_CONDS[opts.linkStatus]})`,
+    );
+  }
   if (opts.topics && opts.topics.length > 0) {
     // Subquery (khong phai JOIN) de dung duoc ca trong cau COUNT(*) khong co JOIN account_topics.
     const placeholders = opts.topics.map(() => '?').join(', ');
     conds.push(`p.username IN (SELECT username FROM account_topics WHERE topic IN (${placeholders}))`);
     args.push(...opts.topics);
+  }
+  if (opts.cleanOnly) {
+    conds.push(CLEAN_POST_COND);
+  }
+  if (opts.rewritten === 'yes') {
+    // 3 = VARIANT_COUNT (services/postCaptionVariants.ts) - hardcode o day de tranh vong lap
+    // import nguoc tu db/ sang services/.
+    conds.push(
+      '(SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) >= 3',
+    );
+  } else if (opts.rewritten === 'no') {
+    conds.push('(SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) < 3');
+  }
+  // scraped_at luu dang ISO UTC ("...Z") - quy doi ve gio VN (+7) truoc khi lay ngay, tranh
+  // lech 1 ngay voi bai thu thap buoi toi (tuong tu bug da gap voi toISOString() o cho khac).
+  if (opts.scrapedFrom) {
+    conds.push("date(p.scraped_at, '+7 hours') >= ?");
+    args.push(opts.scrapedFrom);
+  }
+  if (opts.scrapedTo) {
+    conds.push("date(p.scraped_at, '+7 hours') <= ?");
+    args.push(opts.scrapedTo);
   }
   return { conds, args };
 }
@@ -97,6 +166,15 @@ const SELECT_LIST = `
          (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
             AND s.new_link IS NOT NULL AND s.new_link <> '') AS new_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
+            AND s.link_status = 'dead') AS dead_link_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
+            AND s.link_status = 'out_of_stock') AS oos_link_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
+            AND s.link_status = 'unknown') AS unknown_link_count,
+         (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
+            AND s.link_status IS NOT NULL) AS checked_link_count,
+         (SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) AS variant_count,
          (SELECT comment FROM shopee_entries s WHERE s.post_id = p.post_id
             ORDER BY id LIMIT 1) AS comment,
          (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1
@@ -201,11 +279,12 @@ export function getStats() {
  * - notUpdated: bai co link shopee nhung chua duoc cap nhat link moi (new_link trong)
  * - multiComment: bai co > 1 comment (cua tac gia) chua link shopee -> file chi xuat 1 comment
  *   (comment som nhat), co the sot link cua cac comment con lai.
- * - unavailable: bai co link da kiem tra va phat hien het hang/khong ton tai (chua chac da kiem tra het).
+ * - badLink: bai co link da kiem tra va phat hien link chet/het hang (chua chac da kiem tra het).
+ * - unknownLink: bai co link kiem tra khong ra ket luan (bi Shopee chan) - can xem lai thu cong.
  */
 export function getExportWarnings(
   opts: PostFilterOpts = {},
-): { notUpdated: number; multiComment: number; unavailable: number } {
+): { notUpdated: number; multiComment: number; badLink: number; unknownLink: number } {
   const { conds: baseConds, args } = buildPostFilterConds(opts);
   const withExtra = (extraCond: string) =>
     `SELECT COUNT(*) AS n FROM posts p WHERE ${[...baseConds, extraCond].join(' AND ')}`;
@@ -217,9 +296,14 @@ export function getExportWarnings(
       ),
     ),
     multiComment: n(withExtra('p.shopee_comment_count > 1')),
-    unavailable: n(
+    badLink: n(
       withExtra(
-        "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND s.link_status = 'unavailable')",
+        "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND s.link_status IN ('dead', 'out_of_stock'))",
+      ),
+    ),
+    unknownLink: n(
+      withExtra(
+        "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND s.link_status = 'unknown')",
       ),
     ),
   };
@@ -233,20 +317,25 @@ export interface ShopeeCheckTarget {
 
 /**
  * Danh sach link Shopee can kiem tra.
- * - newLinkOnly=true: CHI xet new_link (bo qua dong chua co new_link) - dung khi nguoi dung tu
- *   tick chon dong trong bang de kiem tra rieng link moi.
- * - mac dinh (false): uu tien new_link, fallback link goc neu chua co - dung cho nut "kiem tra tat ca".
+ * LUON kiem tra link GOC (cot link), khong kiem tra new_link: link moi chi la ban affiliate cua
+ * cung mot san pham nen trang thai con hang/het hang y het nhau - kiem tra link goc la du, va
+ * chay duoc ca voi dong chua kip co link moi.
  * - entryIds: neu truyen vao, chi lay trong danh sach id nay (kiem tra theo lua chon).
+ * - postIds: neu truyen vao, chi lay link cua cac bai nay - dung cho nut kiem tra o trang Bai viet.
  */
 export function getShopeeCheckTargets(
-  opts: { entryIds?: number[]; newLinkOnly?: boolean } = {},
+  opts: { entryIds?: number[]; postIds?: string[] } = {},
 ): ShopeeCheckTarget[] {
-  const targetExpr = opts.newLinkOnly ? 'new_link' : "COALESCE(NULLIF(new_link, ''), link)";
+  const targetExpr = 'link';
   const conds = [`${targetExpr} IS NOT NULL`, `${targetExpr} <> ''`];
   const args: unknown[] = [];
   if (opts.entryIds && opts.entryIds.length > 0) {
     conds.push(`id IN (${opts.entryIds.map(() => '?').join(',')})`);
     args.push(...opts.entryIds);
+  }
+  if (opts.postIds && opts.postIds.length > 0) {
+    conds.push(`post_id IN (${opts.postIds.map(() => '?').join(',')})`);
+    args.push(...opts.postIds);
   }
   return db
     .prepare(

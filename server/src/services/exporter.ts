@@ -1,12 +1,11 @@
-import path from 'node:path';
 import ExcelJS from 'exceljs';
 import { db } from '../db';
 import { listActiveAccounts } from '../db/accounts';
 import { assignAccountAndMarkExported, touchExportedAt } from '../db/repository';
 import { getSetting, setSetting } from '../db/settings';
 import { buildPostFilterConds, type PostFilterOpts } from '../db/queries';
+import { buildComment, mediaPaths } from './postExportFields';
 import { cleanSubId } from '../utils/postId';
-import { DOWNLOAD_DIR } from '../config';
 
 /**
  * Buoc 1: xuat file cho Shopee gen link moi.
@@ -32,54 +31,6 @@ export async function exportShopeeInput(
 
   await wb.xlsx.writeFile(filePath);
   return rows.length;
-}
-
-// Xoa cac doan link shopee (ke ca bi cat "…") khoi text comment.
-const SHOPEE_TOKEN_RE = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:shopee\.vn|shp\.ee)\/?\S*(?:[……]|\.\.\.)?/gi;
-
-function stripShopeeTokens(text: string): string {
-  return text.replace(SHOPEE_TOKEN_RE, ' ').replace(/\s+/g, ' ').trim();
-}
-
-const mediaFor = db.prepare(
-  'SELECT type, file FROM media WHERE post_id = ? AND ok = 1 ORDER BY id',
-);
-const entriesFor = db.prepare(
-  'SELECT comment, link, new_link FROM shopee_entries WHERE post_id = ? ORDER BY id',
-);
-
-/** Comment cuoi: giu chu (bo link cu bi cat) + noi cac link MOI xuong duoi. */
-function buildComment(postId: string): string {
-  const entries = entriesFor.all(postId) as {
-    comment: string;
-    link: string;
-    new_link: string | null;
-  }[];
-
-  const byComment = new Map<string, string[]>();
-  for (const e of entries) {
-    const link = e.new_link || e.link; // chua import thi tam dung link goc
-    if (!byComment.has(e.comment)) byComment.set(e.comment, []);
-    byComment.get(e.comment)!.push(link);
-  }
-
-  const blocks: string[] = [];
-  for (const [text, links] of byComment) {
-    const stripped = stripShopeeTokens(text);
-    const uniq = [...new Set(links)];
-    // Noi bang " \n" (khong chi "\n") de link luon co dau cach dung truoc,
-    // tranh dinh vao chu truoc do neu noi xuoi doc newline bi mat.
-    blocks.push([stripped, ...uniq].filter(Boolean).join(' \n'));
-  }
-  return blocks.join('\n\n');
-}
-
-/** Chi lay duong dan THU MUC chua video/anh (thu muc co the co nhieu file), khong liet ke tung file. */
-function mediaPaths(postId: string, type: 'video' | 'image'): string {
-  const files = mediaFor.all(postId) as { type: string; file: string }[];
-  const match = files.find((f) => f.type === type);
-  if (!match) return '';
-  return path.join(DOWNLOAD_DIR, `post_${postId}`, path.dirname(match.file));
 }
 
 /** Con tro round-robin luu trong app_settings -> gan account tiep theo, tiep tuc vong xoay giua cac lan export. */

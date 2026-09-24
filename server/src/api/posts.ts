@@ -5,7 +5,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { listPosts, getPostDetail, deletePost } from '../db/queries';
 import { markPostsPosted } from '../db/repository';
-import { startRescrapeJob, startBeautifyJob } from '../services/jobs';
+import { startRescrapeJob, startBeautifyJob, startShopeeLinkCheckJob } from '../services/jobs';
 import { BeautifyConfigSchema } from '../services/beautify';
 import { parsePostFilterQuery } from '../utils/postFilters';
 import { DOWNLOAD_DIR } from '../config';
@@ -54,6 +54,24 @@ router.post('/rescrape', (req, res) => {
     return;
   }
   const job = startRescrapeJob(postIds);
+  res.status(202).json({ jobId: job.id, total: job.total });
+});
+
+// POST /api/posts/check-shopee-links { postIds: string[] } -> kiem tra tinh trang link Shopee cua
+// cac bai da chon (job nen, xem tien trinh qua GET /api/batch/:id/stream)
+router.post('/check-shopee-links', (req, res) => {
+  const postIds = (Array.isArray(req.body?.postIds) ? req.body.postIds : [])
+    .map((s: unknown) => String(s).trim())
+    .filter(Boolean);
+  if (postIds.length === 0) {
+    res.status(400).json({ error: 'thieu postIds' });
+    return;
+  }
+  const job = startShopeeLinkCheckJob({ postIds });
+  if (job.total === 0) {
+    res.status(400).json({ error: 'Các bài đã chọn không có link Shopee nào để kiểm tra' });
+    return;
+  }
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 

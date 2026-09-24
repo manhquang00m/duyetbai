@@ -12,6 +12,7 @@ import {
   SkipForward,
   History,
   Trash2,
+  Plus,
 } from 'lucide-react'
 import {
   startBatch,
@@ -20,6 +21,7 @@ import {
   deleteCollectHistory,
   fetchMediaSourceDefault,
   setMediaSourceDefault,
+  ACCOUNT_TOPICS,
   type JobState,
   type BatchItemResult,
   type CollectHistoryRow,
@@ -200,7 +202,13 @@ function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
   )
 }
 
-function JobProgressCard({ job }: { job: JobState }) {
+function JobProgressCard({
+  job,
+  urlTopics,
+}: {
+  job: JobState
+  urlTopics?: Record<string, string>
+}) {
   const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
@@ -240,6 +248,11 @@ function JobProgressCard({ job }: { job: JobState }) {
                     <>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">@{it.username || '—'}</span>
+                        {urlTopics?.[it.url] && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            {urlTopics[it.url]}
+                          </span>
+                        )}
                         {it.skipped && (
                           <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                             đã tải rồi
@@ -297,13 +310,32 @@ function JobProgressCard({ job }: { job: JobState }) {
   )
 }
 
+interface UrlGroup {
+  id: number
+  topic: string | null
+  text: string
+}
+
 export function BatchPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<'collect' | 'history'>('collect')
-  const [text, setText] = useState('')
+  const groupIdRef = useRef(0)
+  const [groups, setGroups] = useState<UrlGroup[]>(() => [
+    { id: groupIdRef.current++, topic: null, text: '' },
+  ])
   const [running, setRunning] = useState(false)
   const [job, setJob] = useState<JobState | null>(null)
+  // Chu de theo url cua lan chay GAN NHAT - dung de hien chip chu de trong JobProgressCard va de
+  // "Retry" giu duoc dung chu de da gan cho tung url thay vi mat het khi chay lai.
+  const [lastUrlTopics, setLastUrlTopics] = useState<Record<string, string>>({})
   const esRef = useRef<EventSource | null>(null)
+
+  const addGroup = () =>
+    setGroups((gs) => [...gs, { id: groupIdRef.current++, topic: null, text: '' }])
+  const removeGroup = (id: number) =>
+    setGroups((gs) => (gs.length > 1 ? gs.filter((g) => g.id !== id) : gs))
+  const updateGroup = (id: number, patch: Partial<Pick<UrlGroup, 'topic' | 'text'>>) =>
+    setGroups((gs) => gs.map((g) => (g.id === id ? { ...g, ...patch } : g)))
 
   const { data: mediaSource } = useQuery({
     queryKey: ['media-source-default'],
@@ -318,7 +350,7 @@ export function BatchPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi đổi nền tảng'),
   })
 
-  const runUrls = async (urls: string[], force: boolean) => {
+  const runUrls = async (urls: string[], force: boolean, urlTopics?: Record<string, string>) => {
     if (urls.length === 0) {
       toast.error('Không có URL')
       return
@@ -326,7 +358,7 @@ export function BatchPage() {
     setRunning(true)
     setJob(null)
     try {
-      const { jobId } = await startBatch(urls, force)
+      const { jobId } = await startBatch(urls, force, urlTopics)
       const es = new EventSource(batchStreamUrl(jobId))
       esRef.current = es
       es.onmessage = (e) => {
@@ -339,6 +371,11 @@ export function BatchPage() {
           qc.invalidateQueries({ queryKey: ['posts'] })
           qc.invalidateQueries({ queryKey: ['stats'] })
           qc.invalidateQueries({ queryKey: ['collect-history'] })
+          // Bai moi cao co the lam doi kho "bai sach" (Phan phoi bai) va so bai chua viet lai
+          // caption - cac trang do dung query rieng, khong tu dong biet co bai moi ma lam moi.
+          qc.invalidateQueries({ queryKey: ['dist-pool'] })
+          qc.invalidateQueries({ queryKey: ['caption-variant-status'] })
+          qc.invalidateQueries({ queryKey: ['account-topics'] })
           const failed = data.job.items.filter(isFailed).length
           if (failed > 0) toast.warning(`Xong, ${failed} bài lỗi — có thể Retry`)
           else toast.success('Batch hoàn tất')
@@ -359,16 +396,25 @@ export function BatchPage() {
   }
 
   const run = () => {
-    const urls = text
-      .split('\n')
-      .map((s) => s.trim())
-      .filter((l) => l && !l.startsWith('#'))
-    runUrls(urls, false)
+    const urls: string[] = []
+    const urlTopics: Record<string, string> = {}
+    for (const g of groups) {
+      const lines = g.text
+        .split('\n')
+        .map((s) => s.trim())
+        .filter((l) => l && !l.startsWith('#'))
+      for (const l of lines) {
+        urls.push(l)
+        if (g.topic) urlTopics[l] = g.topic
+      }
+    }
+    setLastUrlTopics(urlTopics)
+    runUrls(urls, false, urlTopics)
   }
 
   const retryFailed = () => {
     const urls = (job?.items ?? []).filter(isFailed).map((it) => it.url)
-    runUrls(urls, true) // force = cào lại dù đã có trong DB
+    runUrls(urls, true, lastUrlTopics) // force = cào lại dù đã có trong DB, giữ nguyên chủ đề cũ
   }
 
   const retryFromHistory = (urls: string[]) => {
@@ -382,7 +428,8 @@ export function BatchPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Thu thập</h1>
         <p className="text-sm text-muted-foreground">
-          Dán URL bài Threads (mỗi dòng 1 URL) rồi chạy — bài đã tải sẽ tự bỏ qua
+          Dán URL bài Threads theo từng nhóm (mỗi dòng 1 URL) — mỗi nhóm chọn sẵn 1 chủ đề, cào
+          xong tự gán chủ đề đó cho tác giả của các bài trong nhóm. Bài đã tải sẽ tự bỏ qua.
         </p>
       </div>
 
@@ -412,19 +459,57 @@ export function BatchPage() {
       {tab === 'history' && (
         <>
           <HistoryPanel onRetry={retryFromHistory} />
-          {job && <JobProgressCard job={job} />}
+          {job && <JobProgressCard job={job} urlTopics={lastUrlTopics} />}
         </>
       )}
 
       {tab === 'collect' && (
         <>
-          <Textarea
-            placeholder="https://www.threads.com/@user/post/XXXX&#10;https://www.threads.com/@user/post/YYYY"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={6}
-            disabled={running}
-          />
+          <div className="space-y-3">
+            {groups.map((g, i) => (
+              <div key={g.id} className="space-y-1.5 rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">Nhóm {i + 1}</span>
+                    <select
+                      className="flex h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={g.topic ?? ''}
+                      onChange={(e) => updateGroup(g.id, { topic: e.target.value || null })}
+                      disabled={running}
+                    >
+                      <option value="">— Không gán chủ đề —</option>
+                      {ACCOUNT_TOPICS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {groups.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeGroup(g.id)}
+                      disabled={running}
+                      aria-label="Xoá nhóm"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                <Textarea
+                  placeholder="https://www.threads.com/@user/post/XXXX&#10;https://www.threads.com/@user/post/YYYY"
+                  value={g.text}
+                  onChange={(e) => updateGroup(g.id, { text: e.target.value })}
+                  rows={4}
+                  disabled={running}
+                />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addGroup} disabled={running}>
+              <Plus className="h-4 w-4" /> Thêm nhóm
+            </Button>
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
@@ -449,7 +534,7 @@ export function BatchPage() {
             />
           </div>
 
-          {job && <JobProgressCard job={job} />}
+          {job && <JobProgressCard job={job} urlTopics={lastUrlTopics} />}
         </>
       )}
     </div>

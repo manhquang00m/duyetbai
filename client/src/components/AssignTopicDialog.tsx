@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ChevronDown, ChevronRight, ExternalLink, Loader2, Save } from 'lucide-react'
@@ -26,16 +26,47 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
   const [edited, setEdited] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null) // tac gia dang xem danh sach bai
+  const [topicFilter, setTopicFilter] = useState('all') // 'all' | 'unassigned' | 1 gia tri ACCOUNT_TOPICS
 
   useEffect(() => {
     if (open) {
       setEdited({})
       setExpanded(null)
+      setTopicFilter('all')
     }
   }, [open])
 
   const rows = data ?? []
   const dirtyCount = Object.keys(edited).length
+
+  // Uu tien tac gia CHUA gan len dau (theo so bai giam dan) de xu ly het cho chua co truoc.
+  // Sap on dinh theo du lieu tu server, KHONG phu thuoc `edited` - tranh hang nhay lung tung
+  // ngay khi dang chon chu de cho 1 dong.
+  const sortedRows = useMemo(
+    () =>
+      [...(data ?? [])].sort((a, b) => {
+        const aAssigned = a.topic ? 1 : 0
+        const bAssigned = b.topic ? 1 : 0
+        if (aAssigned !== bAssigned) return aAssigned - bAssigned
+        return b.post_count - a.post_count
+      }),
+    [data],
+  )
+
+  const effectiveTopic = (r: { username: string; topic: string | null }) =>
+    edited[r.username] ?? r.topic ?? ''
+
+  const visibleRows = sortedRows.filter((r) => {
+    if (topicFilter === 'all') return true
+    if (topicFilter === 'unassigned') return !effectiveTopic(r)
+    return effectiveTopic(r) === topicFilter
+  })
+
+  const totalPosts = rows.reduce((sum, r) => sum + r.post_count, 0)
+  const assignedPosts = rows.reduce(
+    (sum, r) => (effectiveTopic(r) ? sum + r.post_count : sum),
+    0,
+  )
 
   const submit = async () => {
     const items = Object.entries(edited).map(([username, topic]) => ({ username, topic }))
@@ -64,7 +95,30 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
         đó, kể cả bài thu thập sau này.
       </p>
 
-      <div className="mt-3 max-h-[65vh] overflow-auto rounded-lg border">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Đã gán chủ đề:{' '}
+          <span className="font-medium text-foreground">
+            {assignedPosts}/{totalPosts}
+          </span>{' '}
+          bài
+        </p>
+        <select
+          className="flex h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          value={topicFilter}
+          onChange={(e) => setTopicFilter(e.target.value)}
+        >
+          <option value="all">Tất cả chủ đề</option>
+          <option value="unassigned">— Chưa gán —</option>
+          {ACCOUNT_TOPICS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-2 max-h-[65vh] overflow-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-muted/60 text-xs uppercase text-muted-foreground">
             <tr>
@@ -83,7 +137,7 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
               </tr>
             )}
             {!isLoading &&
-              rows.map((r) => (
+              visibleRows.map((r) => (
                 <AuthorRow
                   key={r.username}
                   username={r.username}
@@ -113,6 +167,13 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
               <tr>
                 <td colSpan={4} className="p-8 text-center text-muted-foreground">
                   Chưa có bài viết nào để gán chủ đề.
+                </td>
+              </tr>
+            )}
+            {!isLoading && rows.length > 0 && visibleRows.length === 0 && (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                  Không có tác giả nào khớp bộ lọc.
                 </td>
               </tr>
             )}
