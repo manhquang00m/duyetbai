@@ -174,6 +174,8 @@ export interface JobState {
   items: BatchItemResult[]
   logs: JobLog[]
   error?: string
+  // 1 bai (post_id) bi gan >1 chu de khac nhau trong chinh lan chay nay (hiem gap) - chi de canh bao.
+  topicConflicts?: { postId: string; topics: string[] }[]
 }
 
 /** Trang thai kiem tra 1 link Shopee - khop voi ShopeeLinkStatus ben server. */
@@ -349,6 +351,28 @@ export async function importAccounts(file: File) {
   const form = new FormData()
   form.append('file', file)
   const { data } = await api.post<AccountImportResult>('/api/accounts/import', form)
+  return data
+}
+
+export interface ProxySyncChange {
+  account: string
+  oldProxy: string | null
+  newProxy: string
+  status?: 'live' | 'die'
+  ip?: string
+}
+
+export interface ProxySyncResult {
+  changed: ProxySyncChange[]
+  uncheckedCount: number
+  unmatchedAccounts: string[]
+  skippedNoPlatform: string[]
+  errors: { platform: string; error: string }[]
+}
+
+/** Doc proxy hien tai tu GPM Login (Global/Stable, khop theo ten profile) va cap nhat vao accounts. */
+export async function syncGpmProxies() {
+  const { data } = await api.post<ProxySyncResult>('/api/accounts/sync-gpm-proxies')
   return data
 }
 
@@ -635,7 +659,9 @@ export type AccountTopic = (typeof ACCOUNT_TOPICS)[number]
 
 export interface AccountTopicRow {
   username: string
-  topic: string | null
+  // Cac chu de KHAC NHAU dang xuat hien trong bai cua tac gia nay - moi BAI chi co dung 1 chu de,
+  // nhung tac gia co the co nhieu bai o nhieu chu de khac nhau nen mang nay co the co >1 phan tu.
+  topics: string[]
   post_count: number
 }
 
@@ -644,14 +670,18 @@ export async function fetchAccountTopics() {
   return data
 }
 
-export async function saveAccountTopics(items: { username: string; topic: string }[]) {
-  const { data } = await api.post<AccountTopicRow[]>('/api/account-topics', { items })
+/** Ap 1 chu de cho TOAN BO bai hien co cua 1 tac gia (topic=null de xoa chu de khoi bai cua ho). */
+export async function setAuthorTopic(username: string, topic: string | null) {
+  const { data } = await api.post<AccountTopicRow[]>('/api/account-topics/author', {
+    username,
+    topic,
+  })
   return data
 }
 
 // ===== Phan phoi bai =====
 // LUU Y: chu de o day la chu de cua TAI KHOAN DANG (posting_account_topics), khac han
-// ACCOUNT_TOPICS gan cho TAC GIA bai (account_topics) - chi dung chung bo 7 gia tri.
+// ACCOUNT_TOPICS gan cho TUNG BAI (posts.topic) - chi dung chung bo 7 gia tri.
 
 export interface PostingAccount {
   id: number

@@ -54,9 +54,8 @@ export async function exportPosts(filePath: string, opts: PostFilterOpts = {}): 
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
   const posts = db
     .prepare(
-      `SELECT p.post_id, p.url, p.caption, p.assigned_account, p.post_status, t.topic AS topic
+      `SELECT p.post_id, p.url, p.caption, p.assigned_account, p.post_status, p.topic
          FROM posts p
-         LEFT JOIN account_topics t ON t.username = p.username
         ${where}
         ORDER BY p.scraped_at, p.post_id`,
     )

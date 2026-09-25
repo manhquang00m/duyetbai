@@ -7,8 +7,6 @@ import {
   Users,
   Upload,
   Pencil,
-  Wifi,
-  WifiOff,
   ShieldCheck,
   RefreshCw,
   Search,
@@ -16,6 +14,10 @@ import {
   Copy,
   CopyPlus,
   Tag,
+  Plug,
+  Info,
+  CircleDot,
+  Loader2,
 } from 'lucide-react'
 import {
   fetchAccounts,
@@ -31,8 +33,9 @@ import {
   PROXY_TYPES,
   APPEAL_STATUSES,
   type Account,
+  type AppealStatus,
 } from '@/lib/api'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,10 +47,12 @@ import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
 import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
 import { PostingTopicsCell } from '@/components/PostingTopicsCell'
 import { CloneAccountDialog } from '@/components/CloneAccountDialog'
+import { GpmProxySyncDialog } from '@/components/GpmProxySyncDialog'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { usePopover, PopoverPanel } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-const COLSPAN = 13
+const COLSPAN = 10
 
 function ProxyCell({
   proxy,
@@ -105,18 +110,76 @@ function ProxyCell({
   )
 }
 
-/** banned=TRUE -> LIVE (xanh), banned=FALSE -> DIE (do). */
-function BannedBadge({ banned }: { banned: number }) {
-  if (!banned)
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        <Wifi className="h-3 w-3" /> LIVE
-      </span>
-    )
+/** Icon "i" - di chuot/bam de xem huong dan dinh dang file import (thay cho doan mo ta dai). */
+function ImportHelp() {
+  const popover = usePopover({ placement: 'bottom-end' })
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
-      <WifiOff className="h-3 w-3" /> DIE
-    </span>
+    <>
+      <button
+        ref={popover.triggerRef}
+        type="button"
+        aria-label="Định dạng file import"
+        onClick={() => popover.setOpen(!popover.open)}
+        onMouseEnter={() => popover.setOpen(true)}
+        onMouseLeave={() => popover.setOpen(false)}
+        className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <Info className="h-4 w-4" />
+      </button>
+      <PopoverPanel popover={popover} className="w-96 p-3 text-xs leading-relaxed">
+        <p className="mb-1 font-medium">Định dạng file import</p>
+        <p className="text-muted-foreground">
+          Cột A→L lần lượt là Profile, Thiết bị, Trạng thái, Ngày tạo, Pass_Threads, Gmail,
+          Password, Proxy, Platform (Stable/Global), Loại proxy, Chủ đề đăng, Ghi chú (dòng 1 là
+          header). Profile trùng sẽ được cập nhật đè.
+        </p>
+        <p className="mt-1.5 text-muted-foreground">
+          Cột C chỉ nhận: {APPEAL_STATUSES.join(' / ')} (chọn "Die" sẽ tự đánh dấu banned). Cột J
+          chỉ nhận: {PROXY_TYPES.join(' / ')}. Cột K là các chủ đề, cách nhau bằng dấu phẩy. Giá
+          trị khác sẽ để trống và báo lại.
+        </p>
+      </PopoverPanel>
+    </>
+  )
+}
+
+/** Nut "Doi trang thai" trong thanh thao tac hang loat. */
+function BulkStatusButton({
+  busy,
+  onPick,
+}: {
+  busy: boolean
+  onPick: (status: AppealStatus) => void
+}) {
+  const popover = usePopover()
+  return (
+    <>
+      <button
+        ref={popover.triggerRef}
+        type="button"
+        disabled={busy}
+        onClick={() => popover.setOpen(!popover.open)}
+        className={buttonVariants({ size: 'sm', variant: 'outline' })}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleDot className="h-4 w-4" />}
+        Đổi trạng thái
+      </button>
+      <PopoverPanel popover={popover} className="p-1">
+        {APPEAL_STATUSES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => {
+              popover.setOpen(false)
+              onPick(s)
+            }}
+            className="flex w-full items-center rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
+          >
+            <AppealBadge status={s} />
+          </button>
+        ))}
+      </PopoverPanel>
+    </>
   )
 }
 
@@ -158,6 +221,7 @@ export function AccountsPage() {
   const [cloningFrom, setCloningFrom] = useState<Account | null>(null)
   const [proxyDialogOpen, setProxyDialogOpen] = useState(false)
   const [recheckAllOpen, setRecheckAllOpen] = useState(false)
+  const [gpmSyncOpen, setGpmSyncOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
   const [postingTopicOpen, setPostingTopicOpen] = useState(false)
@@ -318,6 +382,30 @@ export function AccountsPage() {
     toast.success(`Đã xoá ${ids.length} account`)
   }
 
+  const [bulkStatusBusy, setBulkStatusBusy] = useState(false)
+  const bulkSetStatus = async (status: AppealStatus) => {
+    const ids = [...sel]
+    if (ids.length === 0) return
+    setBulkStatusBusy(true)
+    let ok = 0
+    try {
+      for (const id of ids) {
+        try {
+          // Giong luat import: "Die" <=> banned. Cot Banned da an khoi bang nen phai giu dong bo
+          // o day, khong thi account doi tu Die sang Live van bi coi la banned ma khong ai thay.
+          await updateAccount(id, { appeal_status: status, banned: status === 'Die' })
+          ok++
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Lỗi đổi trạng thái')
+        }
+      }
+    } finally {
+      setBulkStatusBusy(false)
+      invalidate()
+    }
+    if (ok > 0) toast.success(`Đã đổi ${ok} account sang "${status}"`)
+  }
+
   const selectedProxies = checkableProxies(items.filter((a) => sel.has(a.id)).map((a) => a.proxy))
 
   const selectedWithoutProxy = items.filter((a) => sel.has(a.id) && !a.proxy)
@@ -404,6 +492,9 @@ export function AccountsPage() {
             className="hidden"
             onChange={onImportFile}
           />
+          <Button variant="outline" size="sm" onClick={() => setGpmSyncOpen(true)}>
+            <Plug className="h-4 w-4" /> Đồng bộ proxy GPM
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -412,22 +503,17 @@ export function AccountsPage() {
           >
             <RefreshCw className="h-4 w-4" /> Kiểm tra lại tất cả proxy
           </Button>
-          <Button variant="outline" size="sm" onClick={pickImportFile} disabled={importing}>
-            <Upload className="h-4 w-4" /> {importing ? 'Đang import...' : 'Import Excel'}
-          </Button>
+          <div className="flex items-center">
+            <Button variant="outline" size="sm" onClick={pickImportFile} disabled={importing}>
+              <Upload className="h-4 w-4" /> {importing ? 'Đang import...' : 'Import Excel'}
+            </Button>
+            <ImportHelp />
+          </div>
           <Button size="sm" onClick={openCreate}>
             <Plus className="h-4 w-4" /> Thêm account
           </Button>
         </div>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        File import: cột A→L lần lượt là Profile, Thiết bị, Trạng thái, Ngày tạo, Pass_Threads,
-        Gmail, Password, Proxy, Platform (Stable/Global), Loại proxy, Chủ đề đăng, Ghi chú (dòng 1
-        là header). Profile trùng sẽ được cập nhật đè. Cột C chỉ nhận: {APPEAL_STATUSES.join(' / ')}
-        (chọn "Die" sẽ tự đánh dấu banned). Cột J chỉ nhận: {PROXY_TYPES.join(' / ')}. Cột K là các
-        chủ đề, cách nhau bằng dấu phẩy. Giá trị khác sẽ để trống và báo lại.
-      </p>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full max-w-xs">
@@ -506,23 +592,23 @@ export function AccountsPage() {
       </div>
 
       <Card className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        {/* Chieu cao co dinh theo man hinh: bang tu cuon ben trong, header dinh tren cung. */}
+        <div className="max-h-[calc(100vh-16rem)] min-h-[20rem] overflow-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="sticky top-0 z-10 bg-muted">
+              <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="p-2.5 text-left font-medium">
                   <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
                 </th>
                 <th className="p-2.5 text-left font-medium">Profile</th>
                 <th className="p-2.5 text-left font-medium">Thiết bị</th>
-                <th className="p-2.5 text-center font-medium">Banned</th>
                 <th className="p-2.5 text-left font-medium">Ngày tạo</th>
                 <th className="p-2.5 text-left font-medium">Proxy</th>
                 <th className="p-2.5 text-center font-medium">Platform</th>
-                <th className="p-2.5 text-left font-medium">Loại proxy</th>
                 <th className="p-2.5 text-center font-medium">Trạng thái</th>
-                <th className="p-2.5 text-left font-medium">Chủ đề đăng (bấm để sửa)</th>
-                <th className="p-2.5 text-left font-medium">Ghi chú</th>
+                <th className="p-2.5 text-left font-medium" title="Bấm vào ô để sửa chủ đề">
+                  Chủ đề
+                </th>
                 <th className="p-2.5 text-center font-medium">Active</th>
                 <th className="p-2.5 text-right font-medium"></th>
               </tr>
@@ -551,9 +637,6 @@ export function AccountsPage() {
                     </td>
                     <td className="p-2.5 font-medium">{a.name}</td>
                     <td className="p-2.5 text-xs text-muted-foreground">{a.device || '—'}</td>
-                    <td className="p-2.5 text-center">
-                      <BannedBadge banned={a.banned} />
-                    </td>
                     <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
                       {a.created_at ? new Date(a.created_at).toLocaleDateString('vi-VN') : '—'}
                     </td>
@@ -581,25 +664,16 @@ export function AccountsPage() {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="max-w-[10rem] p-2.5 text-xs text-muted-foreground">
-                      <span className="block truncate" title={a.proxy_type ?? undefined}>
-                        {a.proxy_type || '—'}
-                      </span>
-                    </td>
-                    <td className="p-2.5 text-center">
+                    <td className="whitespace-nowrap p-2.5 text-center">
                       <AppealBadge status={a.appeal_status} />
                     </td>
-                    <td className="max-w-[13rem] p-2.5">
+                    <td className="p-2.5">
                       <PostingTopicsCell
                         accountId={a.id}
                         topics={topicsById.get(a.id) ?? []}
+                        compact={2}
                         onChanged={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
                       />
-                    </td>
-                    <td className="max-w-[12rem] p-2.5 text-xs text-muted-foreground">
-                      <span className="block truncate" title={a.note ?? undefined}>
-                        {a.note || '—'}
-                      </span>
                     </td>
                     <td className="p-2.5 text-center">
                       <Switch
@@ -663,6 +737,7 @@ export function AccountsPage() {
               <Wand2 className="h-4 w-4" /> Tự động gán proxy ({selectedWithoutProxy.length})
             </Button>
           )}
+          <BulkStatusButton busy={bulkStatusBusy} onPick={bulkSetStatus} />
           <Button size="sm" variant="outline" onClick={() => setPostingTopicOpen(true)}>
             <Tag className="h-4 w-4" /> Gán chủ đề đăng
           </Button>
@@ -714,6 +789,8 @@ export function AccountsPage() {
         }
         onClose={() => setRecheckAllOpen(false)}
       />
+
+      <GpmProxySyncDialog open={gpmSyncOpen} onClose={() => setGpmSyncOpen(false)} />
     </div>
   )
 }

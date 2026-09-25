@@ -76,17 +76,12 @@ db.exec(`
     value TEXT NOT NULL
   );
 
-  -- Chu de gan theo TAC GIA bai viet (username trich xuat tu URL), khong phai theo tung bai -
-  -- 1 tac gia thuong dang 1 chu de nhat quan nen gan 1 lan la ap dung cho toan bo bai cua ho.
-  CREATE TABLE IF NOT EXISTS account_topics (
-    username    TEXT PRIMARY KEY,
-    topic       TEXT NOT NULL,
-    updated_at  TEXT NOT NULL
-  );
+  -- (Bang account_topics cu da bi thay bang cot posts.topic - xem migration ben duoi. 1 tac gia
+  -- co the dang o nhieu chu de khac nhau, nhung TUNG BAI chi thuoc DUNG 1 chu de.)
 
   -- Chu de cua ACCOUNT DANG BAI (accounts.id), nhieu-nhieu: 1 account nhan duoc nhieu chu de.
-  -- KHAC HAN account_topics o tren (gan theo TAC GIA bai cao ve). Hai tap ten nay roi nhau
-  -- hoan toan, chi dung chung bo 7 gia tri ACCOUNT_TOPICS - dung bao gio gop lam mot.
+  -- KHAC HAN posts.topic o tren (gan theo TUNG BAI, tu tac gia bai cao ve). Hai tap ten nay roi
+  -- nhau hoan toan, chi dung chung bo 7 gia tri ACCOUNT_TOPICS - dung bao gio gop lam mot.
   CREATE TABLE IF NOT EXISTS posting_account_topics (
     account_id  INTEGER NOT NULL,
     topic       TEXT NOT NULL,
@@ -311,6 +306,50 @@ try {
   `);
 } catch {
   // bo qua
+}
+
+// Migration: chu de chuyen tu gan theo TAC GIA (bang account_topics rieng) sang gan THANG vao
+// TUNG BAI (cot posts.topic) - 1 tac gia co the dang o nhieu chu de, nhung 1 bai chi thuoc DUNG
+// 1 chu de nen phai luu tren chinh dong bai do, khong the suy ra tu tac gia nua.
+try {
+  db.exec('ALTER TABLE posts ADD COLUMN topic TEXT');
+} catch {
+  // cot da ton tai -> bo qua
+}
+try {
+  db.exec('CREATE INDEX IF NOT EXISTS idx_posts_topic ON posts(topic)');
+} catch {
+  // index da ton tai -> bo qua
+}
+
+// Backfill tu bang account_topics cu (neu con) sang posts.topic, roi xoa bang cu. Bang transaction
+// de an toan neu server bi --watch restart giua chung. Chi backfill duoc CHINH XAC cho tac gia
+// CHI CO DUNG 1 chu de (con lai suy tu tac gia, khong sai) - tac gia co NHIEU chu de thi khong biet
+// bai nao thuoc chu de nao tu bang cu, phai sua tay tung bai (xem script mot lan da chay cho
+// miu7498/trangxinh.207 luc chuyen doi).
+{
+  const hasOldTable = db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'account_topics'")
+    .get();
+  if (hasOldTable) {
+    db.exec('BEGIN');
+    try {
+      db.exec(`
+        UPDATE posts SET topic = (
+          SELECT t.topic FROM account_topics t WHERE t.username = posts.username LIMIT 1
+        )
+        WHERE topic IS NULL
+          AND username IN (
+            SELECT username FROM account_topics GROUP BY username HAVING COUNT(*) = 1
+          );
+        DROP TABLE account_topics;
+      `);
+      db.exec('COMMIT');
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+  }
 }
 
 export function closeDb(): void {

@@ -13,7 +13,7 @@ import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/reposit
 import { checkShopeeLink } from './shopeeLinkCheck';
 import { listRows, rewriteRow } from './rewrite';
 import { listMissingPostIds, generateVariantsForPost } from './postCaptionVariants';
-import { setAccountTopics } from '../db/accountTopics';
+import { setPostTopic } from '../db/accountTopics';
 import { withRetry } from '../utils/retry';
 import { DOWNLOAD_DIR, LLM_CONCURRENCY } from '../config';
 
@@ -30,6 +30,9 @@ export interface JobState {
   items: BatchItemResult[];
   logs: JobLog[];
   error?: string;
+  // 1 bai (post_id) bi 2 URL KHAC NHAU trong chinh lan chay nay gan cho 2 chu de khac nhau (vd
+  // 2 share-link trung nhau lai nam o 2 nhom chu de khac nhau) - hiem gap, chi de canh bao.
+  topicConflicts?: { postId: string; topics: string[] }[];
 }
 
 export interface JobEvent {
@@ -67,9 +70,10 @@ function newJob(total: number): JobState {
 
 /**
  * Batch tai media + scrape. force=true de cao lai ca bai da co.
- * urlTopics (url -> chu de): gan chu de theo TAC GIA ngay khi bai cua url do cao xong thanh cong
- * (ke ca khi item.skipped vi da tai roi - van biet duoc username qua getPostBrief trong batch.ts).
- * Dung lai nguyen setAccountTopics() (da tu validate topic + upsert) - xem db/accountTopics.ts.
+ * urlTopics (url -> chu de): gan chu de THANG vao DUNG bai (post_id) do url do cao ra ngay khi
+ * thanh cong (ke ca item.skipped vi da tai roi - van biet duoc postId qua batch.ts). Moi bai la
+ * 1 dong rieng nen KHONG the co tranh chap: du 1 tac gia xuat hien o nhieu nhom chu de trong CUNG
+ * 1 lan chay, moi bai cua ho van chi nhan DUNG chu de cua nhom no thuoc ve.
  */
 export function startBatchJob(
   urls: string[],
@@ -77,6 +81,9 @@ export function startBatchJob(
   urlTopics?: Record<string, string>,
 ): JobState {
   const job = newJob(urls.length);
+  // Hiem gap: 2 URL KHAC NHAU trong chinh lan chay nay lai tro ve CUNG 1 post_id (vd 2 share-link
+  // trung bai) nhung nam o 2 nhom chu de khac nhau - theo doi de canh bao sau khi xong.
+  const appliedThisRun = new Map<string, Set<string>>();
   void (async () => {
     try {
       await runBatch(urls, {
@@ -85,8 +92,10 @@ export function startBatchJob(
           job.done = done;
           job.items.push(item);
           const topic = urlTopics?.[item.url];
-          if (item.ok && item.username && topic) {
-            setAccountTopics([{ username: item.username, topic }]);
+          if (item.ok && item.postId && topic) {
+            setPostTopic(item.postId, topic);
+            if (!appliedThisRun.has(item.postId)) appliedThisRun.set(item.postId, new Set());
+            appliedThisRun.get(item.postId)!.add(topic);
           }
           emit(job.id, { type: 'progress', job, item });
         },
@@ -101,6 +110,10 @@ export function startBatchJob(
       job.status = 'error';
       job.error = err instanceof Error ? err.message : String(err);
     } finally {
+      const conflicts = [...appliedThisRun.entries()]
+        .filter(([, topics]) => topics.size > 1)
+        .map(([postId, topics]) => ({ postId, topics: [...topics] }));
+      if (conflicts.length > 0) job.topicConflicts = conflicts;
       await closeBrowser().catch(() => {});
       emit(job.id, { type: 'end', job });
     }

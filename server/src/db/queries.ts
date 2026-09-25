@@ -26,7 +26,7 @@ export interface PostListItem {
   post_status: string; // 'new' | 'exported' | 'posted'
   exported_at: string | null;
   posted_at: string | null;
-  topic: string | null; // chu de gan theo tac gia (username), xem account_topics
+  topic: string | null; // chu de cua CHINH bai nay (cot posts.topic)
   variant_count: number; // so ban caption AI da viet lai (0..3), xem post_caption_variants
 }
 
@@ -65,7 +65,7 @@ export interface PostFilterOpts {
   oneShopee?: boolean;
   postStatus?: 'unposted' | 'posted';
   mediaFilter?: 'complete' | 'missing';
-  topics?: string[]; // loc theo chu de gan cho tac gia (account_topics.topic) - chon nhieu (OR)
+  topics?: string[]; // loc theo chu de cua bai (posts.topic) - chon nhieu (OR)
   linkStatus?: LinkStatusFilter; // loc theo tinh trang link Shopee da kiem tra
   cleanOnly?: boolean; // chi bai du dieu kien phan phoi, xem CLEAN_POST_COND
   rewritten?: 'yes' | 'no'; // da/chua du 3 ban caption AI, xem post_caption_variants
@@ -127,9 +127,8 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
     );
   }
   if (opts.topics && opts.topics.length > 0) {
-    // Subquery (khong phai JOIN) de dung duoc ca trong cau COUNT(*) khong co JOIN account_topics.
     const placeholders = opts.topics.map(() => '?').join(', ');
-    conds.push(`p.username IN (SELECT username FROM account_topics WHERE topic IN (${placeholders}))`);
+    conds.push(`p.topic IN (${placeholders})`);
     args.push(...opts.topics);
   }
   if (opts.cleanOnly) {
@@ -160,7 +159,7 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
 const SELECT_LIST = `
   SELECT p.post_id, p.url, p.username, p.caption, p.likes, p.comments, p.views,
          p.post_date, p.scraped_at, p.scrape_error, p.shopee_comment_count,
-         p.assigned_account, p.post_status, p.exported_at, p.posted_at, t.topic AS topic,
+         p.assigned_account, p.post_status, p.exported_at, p.posted_at, p.topic,
          (SELECT COUNT(*) FROM media m WHERE m.post_id = p.post_id) AS media_count,
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id) AS shopee_count,
          (SELECT COUNT(DISTINCT comment) FROM shopee_entries s WHERE s.post_id = p.post_id) AS distinct_comment_count,
@@ -182,7 +181,6 @@ const SELECT_LIST = `
          (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.ok = 1
             ORDER BY id LIMIT 1) AS any_file
     FROM posts p
-    LEFT JOIN account_topics t ON t.username = p.username
 `;
 
 export function listPosts(

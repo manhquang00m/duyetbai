@@ -62,15 +62,15 @@ function scrapedDateConds(f: Pick<CleanPoolFilter, 'scrapedFrom' | 'scrapedTo'>)
 }
 
 /**
- * Kho bai du dieu kien phan phoi: bai SACH (CLEAN_POST_COND), CO media tai duoc, va tac gia
- * DA duoc gan chu de - khong co chu de thi khong biet phat cho account nao.
+ * Kho bai du dieu kien phan phoi: bai SACH (CLEAN_POST_COND), CO media tai duoc, va DA duoc gan
+ * chu de (posts.topic) - khong co chu de thi khong biet phat cho account nao.
  * Vế media tranh xuat ra dong co ca VideoPath lan ImagePath rong cho tool auto dang.
  */
 export function listCleanPostsWithTopic(filter: CleanPoolFilter = {}): CleanPost[] {
-  const conds = [CLEAN_POST_COND, `(${HAS_VIDEO} OR ${HAS_IMAGE})`, 't.topic IS NOT NULL'];
+  const conds = [CLEAN_POST_COND, `(${HAS_VIDEO} OR ${HAS_IMAGE})`, 'p.topic IS NOT NULL'];
   const args: string[] = [];
   if (filter.topics && filter.topics.length > 0) {
-    conds.push(`t.topic IN (${filter.topics.map(() => '?').join(',')})`);
+    conds.push(`p.topic IN (${filter.topics.map(() => '?').join(',')})`);
     args.push(...filter.topics);
   }
   const scraped = scrapedDateConds(filter);
@@ -78,9 +78,8 @@ export function listCleanPostsWithTopic(filter: CleanPoolFilter = {}): CleanPost
   args.push(...scraped.args);
   return db
     .prepare(
-      `SELECT p.post_id AS post_id, t.topic AS topic
+      `SELECT p.post_id AS post_id, p.topic AS topic
          FROM posts p
-         LEFT JOIN account_topics t ON t.username = p.username
         WHERE ${conds.join(' AND ')}
         ORDER BY p.post_id`,
     )
@@ -91,18 +90,17 @@ export function listCleanPostsWithTopic(filter: CleanPoolFilter = {}): CleanPost
 export function cleanPoolByTopic(
   filter: Pick<CleanPoolFilter, 'scrapedFrom' | 'scrapedTo'> = {},
 ): Record<string, number> {
-  const conds = [CLEAN_POST_COND, `(${HAS_VIDEO} OR ${HAS_IMAGE})`, 't.topic IS NOT NULL'];
+  const conds = [CLEAN_POST_COND, `(${HAS_VIDEO} OR ${HAS_IMAGE})`, 'p.topic IS NOT NULL'];
   const args: string[] = [];
   const scraped = scrapedDateConds(filter);
   conds.push(...scraped.conds);
   args.push(...scraped.args);
   const rows = db
     .prepare(
-      `SELECT t.topic AS topic, COUNT(*) AS n
+      `SELECT p.topic AS topic, COUNT(*) AS n
          FROM posts p
-         LEFT JOIN account_topics t ON t.username = p.username
         WHERE ${conds.join(' AND ')}
-        GROUP BY t.topic`,
+        GROUP BY p.topic`,
     )
     .all(...args) as unknown as { topic: string; n: number }[];
   return Object.fromEntries(rows.map((r) => [r.topic, r.n]));
@@ -128,7 +126,7 @@ export function poolExclusionStats(): Record<string, number> {
     noNewLink: n(
       "EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND (s.new_link IS NULL OR s.new_link = ''))",
     ),
-    noTopic: n('NOT EXISTS (SELECT 1 FROM account_topics t WHERE t.username = p.username)'),
+    noTopic: n('p.topic IS NULL'),
     noMedia: n(`NOT (${HAS_VIDEO} OR ${HAS_IMAGE})`),
   };
 }

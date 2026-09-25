@@ -84,3 +84,12 @@ export const LLM_RPM = Number(process.env.LLM_RPM) || 12;
  * KHONG commit (da nam trong .gitignore, thu muc .pw-session/).
  */
 export const SHOPEE_SESSION_PATH = path.join(repoRoot, '.pw-session', 'shopee.json');
+
+/**
+ * ===== Dong bo proxy tu GPM Login (antidetect browser) =====
+ * GPM Login chay local API rieng cho tung ban (Global/Stable) neu ban cai/mo ca 2 cung luc.
+ * accounts.platform ('Stable' | 'Global') quyet dinh goi ban nao - xem services/gpmLogin.ts.
+ * Doi port qua .env neu may ban khac (vd GPM tu doi port do 9495/19995 dang ban).
+ */
+export const GPM_GLOBAL_URL = process.env.GPM_GLOBAL_URL || 'http://127.0.0.1:9495';
+export const GPM_STABLE_URL = process.env.GPM_STABLE_URL || 'http://127.0.0.1:19995';

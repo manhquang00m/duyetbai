@@ -1,8 +1,8 @@
 import { db } from './index';
 import { ACCOUNT_TOPICS } from './accountTopics';
 
-// Chu de cua ACCOUNT DANG BAI. Dung chung bo 7 gia tri voi account_topics nhung la
-// KHAI NIEM KHAC: account_topics gan theo TAC GIA bai cao ve, bang nay gan theo
+// Chu de cua ACCOUNT DANG BAI. Dung chung bo 7 gia tri voi posts.topic nhung la
+// KHAI NIEM KHAC: posts.topic gan theo TUNG BAI (tu tac gia bai cao ve), bang nay gan theo
 // TAI KHOAN DUNG DE DANG. Hai tap ten roi nhau hoan toan.
 
 const TOPIC_SET = new Set<string>(ACCOUNT_TOPICS);

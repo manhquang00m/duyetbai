@@ -11,6 +11,7 @@ import {
   getAccountByName,
 } from '../db/accounts';
 import { importAccountsExcel } from '../services/accountImporter';
+import { syncProxiesFromGpm } from '../services/proxySync';
 import { PROXY_TYPES, APPEAL_STATUSES } from '../db/accountEnums';
 import { EXPORT_DIR } from '../config';
 
@@ -82,6 +83,17 @@ router.post('/import', upload.single('file'), async (req, res, next) => {
     next(err);
   } finally {
     fs.rm(req.file.path, { force: true }, () => {});
+  }
+});
+
+// POST /api/accounts/sync-gpm-proxies -> doc proxy hien tai tu GPM Login (Global/Stable, theo
+// accounts.platform), cap nhat accounts.proxy cho tung profile trung ten + kiem tra Live/Die ngay
+// cho proxy nao vua doi.
+router.post('/sync-gpm-proxies', async (_req, res, next) => {
+  try {
+    res.json(await syncProxiesFromGpm());
+  } catch (err) {
+    next(err);
   }
 });
 

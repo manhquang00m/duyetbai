@@ -379,6 +379,14 @@ export function BatchPage() {
           const failed = data.job.items.filter(isFailed).length
           if (failed > 0) toast.warning(`Xong, ${failed} bài lỗi — có thể Retry`)
           else toast.success('Batch hoàn tất')
+          if (data.job.topicConflicts && data.job.topicConflicts.length > 0) {
+            const detail = data.job.topicConflicts
+              .map((c) => `${c.postId}: ${c.topics.join(', ')}`)
+              .join(' · ')
+            toast.warning(
+              `${data.job.topicConflicts.length} bài bị 2 URL khác nhau gán 2 chủ đề khác nhau trong lần chạy này — ${detail}. Kiểm tra lại trang Bài viết.`,
+            )
+          }
         }
       }
       es.onerror = () => {

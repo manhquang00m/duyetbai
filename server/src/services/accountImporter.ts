@@ -131,7 +131,7 @@ export async function importAccountsExcel(filePath: string): Promise<AccountImpo
       if (result.action === 'inserted') inserted++;
       else updated++;
 
-      // Cot K: chu de cua TAI KHOAN DANG (khac chu de cua bai o account_topics).
+      // Cot K: chu de cua TAI KHOAN DANG (khac chu de cua bai o posts.topic).
       // O TRONG = giu nguyen chu de dang co, KHONG xoa - file cu chua co cot nay, import lai
       // khong duoc phep quet sach chu de da gan.
       const rawTopics = cellText(row.getCell(11).value);

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 const POPOVER_OPEN_EVENT = 'popover:open'
@@ -65,22 +66,38 @@ export function usePopover(opts: UsePopoverOpts = {}): PopoverState {
     }
   }, [open])
 
-  // Tinh vi tri panel tu trigger, kep trong viewport
+  // Tinh vi tri panel tu trigger, kep trong viewport. Panel luon render position:fixed (xem
+  // PopoverPanel) nen do duoc kich thuoc THAT (shrink-to-fit), khong phai ca chieu rong body.
+  // Tinh lai khi cuon/resize de panel bam theo trigger thay vi dung yen giua man hinh.
   useLayoutEffect(() => {
-    if (!open || !triggerRef.current) return
-    const rect = triggerRef.current.getBoundingClientRect()
-    const panelWidth = panelRef.current?.offsetWidth ?? 220
-    const panelHeight = panelRef.current?.offsetHeight ?? 0
-
-    let left = placement === 'bottom-end' ? rect.right - panelWidth : rect.left
-    left = Math.max(8, Math.min(left, window.innerWidth - panelWidth - 8))
-
-    let top = rect.bottom + offset
-    if (panelHeight && top + panelHeight > window.innerHeight - 8) {
-      top = Math.max(8, rect.top - offset - panelHeight)
+    if (!open) {
+      setPanelStyle({})
+      return
     }
+    const place = () => {
+      const trigger = triggerRef.current
+      const panel = panelRef.current
+      if (!trigger || !panel) return
+      const rect = trigger.getBoundingClientRect()
+      const panelWidth = panel.offsetWidth
+      const panelHeight = panel.offsetHeight
 
-    setPanelStyle({ position: 'fixed', top, left, zIndex: 50 })
+      let left = placement === 'bottom-end' ? rect.right - panelWidth : rect.left
+      left = Math.max(8, Math.min(left, window.innerWidth - panelWidth - 8))
+
+      let top = rect.bottom + offset
+      if (top + panelHeight > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - offset - panelHeight)
+      }
+      setPanelStyle({ top, left })
+    }
+    place()
+    window.addEventListener('scroll', place, true)
+    window.addEventListener('resize', place)
+    return () => {
+      window.removeEventListener('scroll', place, true)
+      window.removeEventListener('resize', place)
+    }
   }, [open, placement, offset])
 
   return { open, setOpen, triggerRef, panelRef, panelStyle }
@@ -96,10 +113,21 @@ export function PopoverPanel({
   children: ReactNode
 }) {
   if (!popover.open) return null
-  return (
+  // Portal ra body: to tien co CSS transform (vd thanh thao tac -translate-x-1/2) bien
+  // position:fixed thanh tuong doi voi chinh to tien do -> panel bi day ra ngoai man hinh.
+  return createPortal(
     <div
       ref={popover.panelRef}
-      style={popover.panelStyle}
+      // An (visibility) cho toi khi da tinh xong toa do - tranh 1 khung hinh panel hien o goc
+      // man hinh roi moi nhay ve canh trigger.
+      style={{
+        position: 'fixed',
+        zIndex: 50,
+        top: 0,
+        left: 0,
+        visibility: popover.panelStyle.top === undefined ? 'hidden' : 'visible',
+        ...popover.panelStyle,
+      }}
       role="menu"
       className={cn(
         'min-w-[10rem] animate-in rounded-md border bg-popover p-1 text-popover-foreground shadow-md fade-in zoom-in-95 duration-100',
@@ -107,6 +135,7 @@ export function PopoverPanel({
       )}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   )
 }

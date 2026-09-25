@@ -13,6 +13,7 @@ export interface BatchItemResult {
   url: string;
   ok: boolean;
   skipped?: boolean; // da tai roi -> bo qua
+  postId?: string; // dung de gan chu de THANG vao dong bai nay (xem services/jobs.ts)
   username?: string;
   caption?: string;
   mediaOk?: number;
@@ -62,6 +63,7 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
             url,
             ok: true,
             skipped: true,
+            postId: postId ?? undefined,
             username: brief?.username ?? '',
             caption: brief?.caption ?? '',
             entries: brief?.shopee_count ?? 0,
@@ -77,6 +79,7 @@ export async function runBatch(urls: string[], opts: RunBatchOpts = {}): Promise
           item = {
             url,
             ok: true,
+            postId: postId ?? undefined,
             username: result.username,
             caption: result.caption,
             mediaOk,
