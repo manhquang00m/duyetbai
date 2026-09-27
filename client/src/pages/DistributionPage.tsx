@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -10,8 +10,6 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  Settings2,
-  Wand2,
   Info,
   Search,
 } from 'lucide-react'
@@ -24,30 +22,19 @@ import {
   fetchDistributionPlan,
   deleteDistributionPlan,
   distributionExportUrl,
-  fetchCaptionVariantStatus,
-  fetchCaptionVariants,
-  runCaptionVariantJob,
-  runCaptionVariantForPost,
-  fetchVariantRewritePrompt,
-  saveVariantRewritePrompt,
-  batchStreamUrl,
   ACCOUNT_TOPICS,
-  APPEAL_STATUSES,
   type PlanPreview,
   type PostingAccount,
-  type JobState,
-  type CaptionVariantStatus,
 } from '@/lib/api'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { usePopover, PopoverPanel } from '@/components/ui/popover'
 import { EmptyState } from '@/components/EmptyState'
 import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
 import { PostingTopicsCell } from '@/components/PostingTopicsCell'
+import { StatusCheckboxFilter } from '@/components/StatusCheckboxFilter'
 import { cn } from '@/lib/utils'
 
 /** Hom nay theo gio MAY, khong dung toISOString (buoi toi VN se ra ngay hom truoc). */
@@ -261,10 +248,7 @@ export function DistributionPage() {
         </p>
       </Card>
 
-      {/* 2. Viết lại caption kho bài */}
-      <CaptionVariantCard />
-
-      {/* 3. Chủ đề tài khoản đăng */}
+      {/* 2. Chủ đề tài khoản đăng */}
       <Card className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
           <div>
@@ -346,7 +330,7 @@ export function DistributionPage() {
         </div>
       </Card>
 
-      {/* 4. Lập kế hoạch */}
+      {/* 3. Lập kế hoạch */}
       <Card className="space-y-4 p-4">
         <h2 className="font-semibold">Lập kế hoạch</h2>
         <div className="grid gap-3 sm:grid-cols-4">
@@ -534,7 +518,7 @@ export function DistributionPage() {
         )}
       </Card>
 
-      {/* 5. Kế hoạch đã tạo */}
+      {/* 4. Kế hoạch đã tạo */}
       <Card className="overflow-hidden p-0">
         <div className="border-b p-4">
           <h2 className="font-semibold">Kế hoạch đã tạo</h2>
@@ -633,69 +617,6 @@ export function DistributionPage() {
       </Dialog>
 
       <RulesDialog open={rulesOpen} onClose={() => setRulesOpen(false)} />
-    </div>
-  )
-}
-
-/** Loc nhieu trang thai tai khoan cung luc (checkbox), dung cho bang "Chu de tai khoan dang". */
-function StatusCheckboxFilter({
-  selected,
-  onChange,
-}: {
-  selected: Set<string>
-  onChange: (next: Set<string>) => void
-}) {
-  const popover = usePopover()
-
-  const toggle = (status: string) => {
-    const next = new Set(selected)
-    if (next.has(status)) next.delete(status)
-    else next.add(status)
-    onChange(next)
-  }
-
-  return (
-    <div className="relative inline-block">
-      <button
-        ref={popover.triggerRef}
-        type="button"
-        onClick={() => popover.setOpen(!popover.open)}
-        aria-expanded={popover.open}
-        aria-haspopup="menu"
-        className={cn(
-          buttonVariants({ variant: 'outline', size: 'sm' }),
-          selected.size > 0 && 'border-primary text-foreground',
-        )}
-      >
-        Trạng thái
-        {selected.size > 0 && <span className="font-semibold">: {selected.size}</span>}
-        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-      </button>
-      <PopoverPanel popover={popover} className="w-56 p-2">
-        <div className="space-y-0.5">
-          {APPEAL_STATUSES.map((t) => (
-            <label
-              key={t}
-              className="flex cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-sm hover:bg-accent"
-            >
-              <Checkbox checked={selected.has(t)} onCheckedChange={() => toggle(t)} />
-              {t}
-            </label>
-          ))}
-        </div>
-        {selected.size > 0 && (
-          <>
-            <div className="my-2 border-t" />
-            <button
-              type="button"
-              onClick={() => onChange(new Set())}
-              className="w-full rounded-sm px-2 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              Bỏ lọc trạng thái
-            </button>
-          </>
-        )}
-      </PopoverPanel>
     </div>
   )
 }
@@ -847,296 +768,5 @@ function PlanDetail({ id }: { id: string }) {
         )
       })}
     </div>
-  )
-}
-
-/**
- * "Viet lai caption kho bai": moi lan 1 bai duoc phan phoi lai o account khac, thuat toan phan
- * phoi tu xoay vong 1 trong 3 ban o day (xem services/distribution.ts) - bai chua co ban nao thi
- * dung tam caption goc. The nay chi lo phan CHUAN BI san 3 ban, khong lam gi den viec phan phoi.
- */
-function CaptionVariantCard() {
-  const qc = useQueryClient()
-  const { data } = useQuery({
-    queryKey: ['caption-variant-status'],
-    queryFn: fetchCaptionVariantStatus,
-  })
-  const [job, setJob] = useState<JobState | null>(null)
-  const [running, setRunning] = useState(false)
-  const [promptOpen, setPromptOpen] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-
-  const rows = data ?? []
-  const doneCount = rows.filter((r) => r.variant_count >= 3).length
-  const missingCount = rows.length - doneCount
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['caption-variant-status'] })
-
-  const runOneMut = useMutation({
-    mutationFn: (postId: string) => runCaptionVariantForPost(postId),
-    onSuccess: () => {
-      invalidate()
-      toast.success('Đã viết lại')
-    },
-    onError: (e: Error) => toast.error(e.message),
-  })
-
-  // postIds bo trong = server tu chon bai con thieu ban. Truyen DU postIds (ke ca bai da xong)
-  // de force viet lai lai toan bo - server force=true cho moi id duoc truyen thang vao.
-  const runJob = async (postIds?: string[]) => {
-    try {
-      setRunning(true)
-      setJob(null)
-      const { jobId } = await runCaptionVariantJob(postIds)
-      const es = new EventSource(batchStreamUrl(jobId))
-      es.onmessage = (ev) => {
-        const d = JSON.parse(ev.data) as { type: string; job: JobState }
-        setJob(d.job)
-        if (d.type === 'end') {
-          es.close()
-          setRunning(false)
-          invalidate()
-          const failed = d.job.items.filter((i) => !i.ok).length
-          if (failed) toast.warning(`Xong, ${failed} bài lỗi`)
-          else toast.success('Đã viết lại xong')
-        }
-      }
-      es.onerror = () => {
-        es.close()
-        setRunning(false)
-      }
-    } catch (e) {
-      setRunning(false)
-      toast.error(e instanceof Error ? e.message : 'Không chạy được')
-    }
-  }
-
-  const runAllForce = () => {
-    if (
-      !confirm(
-        `Viết lại lại TOÀN BỘ ${rows.length} bài, kể cả ${doneCount} bài đã có đủ 3 bản?\n\n` +
-          'Bản cũ sẽ bị ghi đè, tốn thêm quota AI cho những bài đã xong.',
-      )
-    )
-      return
-    void runJob(rows.map((r) => r.post_id))
-  }
-
-  const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
-
-  return (
-    <Card className="space-y-3 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-semibold">Viết lại caption kho bài</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {doneCount}/{rows.length} bài đã đủ 3 bản — mỗi lần 1 bài được phân phối lại cho tài
-            khoản khác sẽ dùng luân phiên 1 bản khác nhau, tránh nhiều tài khoản đăng y hệt cùng
-            caption.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)}>
-            <Settings2 className="h-4 w-4" /> Giọng văn
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={running || rows.length === 0}
-            onClick={runAllForce}
-          >
-            {running ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Wand2 className="h-4 w-4" />
-            )}
-            Viết lại tất cả ({rows.length})
-          </Button>
-          <Button size="sm" disabled={running || missingCount === 0} onClick={() => runJob()}>
-            {running ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Wand2 className="h-4 w-4" />
-            )}
-            Viết lại còn thiếu ({missingCount})
-          </Button>
-        </div>
-      </div>
-
-      {job && (
-        <div className="space-y-1">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {job.done}/{job.total} bài
-          </p>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="text-xs text-muted-foreground hover:text-foreground"
-      >
-        {expanded ? 'Ẩn danh sách bài' : 'Xem danh sách bài'}
-      </button>
-
-      {expanded && (
-        <div className="max-h-96 overflow-auto rounded-lg border">
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-muted/40 uppercase text-muted-foreground">
-              <tr>
-                <th className="w-8 p-2"></th>
-                <th className="p-2 text-left font-medium">Post ID</th>
-                <th className="p-2 text-left font-medium">Caption gốc</th>
-                <th className="p-2 text-center font-medium">Bản</th>
-                <th className="w-20 p-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <CaptionVariantRow
-                  key={r.post_id}
-                  row={r}
-                  onRewrite={() => runOneMut.mutate(r.post_id)}
-                  rewriting={runOneMut.isPending && runOneMut.variables === r.post_id}
-                />
-              ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                    Chưa có bài nào trong kho sạch.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <VariantPromptDialog open={promptOpen} onClose={() => setPromptOpen(false)} />
-    </Card>
-  )
-}
-
-/** 1 dong bai + (khi bung) noi dung 3 ban caption da viet, xem truoc khi tin dung. */
-function CaptionVariantRow({
-  row,
-  onRewrite,
-  rewriting,
-}: {
-  row: CaptionVariantStatus
-  onRewrite: () => void
-  rewriting: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const variants = useQuery({
-    queryKey: ['caption-variants', row.post_id],
-    queryFn: () => fetchCaptionVariants(row.post_id),
-    enabled: open,
-  })
-
-  return (
-    <>
-      <tr className="border-b last:border-0">
-        <td className="p-2">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            disabled={row.variant_count === 0}
-            className="rounded p-0.5 text-muted-foreground hover:bg-accent disabled:opacity-30"
-          >
-            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-          </button>
-        </td>
-        <td className="whitespace-nowrap p-2 font-mono text-[11px] text-muted-foreground">
-          {row.post_id}
-        </td>
-        <td className="max-w-[28rem] truncate p-2">
-          {row.caption || <em className="text-muted-foreground">(trống)</em>}
-        </td>
-        <td
-          className={cn(
-            'p-2 text-center tabular-nums',
-            row.variant_count < 3 && 'text-amber-600 dark:text-amber-400',
-          )}
-        >
-          {row.variant_count}/3
-        </td>
-        <td className="p-2">
-          <Button variant="ghost" size="sm" disabled={rewriting} onClick={onRewrite}>
-            {rewriting && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Viết lại
-          </Button>
-        </td>
-      </tr>
-      {open && (
-        <tr className="border-b bg-muted/30 last:border-0">
-          <td colSpan={5} className="space-y-1.5 p-2.5">
-            {variants.isLoading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang tải...
-              </div>
-            )}
-            {!variants.isLoading &&
-              (variants.data ?? []).map((v) => (
-                <div key={v.variant_index} className="rounded-md border bg-background p-2">
-                  <span className="mr-1.5 font-medium text-muted-foreground">
-                    Bản {v.variant_index}:
-                  </span>
-                  {v.caption}
-                </div>
-              ))}
-            {!variants.isLoading && (variants.data ?? []).length === 0 && (
-              <p className="text-muted-foreground">Chưa có bản nào.</p>
-            )}
-          </td>
-        </tr>
-      )}
-    </>
-  )
-}
-
-function VariantPromptDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [text, setText] = useState('')
-  const prompt = useQuery({
-    queryKey: ['variant-rewrite-prompt'],
-    queryFn: fetchVariantRewritePrompt,
-    enabled: open,
-  })
-
-  useEffect(() => {
-    if (prompt.data) setText(prompt.data.prompt)
-  }, [prompt.data])
-
-  const save = useMutation({
-    mutationFn: () => saveVariantRewritePrompt(text),
-    onSuccess: () => {
-      toast.success('Đã lưu giọng văn')
-      onClose()
-    },
-    onError: (e: Error) => toast.error(e.message),
-  })
-
-  return (
-    <Dialog open={open} onClose={onClose} className="max-w-2xl">
-      <h2 className="text-lg font-semibold">Giọng văn viết lại caption kho bài</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hướng dẫn cho AI khi viết 3 bản caption khác nhau cho 1 bài. Để trống rồi lưu sẽ quay về
-        mặc định.
-      </p>
-      <Textarea className="mt-3" rows={14} value={text} onChange={(e) => setText(e.target.value)} />
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Hủy
-        </Button>
-        <Button disabled={save.isPending} onClick={() => save.mutate()}>
-          {save.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Lưu
-        </Button>
-      </div>
-    </Dialog>
   )
 }

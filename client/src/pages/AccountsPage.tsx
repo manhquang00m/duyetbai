@@ -6,6 +6,7 @@ import {
   Trash2,
   Users,
   Upload,
+  Download,
   Pencil,
   ShieldCheck,
   RefreshCw,
@@ -26,6 +27,7 @@ import {
   deleteAccount,
   deleteAccounts,
   importAccounts,
+  exportAccountsUrl,
   checkProxies,
   saveProxies,
   fetchProxies,
@@ -48,6 +50,7 @@ import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialo
 import { PostingTopicsCell } from '@/components/PostingTopicsCell'
 import { CloneAccountDialog } from '@/components/CloneAccountDialog'
 import { GpmProxySyncDialog } from '@/components/GpmProxySyncDialog'
+import { StatusCheckboxFilter, STATUS_NONE } from '@/components/StatusCheckboxFilter'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -235,7 +238,10 @@ export function AccountsPage() {
   )
   const [platformFilter, setPlatformFilter] = useState<'all' | 'Stable' | 'Global' | 'none'>('all')
   const [proxyTypeFilter, setProxyTypeFilter] = useState<string>('all')
-  const [appealFilter, setAppealFilter] = useState<string>('all')
+  // Rong = khong loc. Mac dinh chi hien account dang dung duoc.
+  const [appealFilter, setAppealFilter] = useState<Set<string>>(
+    () => new Set(['Live', 'Kháng thành công', 'Chưa kháng']),
+  )
 
   const allAccounts = accounts ?? []
   // Chu de cua TAI KHOAN DANG (posting_account_topics) - khac chu de cua bai o cot duoi.
@@ -267,10 +273,7 @@ export function AccountsPage() {
         if (proxyTypeFilter === 'none' ? !!a.proxy_type : a.proxy_type !== proxyTypeFilter)
           return false
       }
-      if (appealFilter !== 'all') {
-        if (appealFilter === 'none' ? !!a.appeal_status : a.appeal_status !== appealFilter)
-          return false
-      }
+      if (appealFilter.size > 0 && !appealFilter.has(a.appeal_status || STATUS_NONE)) return false
       return true
     })
   }, [
@@ -415,7 +418,13 @@ export function AccountsPage() {
     if (targets.length === 0) return
 
     // Proxy Live va chua bi account nao dung (tinh tren TOAN BO account, khong chi trang dang loc)
-    const taken = new Set(allAccounts.map((a) => a.proxy).filter((p): p is string => !!p))
+    // Account Die khong con dung proxy -> proxy chi con account Die gan = proxy ranh (khop kho proxy).
+    const taken = new Set(
+      allAccounts
+        .filter((a) => a.appeal_status !== 'Die')
+        .map((a) => a.proxy)
+        .filter((p): p is string => !!p),
+    )
     const pool = (proxiesData ?? []).filter((p) => p.status === 'live' && !taken.has(p.proxy))
 
     if (pool.length === 0) {
@@ -509,6 +518,9 @@ export function AccountsPage() {
             </Button>
             <ImportHelp />
           </div>
+          <a href={exportAccountsUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+            <Download className="h-4 w-4" /> Xuất Excel
+          </a>
           <Button size="sm" onClick={openCreate}>
             <Plus className="h-4 w-4" /> Thêm account
           </Button>
@@ -578,16 +590,7 @@ export function AccountsPage() {
             { value: 'none', label: 'Chưa đặt' },
           ]}
         />
-        <SingleFilterDropdown
-          label="Trạng thái"
-          value={appealFilter}
-          onChange={setAppealFilter}
-          options={[
-            { value: 'all', label: 'Tất cả' },
-            ...APPEAL_STATUSES.map((t) => ({ value: t, label: t })),
-            { value: 'none', label: 'Chưa đặt' },
-          ]}
-        />
+        <StatusCheckboxFilter selected={appealFilter} onChange={setAppealFilter} includeNone />
         <span className="text-xs text-muted-foreground">{items.length}/{allAccounts.length} account</span>
       </div>
 

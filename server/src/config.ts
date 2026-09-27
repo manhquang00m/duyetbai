@@ -66,8 +66,16 @@ export const LLM_MODELS = (process.env.LLM_MODEL || 'gemini-3.5-flash-lite,gemin
   .map((m) => m.trim())
   .filter(Boolean);
 
-/** KHONG hardcode key o day - dien trong .env (da nam trong .gitignore). */
-export const LLM_API_KEY = process.env.LLM_API_KEY || '';
+/**
+ * Danh sach API key, ngan cach bang dau phay - dung NHIEU key de cong don quota/ngay (moi key
+ * Google cap quota RIENG). Het quota ngay o key dau (voi 1 model) -> tu chuyen sang key ke tiep
+ * CHO CUNG model do truoc khi chuyen sang model ke tiep (xem services/llm.ts).
+ * KHONG hardcode key o day - dien trong .env (da nam trong .gitignore).
+ */
+export const LLM_API_KEYS = (process.env.LLM_API_KEY || '')
+  .split(',')
+  .map((k) => k.trim())
+  .filter(Boolean);
 
 /** So request AI chay song song. De thap vi free tier siet so request/phut. */
 export const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 2;
@@ -93,3 +101,14 @@ export const SHOPEE_SESSION_PATH = path.join(repoRoot, '.pw-session', 'shopee.js
  */
 export const GPM_GLOBAL_URL = process.env.GPM_GLOBAL_URL || 'http://127.0.0.1:9495';
 export const GPM_STABLE_URL = process.env.GPM_STABLE_URL || 'http://127.0.0.1:19995';
+
+/**
+ * Khoa cho tool auto dang goi API bao ket qua dang bai (header X-Api-Key). KHONG co gia tri mac
+ * dinh: de trong -> API tu choi het (fail closed) - xem api/automation.ts.
+ */
+export const AUTOMATION_API_KEY = process.env.AUTOMATION_API_KEY?.trim() || '';
+
+/** Thu muc file log server (logs/server-YYYY-MM-DD.log). Mac dinh <root>/logs */
+export const LOG_DIR = process.env.LOG_DIR
+  ? path.resolve(process.env.LOG_DIR)
+  : path.join(repoRoot, 'logs');

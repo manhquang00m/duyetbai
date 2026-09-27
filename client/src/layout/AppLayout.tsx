@@ -9,9 +9,12 @@ import {
   Sparkles,
   Wand2,
   CalendarDays,
+  TrendingUp,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { ServerHealthButton } from '@/components/ServerHealthButton'
 
 const nav = [
   { to: '/', label: 'Tổng quan', icon: LayoutDashboard, end: true },
@@ -20,7 +23,9 @@ const nav = [
   { to: '/accounts', label: 'Accounts', icon: Users, end: false },
   { to: '/proxy', label: 'Proxy', icon: Network, end: false },
   { to: '/distribution', label: 'Phân phối bài', icon: CalendarDays, end: false },
+  { to: '/post-log', label: 'Nhật ký đăng', icon: ClipboardList, end: false },
   { to: '/shopee', label: 'Shopee & Export', icon: ShoppingBag, end: false },
+  { to: '/affiliate', label: 'Hiệu quả Affiliate', icon: TrendingUp, end: false },
   { to: '/rewrite', label: 'Viết lại caption', icon: Wand2, end: false },
 ]
 
@@ -59,6 +64,7 @@ export function AppLayout() {
 
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-2 border-b bg-background/70 px-6 backdrop-blur">
+          <ServerHealthButton />
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-auto p-8">

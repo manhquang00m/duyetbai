@@ -11,8 +11,10 @@ import {
   getAccountByName,
 } from '../db/accounts';
 import { importAccountsExcel } from '../services/accountImporter';
+import { exportAccountsXlsx } from '../services/accountExporter';
 import { syncProxiesFromGpm } from '../services/proxySync';
 import { PROXY_TYPES, APPEAL_STATUSES } from '../db/accountEnums';
+import { fileStamp } from '../utils/fileStamp';
 import { EXPORT_DIR } from '../config';
 
 const router = Router();
@@ -83,6 +85,19 @@ router.post('/import', upload.single('file'), async (req, res, next) => {
     next(err);
   } finally {
     fs.rm(req.file.path, { force: true }, () => {});
+  }
+});
+
+// GET /api/accounts/export -> xuat Excel toan bo account, dung DUNG dinh dang cot A-L nhu file
+// import (xem services/accountExporter.ts) - xuat ra sua tay roi import lai duoc ngay.
+router.get('/export', async (_req, res, next) => {
+  try {
+    fs.mkdirSync(EXPORT_DIR, { recursive: true });
+    const out = path.join(EXPORT_DIR, 'accounts_export.xlsx');
+    await exportAccountsXlsx(out);
+    res.download(out, `accounts_${fileStamp()}.xlsx`);
+  } catch (err) {
+    next(err);
   }
 });
 

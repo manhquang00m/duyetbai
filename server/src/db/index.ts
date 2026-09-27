@@ -162,6 +162,104 @@ db.exec(`
     PRIMARY KEY (post_id, variant_index),
     FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE
   );
+
+  -- ===== Hieu qua Affiliate: import bao cao Click + Hoa hong tu Shopee Affiliate =====
+  -- Thoi gian luu nguyen chuoi 'YYYY-MM-DD HH:MM:SS' gio VN nhu file Shopee (khong doi UTC).
+  -- Tien luu so nguyen milli-dong (x1000) - xem utils/money.ts.
+  -- CO Y khong dat FK sang posts: bao cao co the chua Sub_id cua bai da xoa/chua cao; post_id chi
+  -- la ket qua doi chieu (NULL = khong khop bai nao).
+  CREATE TABLE IF NOT EXISTS aff_imports (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind         TEXT NOT NULL,            -- 'click' | 'commission'
+    file_name    TEXT NOT NULL,
+    rows         INTEGER NOT NULL,
+    inserted     INTEGER NOT NULL,
+    updated      INTEGER NOT NULL,
+    skipped      INTEGER NOT NULL,
+    min_time     TEXT,
+    max_time     TEXT,
+    imported_at  TEXT NOT NULL
+  );
+
+  -- 1 dong = 1 click. Bat bien -> import lai chi bo qua dong da co.
+  CREATE TABLE IF NOT EXISTS aff_clicks (
+    click_id    TEXT PRIMARY KEY,
+    clicked_at  TEXT NOT NULL,
+    region      TEXT,
+    referrer    TEXT,
+    sub_id_raw  TEXT,
+    sub_id1     TEXT,
+    sub_id2     TEXT,
+    sub_id3     TEXT,
+    sub_id4     TEXT,
+    sub_id5     TEXT,
+    post_id     TEXT,
+    import_id   INTEGER
+  );
+
+  -- 1 dong = 1 SAN PHAM trong 1 don. Trang thai/hoa hong doi theo thoi gian -> import lai ghi de.
+  -- Hoa hong cap DON chi nam o dong dau cua don (dong sau = 0) nen cong net_commission_milli theo
+  -- tung dong la ra dung tong, khong nhan doi.
+  CREATE TABLE IF NOT EXISTS aff_order_items (
+    order_id              TEXT NOT NULL,
+    item_id               TEXT NOT NULL,
+    model_id              TEXT NOT NULL,
+    checkout_id           TEXT,
+    order_status          TEXT,
+    product_status        TEXT,
+    ordered_at            TEXT,
+    completed_at          TEXT,
+    clicked_at            TEXT,
+    shop_name             TEXT,
+    shop_id               TEXT,
+    item_name             TEXT,
+    quantity              INTEGER NOT NULL DEFAULT 0,
+    price_milli           INTEGER NOT NULL DEFAULT 0,
+    order_value_milli     INTEGER NOT NULL DEFAULT 0,
+    refund_milli          INTEGER NOT NULL DEFAULT 0,
+    net_commission_milli  INTEGER NOT NULL DEFAULT 0,
+    attribution_type      TEXT,
+    buyer_status          TEXT,
+    channel               TEXT,
+    sub_id1               TEXT,
+    sub_id2               TEXT,
+    sub_id3               TEXT,
+    sub_id4               TEXT,
+    sub_id5               TEXT,
+    post_id               TEXT,
+    click_id              TEXT,
+    import_id             INTEGER,
+    updated_at            TEXT NOT NULL,
+    PRIMARY KEY (order_id, item_id, model_id)
+  );
+
+  -- ===== Nhat ky dang bai: tool auto dang goi API bao ket qua tung bai (api/automation.ts) =====
+  -- 1 dong = 1 slot (ngay, nick, bai) - trung khoa voi ux_dist_date_account_post cua ke hoach nen
+  -- khop duoc dung slot. Gui lai cung slot -> cap nhat (chi NANG trang thai, khong ha).
+  -- status: 'posted' (dang bai OK) | 'commented' (dang bai + comment OK).
+  -- dist_item_id NULL = bai dang ngoai ke hoach phan phoi.
+  CREATE TABLE IF NOT EXISTS post_runs (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_date          TEXT NOT NULL,
+    account_name       TEXT NOT NULL,
+    post_id            TEXT NOT NULL,
+    caption_variant    INTEGER,
+    dist_item_id       INTEGER,
+    status             TEXT NOT NULL,
+    posted_url         TEXT,
+    posted_at          TEXT,
+    reports            INTEGER NOT NULL DEFAULT 1,
+    first_reported_at  TEXT NOT NULL,
+    last_reported_at   TEXT NOT NULL,
+    UNIQUE (post_date, account_name, post_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_post_runs_date ON post_runs(post_date);
+
+  CREATE INDEX IF NOT EXISTS idx_aff_clicks_sub_time ON aff_clicks(sub_id1, clicked_at);
+  CREATE INDEX IF NOT EXISTS idx_aff_clicks_post ON aff_clicks(post_id);
+  CREATE INDEX IF NOT EXISTS idx_aff_clicks_time ON aff_clicks(clicked_at);
+  CREATE INDEX IF NOT EXISTS idx_aff_orders_post ON aff_order_items(post_id);
+  CREATE INDEX IF NOT EXISTS idx_aff_orders_sub_time ON aff_order_items(sub_id1, clicked_at);
 `);
 
 // Migration: them cot new_link cho shopee_entries neu chua co (DB cu).

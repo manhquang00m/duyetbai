@@ -72,8 +72,14 @@ export function setAuthorTopic(username: string, topic: string | null): { update
 
 const updateOne = db.prepare('UPDATE posts SET topic = ? WHERE post_id = ?');
 
-/** Gan chu de cho DUNG 1 bai (theo post_id) - dung khi cao qua "Thu thap theo nhom URL". */
-export function setPostTopic(postId: string, topic: string): void {
-  if (!ACCOUNT_TOPICS_SET.has(topic)) return;
-  updateOne.run(topic, postId);
+/**
+ * Gan/bo chu de cho DUNG 1 bai (theo post_id) - topic=null de bo gan. Dung khi cao qua "Thu thap
+ * theo nhom URL" (topic luon co gia tri o do) VA khi nguoi dung tu gan tung bai o trang "Bai viet".
+ */
+export function setPostTopic(postId: string, topic: string | null): { updated: number } {
+  const trimmed = postId?.trim();
+  if (!trimmed) return { updated: 0 };
+  if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
+  const result = updateOne.run(topic, trimmed);
+  return { updated: Number(result.changes) };
 }

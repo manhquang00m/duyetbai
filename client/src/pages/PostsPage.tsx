@@ -16,19 +16,18 @@ import {
   Wand2,
   AlertTriangle,
   Send,
-  Undo2,
   Tag,
-  ShieldCheck,
 } from 'lucide-react'
 import {
   fetchPosts,
   fetchPost,
   deletePosts,
-  markPostsPosted,
+  setPostTopic,
   fetchExportPostsWarnings,
   buildExportPostsUrl,
   fetchCaptionVariants,
   ACCOUNT_TOPICS,
+  UNASSIGNED_TOPIC,
   type ExportPostsWarnings,
   exportShopeeUrl,
   type LinkStatusFilter,
@@ -42,9 +41,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
-import { BeautifyDialog } from '@/components/BeautifyDialog'
 import { AssignTopicDialog } from '@/components/AssignTopicDialog'
-import { ShopeeLinkCheckDialog } from '@/components/ShopeeLinkCheckDialog'
+import { PostTopicCell } from '@/components/PostTopicCell'
 import { MultiFilterDropdown, TopicFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
@@ -180,8 +178,6 @@ export function PostsPage() {
   const [topics, setTopics] = useState<string[]>([])
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
-  const [beautifyIds, setBeautifyIds] = useState<string[] | null>(null)
-  const [checkLinkIds, setCheckLinkIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
@@ -292,15 +288,6 @@ export function PostsPage() {
     setSel(new Set())
     invalidateAll()
     toast.success(`Đã xoá ${ids.length} bài`)
-  }
-
-  const doMarkPosted = async (posted: boolean) => {
-    const ids = [...sel]
-    if (ids.length === 0) return
-    await markPostsPosted(ids, posted)
-    setSel(new Set())
-    invalidateAll()
-    toast.success(posted ? `Đã đánh dấu ${ids.length} bài là đã đăng` : `Đã bỏ đánh dấu ${ids.length} bài`)
   }
 
   const resetPage = () => setPage(0)
@@ -473,8 +460,6 @@ export function PostsPage() {
               options: [
                 { value: 'all', label: 'Tất cả' },
                 { value: 'bad', label: 'Link chết hoặc hết hàng' },
-                { value: 'dead', label: 'Link chết' },
-                { value: 'out_of_stock', label: 'Hết hàng' },
                 { value: 'review', label: 'Cần xem lại' },
                 { value: 'unchecked', label: 'Chưa kiểm tra' },
               ],
@@ -520,6 +505,7 @@ export function PostsPage() {
             setTopics([])
             resetPage()
           }}
+          unassignedValue={UNASSIGNED_TOPIC}
         />
       </div>
 
@@ -610,8 +596,14 @@ export function PostsPage() {
                   <td className="p-2.5 text-center">
                     <LinkHealthBadge post={p} />
                   </td>
-                  <td className="max-w-[10rem] truncate p-2.5 text-xs text-muted-foreground">
-                    {p.topic || '—'}
+                  <td className="max-w-[10rem] p-2.5 text-xs">
+                    <PostTopicCell
+                      topic={p.topic}
+                      onChange={async (topic) => {
+                        await setPostTopic(p.post_id, topic)
+                        invalidateAll()
+                      }}
+                    />
                   </td>
                   <td className="p-2.5 text-center">
                     <div className="flex flex-col items-center gap-1">
@@ -712,18 +704,6 @@ export function PostsPage() {
           <Button size="sm" variant="outline" onClick={() => setRescrapeIds([...sel])}>
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setBeautifyIds([...sel])}>
-            <Wand2 className="h-4 w-4" /> Làm đẹp video
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setCheckLinkIds([...sel])}>
-            <ShieldCheck className="h-4 w-4" /> Kiểm tra link Shopee
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => doMarkPosted(true)}>
-            <Send className="h-4 w-4" /> Đánh dấu đã đăng
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => doMarkPosted(false)}>
-            <Undo2 className="h-4 w-4" /> Bỏ đánh dấu
-          </Button>
           <Button size="sm" variant="outline" onClick={doDelete}>
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa
           </Button>
@@ -742,26 +722,6 @@ export function PostsPage() {
         postIds={rescrapeIds ?? []}
         onClose={() => {
           setRescrapeIds(null)
-          invalidateAll()
-        }}
-        onDone={invalidateAll}
-      />
-
-      <BeautifyDialog
-        open={!!beautifyIds}
-        postIds={beautifyIds ?? []}
-        onClose={() => {
-          setBeautifyIds(null)
-          invalidateAll()
-        }}
-        onDone={invalidateAll}
-      />
-
-      <ShopeeLinkCheckDialog
-        open={!!checkLinkIds}
-        postIds={checkLinkIds ?? []}
-        onClose={() => {
-          setCheckLinkIds(null)
           invalidateAll()
         }}
         onDone={invalidateAll}
@@ -795,13 +755,13 @@ export function PostsPage() {
               {(exportWarn?.badLink ?? 0) > 0 && (
                 <li>
                   <strong className="text-foreground">{exportWarn?.badLink}</strong> bài có link
-                  Shopee đã chết hoặc hết hàng — lọc "Link chết hoặc hết hàng" để xem và xử lý trước.
+                  Shopee đã chết hoặc hết hàng — cần xem và xử lý trước.
                 </li>
               )}
               {(exportWarn?.unknownLink ?? 0) > 0 && (
                 <li>
                   <strong className="text-foreground">{exportWarn?.unknownLink}</strong> bài có link
-                  chưa xác định được tình trạng (lọc "Cần xem lại").
+                  chưa xác định được tình trạng.
                 </li>
               )}
             </ul>

@@ -79,6 +79,12 @@ export interface PostFilterOpts {
  */
 export type LinkStatusFilter = 'bad' | 'dead' | 'out_of_stock' | 'review' | 'unchecked';
 
+/**
+ * Gia tri dac biet trong PostFilterOpts.topics de loc bai CHUA duoc gan chu de (p.topic rong/null).
+ * PHAI khop voi UNASSIGNED_TOPIC o client/src/lib/api.ts.
+ */
+export const UNASSIGNED_TOPIC = '__unassigned__';
+
 const LINK_STATUS_CONDS: Record<LinkStatusFilter, string> = {
   bad: "s.link_status IN ('dead', 'out_of_stock')",
   dead: "s.link_status = 'dead'",
@@ -127,9 +133,17 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
     );
   }
   if (opts.topics && opts.topics.length > 0) {
-    const placeholders = opts.topics.map(() => '?').join(', ');
-    conds.push(`p.topic IN (${placeholders})`);
-    args.push(...opts.topics);
+    const real = opts.topics.filter((t) => t !== UNASSIGNED_TOPIC);
+    const wantsUnassigned = opts.topics.includes(UNASSIGNED_TOPIC);
+    const subConds: string[] = [];
+    if (real.length > 0) {
+      subConds.push(`p.topic IN (${real.map(() => '?').join(', ')})`);
+      args.push(...real);
+    }
+    if (wantsUnassigned) {
+      subConds.push("(p.topic IS NULL OR p.topic = '')");
+    }
+    if (subConds.length > 0) conds.push(`(${subConds.join(' OR ')})`);
   }
   if (opts.cleanOnly) {
     conds.push(CLEAN_POST_COND);

@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from 'axios';
 import { getProxyAgent } from '../utils/httpAgent';
 import { withRetry } from '../utils/retry';
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MODELS, LLM_RPM } from '../config';
+import { LLM_API_KEYS, LLM_BASE_URL, LLM_MODELS, LLM_RPM } from '../config';
 
 /**
  * Loi cua nha cung cap nam trong body (vd: "model xyz is not found"), nhung axios chi de
@@ -27,9 +27,10 @@ function describeError(err: unknown, model: string): string {
         : data?.error?.message;
   if (err.response.status === 429 && isDailyQuotaExhausted(err)) {
     return (
-      `Da dung het quota MOI NGAY cua goi free cho TAT CA model dang cau hinh ` +
-      `(${LLM_MODELS.join(', ')}). Them model vao LLM_MODEL o server/.env (ngan cach bang dau ` +
-      `phay), bat billing, hoac cho sang ngay moi. Chi tiet: ${String(detail ?? '').slice(0, 200)}`
+      `Da dung het quota MOI NGAY cua goi free cho TAT CA to hop model x key dang cau hinh ` +
+      `(model: ${LLM_MODELS.join(', ')}; so key: ${LLM_API_KEYS.length}). Them model vao ` +
+      `LLM_MODEL hoac them key vao LLM_API_KEY (ngan cach bang dau phay) o server/.env, bat ` +
+      `billing, hoac cho sang ngay moi. Chi tiet: ${String(detail ?? '').slice(0, 200)}`
     );
   }
   return `HTTP ${err.response.status} tu ${LLM_BASE_URL} (model ${model}): ${
@@ -92,13 +93,50 @@ function throttled<T>(fn: () => Promise<T>): Promise<T> {
  * ket noi truc tiep) va doi nha cung cap chi can sua LLM_BASE_URL/LLM_MODEL trong .env.
  * withRetry cho theo dung thoi gian API yeu cau khi dinh 429 (Retry-After hoac body loi).
  */
-// Model da het quota ngay -> nho lai de cac lan goi sau khong phi them mot luot hoi nua.
-// Chi nho trong bo nho tien trinh: restart server la quen, va quota Google cung reset theo ngay
-// nen khong can luu xuong DB.
+// To hop (model, key) da het quota ngay -> nho lai de cac lan goi sau khong phi them mot luot
+// hoi nua. Chi nho trong bo nho tien trinh: restart server la quen, va quota Google cung reset
+// theo ngay nen khong can luu xuong DB.
 const exhaustedToday = new Set<string>();
 
-/** Goi 1 model cu the (da kem throttle + retry). */
-async function callModel(model: string, system: string, user: string): Promise<string> {
+interface Combo {
+  model: string;
+  keyIndex: number;
+}
+
+const comboId = (c: Combo): string => `${c.model}::${c.keyIndex}`;
+// Dung "key#N" (vi tri, 1-based) de log/bao loi - KHONG BAO GIO lo gia tri key that ra ngoai.
+const comboLabel = (c: Combo): string => `model=${c.model} key#${c.keyIndex + 1}`;
+
+/**
+ * Tat ca to hop (model, key) theo thu tu uu tien: model uu tien truoc (het quota moi key cua
+ * model dau moi chuyen model ke tiep), trong 1 model thi theo thu tu key trong LLM_API_KEY.
+ */
+function allCombos(): Combo[] {
+  const combos: Combo[] = [];
+  for (const model of LLM_MODELS) {
+    for (let keyIndex = 0; keyIndex < LLM_API_KEYS.length; keyIndex++) {
+      combos.push({ model, keyIndex });
+    }
+  }
+  return combos;
+}
+
+export interface AiConfigInfo {
+  keyCount: number;
+  models: string[];
+}
+
+/**
+ * Thong tin cau hinh AI HIEN CO (khong phai usage that - Gemini khong co API tra ve quota con lai,
+ * nen KHONG bia so lieu used/limit). Chi hien so luong key + danh sach model dang dung, xem trang
+ * "Viet lai caption".
+ */
+export function getAiConfig(): AiConfigInfo {
+  return { keyCount: LLM_API_KEYS.length, models: LLM_MODELS };
+}
+
+/** Goi 1 to hop model+key cu the (da kem throttle + retry). */
+async function callModel(model: string, apiKey: string, system: string, user: string): Promise<string> {
   const res = await withRetry(
     () =>
       throttled(() => {
@@ -116,7 +154,7 @@ async function callModel(model: string, system: string, user: string): Promise<s
           {
             timeout: 60_000,
             headers: {
-              authorization: `Bearer ${LLM_API_KEY}`,
+              authorization: `Bearer ${apiKey}`,
               'content-type': 'application/json',
             },
             proxy: false, // luon tuong minh, tranh axios tu doc HTTPS_PROXY tu env
@@ -135,29 +173,34 @@ async function callModel(model: string, system: string, user: string): Promise<s
 }
 
 export async function chatComplete(system: string, user: string): Promise<string> {
-  if (!LLM_API_KEY) {
+  if (LLM_API_KEYS.length === 0) {
     throw new Error('Chua cau hinh LLM_API_KEY trong server/.env nen khong goi duoc AI');
   }
 
-  const candidates = LLM_MODELS.filter((m) => !exhaustedToday.has(m));
-  // Het sach quota o moi model -> van thu lai model dau de lay thong bao loi that tu API,
-  // phong truong hop quota da reset ma bo nho cua ta con ghi nham la het.
-  const models = candidates.length > 0 ? candidates : LLM_MODELS;
+  const combos = allCombos();
+  const candidates = combos.filter((c) => !exhaustedToday.has(comboId(c)));
+  // Het sach quota o MOI to hop model+key -> van thu lai to hop dau de lay thong bao loi that tu
+  // API, phong truong hop quota da reset ma bo nho cua ta con ghi nham la het.
+  const tryList = candidates.length > 0 ? candidates : combos;
 
   let lastErr: unknown;
-  for (const model of models) {
+  let lastModel = tryList[tryList.length - 1]?.model ?? '';
+  for (const combo of tryList) {
+    lastModel = combo.model;
     try {
-      return await callModel(model, system, user);
+      return await callModel(combo.model, LLM_API_KEYS[combo.keyIndex], system, user);
     } catch (err) {
       lastErr = err;
       const daily = axios.isAxiosError(err) && isDailyQuotaExhausted(err);
-      if (!daily) throw new Error(describeError(err, model));
-      exhaustedToday.add(model);
-      const next = models[models.indexOf(model) + 1];
+      if (!daily) throw new Error(describeError(err, combo.model));
+      exhaustedToday.add(comboId(combo));
+      const next = tryList[tryList.indexOf(combo) + 1];
       console.warn(
-        `[llm] ${model} het quota ngay${next ? `, chuyen sang ${next}` : ' (khong con model du phong)'}`,
+        `[llm] ${comboLabel(combo)} het quota ngay${
+          next ? `, chuyen sang ${comboLabel(next)}` : ' (khong con to hop du phong)'
+        }`,
       );
     }
   }
-  throw new Error(describeError(lastErr, models[models.length - 1] ?? ''));
+  throw new Error(describeError(lastErr, lastModel));
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listAccountTopics, setAuthorTopic } from '../db/accountTopics';
+import { listAccountTopics, setAuthorTopic, setPostTopic } from '../db/accountTopics';
 
 const router = Router();
 
@@ -21,6 +21,20 @@ router.post('/author', (req, res) => {
   }
   setAuthorTopic(username, topic);
   res.json(listAccountTopics());
+});
+
+// POST /api/account-topics/post { postId, topic } -> gan/bo chu de cho DUNG 1 bai
+// (topic = null/'' de bo gan)
+router.post('/post', (req, res) => {
+  const postId = String(req.body?.postId ?? '').trim();
+  const topicRaw = req.body?.topic;
+  const topic = typeof topicRaw === 'string' && topicRaw.trim() ? topicRaw.trim() : null;
+  if (!postId) {
+    res.status(400).json({ error: 'postId không hợp lệ' });
+    return;
+  }
+  setPostTopic(postId, topic);
+  res.json({ ok: true });
 });
 
 export default router;

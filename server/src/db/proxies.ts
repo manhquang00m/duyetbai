@@ -21,13 +21,17 @@ export interface ProxyInput {
   note?: string | null;
 }
 
+// Account trang thai 'Die' khong con dung duoc -> khong tinh la "dang dung" proxy (proxy chi con
+// account Die gan vao = proxy ranh, gan lai cho account khac duoc).
+const USING_ACCOUNT = "a.proxy = p.proxy AND COALESCE(a.appeal_status, '') <> 'Die'";
+
 /** Danh sach proxy da luu, kem ten account dang gan (join theo chuoi proxy trung khop). */
 export function listProxies(): Proxy[] {
   return db
     .prepare(
       `SELECT p.id, p.proxy, p.status, p.ip, p.checked_at, p.created_at, p.proxy_type, p.note,
-              (SELECT GROUP_CONCAT(a.name, ', ') FROM accounts a WHERE a.proxy = p.proxy) AS account_names,
-              (SELECT COUNT(*) FROM accounts a WHERE a.proxy = p.proxy) AS account_count
+              (SELECT GROUP_CONCAT(a.name, ', ') FROM accounts a WHERE ${USING_ACCOUNT}) AS account_names,
+              (SELECT COUNT(*) FROM accounts a WHERE ${USING_ACCOUNT}) AS account_count
          FROM proxies p
         ORDER BY p.id DESC`,
     )

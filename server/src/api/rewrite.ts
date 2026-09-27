@@ -12,6 +12,7 @@ import {
   saveRewritten,
 } from '../services/rewrite';
 import { startRewriteJob } from '../services/jobs';
+import { getAiConfig } from '../services/llm';
 import { EXPORT_DIR } from '../config';
 
 const uploadDir = path.join(EXPORT_DIR, '_rewrite_uploads');
@@ -54,6 +55,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     fs.rm(filePath, { force: true }, () => {}); // tao batch that bai -> khong ai dung file nay nua
     res.status(400).json({ error: `Không đọc được file: ${errMsg(err)}` });
   }
+});
+
+// GET /api/rewrite/ai-config -> co dang cau hinh API key khong + danh sach model dang dung (dat
+// TRUOC /:batchId vi khong thi Express se hieu "ai-config" la mot batchId).
+router.get('/ai-config', (_req, res) => {
+  res.json(getAiConfig());
 });
 
 // GET /api/rewrite/:batchId -> danh sach dong (goc + ban viet lai)

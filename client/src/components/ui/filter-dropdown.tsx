@@ -78,6 +78,9 @@ interface TopicFilterDropdownProps {
   selected: string[]
   onToggle: (value: string) => void
   onClear: () => void
+  /** Gia tri pill rieng vd "chua gan chu de" - hien tach biet voi options bang 1 duong ke doc. */
+  unassignedValue?: string
+  unassignedLabel?: string
 }
 
 /**
@@ -90,6 +93,8 @@ export function TopicFilterDropdown({
   selected,
   onToggle,
   onClear,
+  unassignedValue,
+  unassignedLabel = 'Chưa gán chủ đề',
 }: TopicFilterDropdownProps) {
   const popover = usePopover()
   const isActive = selected.length > 0
@@ -132,6 +137,21 @@ export function TopicFilterDropdown({
               </button>
             )
           })}
+          {unassignedValue != null && (
+            <button
+              type="button"
+              onClick={() => onToggle(unassignedValue)}
+              aria-pressed={selected.includes(unassignedValue)}
+              className={cn(
+                'rounded-full border border-dashed px-3 py-1.5 text-sm transition-colors',
+                selected.includes(unassignedValue)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-background text-muted-foreground hover:bg-accent',
+              )}
+            >
+              {unassignedLabel}
+            </button>
+          )}
         </div>
         {isActive && (
           <>

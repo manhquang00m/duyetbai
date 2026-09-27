@@ -354,6 +354,9 @@ export async function importAccounts(file: File) {
   return data
 }
 
+/** Xuat Excel toan bo account, dung DUNG dinh dang cot nhu file import (import lai duoc ngay). */
+export const exportAccountsUrl = '/api/accounts/export'
+
 export interface ProxySyncChange {
   account: string
   oldProxy: string | null
@@ -504,6 +507,17 @@ export async function saveRewriteRow(rowId: number, rewritten: string) {
 
 export function rewriteExportUrl(batchId: string) {
   return `/api/rewrite/${batchId}/export`
+}
+
+export interface AiConfigInfo {
+  keyCount: number
+  models: string[]
+}
+
+/** Co dang cau hinh API key AI khong + danh sach model dang dung (KHONG phai so lieu usage that). */
+export async function fetchAiConfig() {
+  const { data } = await api.get<AiConfigInfo>('/api/rewrite/ai-config')
+  return data
 }
 
 export async function fetchRewritePrompt() {
@@ -657,6 +671,12 @@ export const ACCOUNT_TOPICS = [
 
 export type AccountTopic = (typeof ACCOUNT_TOPICS)[number]
 
+/**
+ * Gia tri dac biet dung trong PostFilterParams.topics de loc bai CHUA duoc gan chu de.
+ * PHAI khop voi UNASSIGNED_TOPIC o server/src/db/queries.ts.
+ */
+export const UNASSIGNED_TOPIC = '__unassigned__'
+
 export interface AccountTopicRow {
   username: string
   // Cac chu de KHAC NHAU dang xuat hien trong bai cua tac gia nay - moi BAI chi co dung 1 chu de,
@@ -677,6 +697,11 @@ export async function setAuthorTopic(username: string, topic: string | null) {
     topic,
   })
   return data
+}
+
+/** Gan/bo chu de cho DUNG 1 bai (topic=null de bo gan) - dung cho o "Chủ đề" tren trang Bài viết. */
+export async function setPostTopic(postId: string, topic: string | null) {
+  await api.post('/api/account-topics/post', { postId, topic })
 }
 
 // ===== Phan phoi bai =====
@@ -881,6 +906,181 @@ export async function fetchVariantRewritePrompt() {
 export async function saveVariantRewritePrompt(prompt: string) {
   const { data } = await api.put<{ prompt: string }>('/api/settings/variant-rewrite-prompt', {
     prompt,
+  })
+  return data
+}
+
+// ===== Hieu qua Affiliate (bao cao Click + Hoa hong Shopee) =====
+// Tien tra ve milli-dong (so nguyen) - chia 1000 khi hien thi.
+
+export type AffImportResult =
+  | {
+      kind: 'click' | 'commission'
+      fileName: string
+      rows: number
+      inserted: number
+      updated: number
+      skipped: number
+      unmatchedSubIds: number
+      minTime: string | null
+      maxTime: string | null
+    }
+  | { fileName: string; error: string }
+
+export interface AffFilterParams {
+  from: string
+  to: string
+  topics?: string[]
+}
+
+export interface AffSummary {
+  clicks: number
+  convertedClicks: number
+  orders: number
+  cancelledOrders: number
+  pendingMilli: number
+  completedMilli: number
+  unmatchedClicks: number
+  byReferrer: { referrer: string; clicks: number }[]
+  daily: { date: string; clicks: number; orders: number }[]
+}
+
+export interface AffPostRow {
+  post_id: string
+  username: string | null
+  caption: string | null
+  topic: string | null
+  url: string | null
+  thumb: string | null
+  clicks: number
+  converted_clicks: number
+  orders: number
+  cancelled_orders: number
+  pending_milli: number
+  completed_milli: number
+  first_click: string | null
+  last_click: string | null
+  referrers: Record<string, number>
+  accounts: string[]
+}
+
+export interface AffUnmatchedRow {
+  sub_id1: string
+  clicks: number
+  orders: number
+  commission_milli: number
+}
+
+export interface AffOrderLine {
+  order_id: string
+  item_name: string | null
+  shop_name: string | null
+  quantity: number
+  order_status: string | null
+  product_status: string | null
+  ordered_at: string | null
+  completed_at: string | null
+  clicked_at: string | null
+  click_id: string | null
+  order_value_milli: number
+  net_commission_milli: number
+}
+
+export interface AffCoverage {
+  imports: {
+    id: number
+    kind: string
+    file_name: string
+    rows: number
+    inserted: number
+    updated: number
+    skipped: number
+    min_time: string | null
+    max_time: string | null
+    imported_at: string
+  }[]
+  clickMin: string | null
+  clickMax: string | null
+  orderClickMin: string | null
+  orderClickMax: string | null
+}
+
+const affParams = (f: AffFilterParams) => ({
+  from: f.from,
+  to: f.to,
+  topics: f.topics && f.topics.length > 0 ? f.topics.join(',') : undefined,
+})
+
+export async function importAffiliateFiles(files: File[]) {
+  const form = new FormData()
+  for (const f of files) form.append('files', f)
+  const { data } = await api.post<AffImportResult[]>('/api/affiliate/import', form)
+  return data
+}
+
+export async function fetchAffSummary(f: AffFilterParams) {
+  const { data } = await api.get<AffSummary>('/api/affiliate/summary', { params: affParams(f) })
+  return data
+}
+
+export async function fetchAffPosts(f: AffFilterParams) {
+  const { data } = await api.get<{ posts: AffPostRow[]; unmatched: AffUnmatchedRow[] }>(
+    '/api/affiliate/posts',
+    { params: affParams(f) },
+  )
+  return data
+}
+
+export async function fetchAffPostDetail(postId: string, f: AffFilterParams) {
+  const { data } = await api.get<{ orders: AffOrderLine[]; daily: { date: string; clicks: number }[] }>(
+    `/api/affiliate/posts/${encodeURIComponent(postId)}`,
+    { params: affParams(f) },
+  )
+  return data
+}
+
+export async function fetchAffCoverage() {
+  const { data } = await api.get<AffCoverage>('/api/affiliate/coverage')
+  return data
+}
+
+// ===== Nhat ky dang bai (tool auto bao ve qua /api/automation/post-results) =====
+export type PostRunState = 'posted' | 'commented' | 'missing'
+
+export interface PostRunDayRow {
+  account_name: string
+  appeal_status: string | null
+  post_id: string
+  caption_variant: number | null
+  plan_name: string | null
+  in_plan: boolean
+  state: PostRunState
+  posted_url: string | null
+  posted_at: string | null
+  reports: number
+  last_reported_at: string | null
+  caption: string | null
+  thumb: string | null
+}
+
+export interface PostRunAccountRow {
+  account_name: string
+  appeal_status: string | null
+  planned: number
+  commented: number
+  posted_only: number
+  missing: number
+  extra: number
+}
+
+export async function fetchPostRunsDay(date: string) {
+  const { data } = await api.get<PostRunDayRow[]>('/api/post-runs/day', { params: { date } })
+  return data
+}
+
+export async function fetchPostRunsAccounts(from: string, to: string) {
+  const { data } = await api.get<PostRunAccountRow[]>('/api/post-runs/accounts', {
+    params: { from, to },
   })
   return data
 }
