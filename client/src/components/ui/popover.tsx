@@ -130,7 +130,7 @@ export function PopoverPanel({
       }}
       role="menu"
       className={cn(
-        'min-w-[10rem] animate-in rounded-md border bg-popover p-1 text-popover-foreground shadow-md fade-in zoom-in-95 duration-100',
+        'min-w-[10rem] max-w-[calc(100vw-1rem)] max-h-[70dvh] overflow-y-auto animate-in rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg fade-in zoom-in-95 duration-100',
         className,
       )}
     >

@@ -62,14 +62,14 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-3xl">
-      <h2 className="text-lg font-semibold">Gán chủ đề theo tác giả</h2>
+      <h2 className="pr-8 text-lg font-semibold">Gán chủ đề theo tác giả</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Chọn 1 chủ đề sẽ ghi đè lên TOÀN BỘ bài hiện có của tác giả đó — dùng cho bài cũ/cào trước
         khi có "Thu thập theo nhóm". Bài mới cào theo nhóm URL đã tự gán đúng chủ đề riêng, không
         cần chỉnh ở đây nữa.
       </p>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
           Đã gán chủ đề:{' '}
           <span className="font-medium text-foreground">
@@ -78,7 +78,7 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
           bài
         </p>
         <select
-          className="flex h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:w-auto sm:text-xs"
           value={topicFilter}
           onChange={(e) => setTopicFilter(e.target.value)}
         >
@@ -92,9 +92,9 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
         </select>
       </div>
 
-      <div className="mt-2 max-h-[65vh] overflow-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-muted/60 text-xs uppercase text-muted-foreground">
+      <div className="table-scroll mt-2 max-h-[55dvh] overflow-y-auto rounded-lg border sm:max-h-[65dvh]">
+        <table className="w-full min-w-[34rem] text-sm">
+          <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
             <tr>
               <th className="p-2.5 text-left font-medium">Tác giả</th>
               <th className="p-2.5 text-right font-medium">Số bài</th>
@@ -149,7 +149,7 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
         </table>
       </div>
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="ghost" onClick={onClose}>
           Đóng
         </Button>
@@ -185,7 +185,7 @@ function AuthorTopicSelect({
   return (
     <div className="flex items-center gap-2">
       <select
-        className="flex h-8 w-40 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+        className="flex h-10 w-40 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 sm:h-9 sm:text-xs"
         value={selected}
         disabled={saving}
         onChange={(e) => handleChange(e.target.value)}
@@ -234,7 +234,7 @@ function AuthorRow({
             {expanded ? 'Ẩn' : 'Xem'}
           </Button>
         </td>
-        <td className="p-2.5">{children}</td>
+        <td className="min-w-[13rem] p-2.5">{children}</td>
       </tr>
       {expanded && (
         <tr className="border-b bg-muted/30 last:border-0">
@@ -283,7 +283,7 @@ function AuthorPosts({ username }: { username: string }) {
           Hiển thị {items.length} bài mới nhất trong tổng số {data.total}.
         </p>
       )}
-      <div className="max-h-72 space-y-1.5 overflow-auto pr-1">
+      <div className="max-h-[40dvh] space-y-1.5 overflow-auto pr-1 sm:max-h-72">
         {items.map((p) => (
           <div key={p.post_id} className="flex gap-2.5 rounded-md border bg-background p-2">
             {p.thumb ? (
@@ -297,7 +297,7 @@ function AuthorPosts({ username }: { username: string }) {
             )}
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-xs">{p.caption || <em>(không có caption)</em>}</p>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
                 <span>{p.post_date || p.scraped_at?.slice(0, 10)}</span>
                 <span>· {p.shopee_count} link</span>
                 <a

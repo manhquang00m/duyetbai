@@ -7,6 +7,7 @@ import {
   Upload,
   Loader2,
   ShieldCheck,
+  Link2Off,
 } from 'lucide-react'
 import {
   importShopee,
@@ -27,10 +28,42 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/PageHeader'
+import { EmptyState } from '@/components/EmptyState'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 /** Panel tien trinh kiem tra link Shopee: progress bar + tung link kem log chi tiet tung buoc. */
+function LinkCell({ href, className, empty = '—' }: { href: string | null; className: string; empty?: string }) {
+  if (!href) return <span className="text-muted-foreground">{empty}</span>
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn('underline-offset-2 hover:underline', className)}
+      title={href}
+    >
+      {href}
+    </a>
+  )
+}
+
+function ProductCell({ row }: { row: ShopeeLinkRow }) {
+  if (!row.product_title) return <span className="text-muted-foreground">—</span>
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {row.product_image && (
+        <img src={row.product_image} alt="" className="h-8 w-8 shrink-0 rounded object-cover" />
+      )}
+      <span className="truncate text-xs" title={row.product_title}>
+        {row.product_title}
+      </span>
+    </div>
+  )
+}
+
 function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boolean }) {
   const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
   const badCount = job.items.filter(
@@ -42,10 +75,10 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
   )
 
   return (
-    <Card className="space-y-3 p-4">
+    <Card className="space-y-3 p-3 sm:p-4">
       <div>
-        <div className="mb-1 flex items-center justify-between text-sm">
-          <span className="font-medium">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 text-sm">
+          <span className="font-medium tabular-nums">
             {checking ? 'Đang kiểm tra' : 'Hoàn tất'} {job.done}/{job.total}
           </span>
           <span className="text-muted-foreground">
@@ -60,7 +93,7 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
         </div>
       </div>
 
-      <ul className="max-h-80 space-y-1.5 overflow-auto text-sm">
+      <ul className="max-h-[50dvh] space-y-1.5 overflow-auto text-sm">
         {job.items.map((it, i) => {
           const logs = job.logs.filter((l) => l.url === it.url)
           return (
@@ -126,7 +159,10 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
 export function ShopeePage() {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
-  const { data: links } = useQuery({ queryKey: ['shopee-links'], queryFn: fetchShopeeLinks })
+  const { data: links, isLoading: linksLoading } = useQuery({
+    queryKey: ['shopee-links'],
+    queryFn: fetchShopeeLinks,
+  })
   const [onlyMissing, setOnlyMissing] = useState(false)
   const [checkJob, setCheckJob] = useState<JobState | null>(null)
   const [checking, setChecking] = useState(false)
@@ -250,15 +286,13 @@ export function ShopeePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Shopee & Export</h1>
-        <p className="text-sm text-muted-foreground">
-          Xuất link gốc cho Shopee → gen link mới → import lại → xuất file đăng bài
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
+      <PageHeader
+        title="Shopee & Export"
+        description="Xuất link gốc cho Shopee → gen link mới → import lại → xuất file đăng bài"
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">1. Xuất link gốc</CardTitle>
@@ -273,7 +307,7 @@ export function ShopeePage() {
             </label>
             <a
               href={onlyMissing ? `${exportShopeeUrl}?onlyMissing=1` : exportShopeeUrl}
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full sm:w-auto')}
             >
               <FileDown className="h-4 w-4" /> shopee_input.xlsx
             </a>
@@ -292,6 +326,7 @@ export function ShopeePage() {
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               disabled={importMut.isPending}
               onClick={() => fileRef.current?.click()}
             >
@@ -313,21 +348,26 @@ export function ShopeePage() {
             <p className="text-sm text-muted-foreground">
               File posts.xlsx cho tool auto đăng (Comment dùng link mới).
             </p>
-            <a href={exportPostsUrl} className={cn(buttonVariants({ size: 'sm' }))}>
+            <a
+              href={exportPostsUrl}
+              className={cn(buttonVariants({ size: 'sm' }), 'w-full sm:w-auto')}
+            >
               <Download className="h-4 w-4" /> posts.xlsx
             </a>
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Link Shopee</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">Link Shopee</h2>
+            <span className="text-sm tabular-nums text-muted-foreground">
               {updated}/{allRows.length} đã có link mới
               {uncheckedCount > 0 && ` · ${uncheckedCount} chưa kiểm tra`}
             </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <SingleFilterDropdown
               label="Tình trạng"
               value={statusFilter}
@@ -364,8 +404,10 @@ export function ShopeePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 p-2.5">
-          <span className="text-xs text-muted-foreground shrink-0">Kiểm tra nhanh link ngoài:</span>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 p-3">
+          <span className="w-full shrink-0 text-xs text-muted-foreground sm:w-auto">
+            Kiểm tra nhanh link ngoài:
+          </span>
           <Input
             placeholder="Dán link Shopee bất kỳ..."
             value={adhocLink}
@@ -373,18 +415,23 @@ export function ShopeePage() {
               setAdhocLink(e.target.value)
               setAdhocResult(null)
             }}
-            className="h-8 max-w-sm text-xs"
+            className="w-full min-w-0 sm:max-w-sm sm:flex-1"
           />
-          <Button size="sm" variant="outline" onClick={runAdhocCheck} disabled={adhocChecking || !adhocLink.trim()}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runAdhocCheck}
+            disabled={adhocChecking || !adhocLink.trim()}
+          >
             {adhocChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
             Kiểm tra
           </Button>
           {adhocResult && (
-            <span className="flex items-center gap-2 text-xs" title={adhocResult.message}>
+            <span className="flex min-w-0 max-w-full items-center gap-2 text-xs" title={adhocResult.message}>
               {adhocResult.image && (
-                <img src={adhocResult.image} alt="" className="h-6 w-6 rounded object-cover" />
+                <img src={adhocResult.image} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
               )}
-              {adhocResult.title && <span className="max-w-xs truncate">{adhocResult.title}</span>}
+              {adhocResult.title && <span className="min-w-0 truncate sm:max-w-xs">{adhocResult.title}</span>}
               <LinkStatusBadge status={adhocResult.status} message={adhocResult.message} />
             </span>
           )}
@@ -393,88 +440,90 @@ export function ShopeePage() {
         {checkJob && <ShopeeCheckProgress job={checkJob} checking={checking} />}
 
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <div className="max-h-[28rem] overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/60 text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="p-3 text-left font-medium">
-                    <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAllRows} />
-                  </th>
-                  <th className="p-3 text-left font-medium">Post</th>
-                  <th className="p-3 text-left font-medium">Sản phẩm</th>
-                  <th className="p-3 text-left font-medium">Link gốc</th>
-                  <th className="p-3 text-left font-medium">Link mới</th>
-                  <th className="p-3 text-left font-medium">Tình trạng</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r: ShopeeLinkRow) => (
-                  <tr key={r.id} className={cn('border-b last:border-0', sel.has(r.id) && 'bg-primary/5')}>
-                    <td className="p-3">
-                      <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
-                    </td>
-                    <td className="whitespace-nowrap p-3 font-mono text-xs">{r.post_id}</td>
-                    <td className="max-w-[14rem] p-3">
-                      {r.product_title ? (
-                        <div className="flex items-center gap-2">
-                          {r.product_image && (
-                            <img
-                              src={r.product_image}
-                              alt=""
-                              className="h-8 w-8 shrink-0 rounded object-cover"
-                            />
-                          )}
-                          <span className="truncate text-xs" title={r.product_title}>
-                            {r.product_title}
+          {linksLoading ? (
+            <div className="space-y-2 p-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              icon={Link2Off}
+              title={allRows.length === 0 ? 'Chưa có link shopee nào.' : 'Không có link nào khớp bộ lọc.'}
+            />
+          ) : (
+            <>
+              <div className="max-h-[70dvh] overflow-auto md:hidden">
+                <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+                  <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAllRows} />
+                  Chọn tất cả
+                </div>
+                <ul className="divide-y">
+                  {rows.map((r: ShopeeLinkRow) => (
+                    <li key={r.id} className={cn('flex gap-3 p-3', sel.has(r.id) && 'bg-primary/5')}>
+                      <Checkbox className="mt-1" checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 break-all font-mono text-xs">{r.post_id}</span>
+                          <span className="shrink-0">
+                            <LinkStatusBadge status={r.link_status} message={r.link_message} />
                           </span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="max-w-xs truncate p-3">
-                      <a
-                        href={r.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                        title={r.link}
-                      >
-                        {r.link}
-                      </a>
-                    </td>
-                    <td className="max-w-xs truncate p-3">
-                      {r.new_link ? (
-                        <a
-                          href={r.new_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 underline-offset-2 hover:underline dark:text-green-400"
-                          title={r.new_link}
-                        >
-                          {r.new_link}
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <LinkStatusBadge status={r.link_status} message={r.link_message} />
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      {allRows.length === 0
-                        ? 'Chưa có link shopee nào.'
-                        : 'Không có link nào khớp bộ lọc.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                        <ProductCell row={r} />
+                        <div className="truncate text-xs">
+                          <span className="text-muted-foreground">Gốc: </span>
+                          <LinkCell href={r.link} className="text-muted-foreground hover:text-foreground" />
+                        </div>
+                        <div className="truncate text-xs">
+                          <span className="text-muted-foreground">Mới: </span>
+                          <LinkCell href={r.new_link} className="text-green-600 dark:text-green-400" />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
+                <table className="w-full min-w-[48rem] text-sm">
+                  <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="p-3 text-left font-medium">
+                        <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAllRows} />
+                      </th>
+                      <th className="p-3 text-left font-medium">Post</th>
+                      <th className="p-3 text-left font-medium">Sản phẩm</th>
+                      <th className="p-3 text-left font-medium">Link gốc</th>
+                      <th className="p-3 text-left font-medium">Link mới</th>
+                      <th className="p-3 text-left font-medium">Tình trạng</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r: ShopeeLinkRow) => (
+                      <tr key={r.id} className={cn('border-b last:border-0', sel.has(r.id) && 'bg-primary/5')}>
+                        <td className="p-3">
+                          <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
+                        </td>
+                        <td className="whitespace-nowrap p-3 font-mono text-xs">{r.post_id}</td>
+                        <td className="max-w-[14rem] p-3">
+                          <ProductCell row={r} />
+                        </td>
+                        <td className="max-w-xs truncate p-3">
+                          <LinkCell href={r.link} className="text-muted-foreground hover:text-foreground" />
+                        </td>
+                        <td className="max-w-xs truncate p-3">
+                          <LinkCell href={r.new_link} className="text-green-600 dark:text-green-400" />
+                        </td>
+                        <td className="p-3">
+                          <LinkStatusBadge status={r.link_status} message={r.link_message} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

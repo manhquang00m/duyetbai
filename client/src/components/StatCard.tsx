@@ -11,14 +11,17 @@ interface StatCardProps {
 export function StatCard({ label, value, icon: Icon }: StatCardProps) {
   const v = useCountUp(value)
   return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <Card className="relative overflow-hidden p-4 transition-shadow hover:shadow-md sm:p-5">
+      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5" />
+      <div className="relative flex items-center justify-between gap-2">
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-3 text-3xl font-semibold tabular-nums">{v.toLocaleString('vi-VN')}</div>
+      <div className="relative mt-2 text-2xl font-semibold tabular-nums sm:mt-3 sm:text-3xl">
+        {v.toLocaleString('vi-VN')}
+      </div>
     </Card>
   )
 }

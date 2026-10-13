@@ -8,6 +8,7 @@ interface CheckboxProps {
   className?: string
 }
 
+// Vung cham 40px tren mobile (pseudo-element), o hien thi van 16px.
 export function Checkbox({ checked, indeterminate, onCheckedChange, className }: CheckboxProps) {
   return (
     <button
@@ -19,8 +20,8 @@ export function Checkbox({ checked, indeterminate, onCheckedChange, className }:
         onCheckedChange(!checked)
       }}
       className={cn(
-        'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-        checked || indeterminate ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+        'relative flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors before:absolute before:-inset-3 before:content-[""] sm:before:-inset-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        checked || indeterminate ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background',
         className,
       )}
     >

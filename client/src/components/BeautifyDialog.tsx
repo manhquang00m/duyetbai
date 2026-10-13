@@ -24,7 +24,7 @@ interface Props {
 }
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9'
 
 const FILTERS: { value: BeautifyConfig['filter']; label: string }[] = [
   { value: 'none', label: 'Không áp dụng' },
@@ -95,7 +95,7 @@ function SliderField({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-1 w-full accent-primary"
+        className="mt-1 h-6 w-full accent-primary sm:h-5"
       />
     </div>
   )
@@ -177,7 +177,7 @@ function PreviewPanel({
         Xem trước (không có âm thanh)
       </div>
       <div
-        className="relative mx-auto overflow-hidden rounded-lg bg-black"
+        className="relative mx-auto w-44 overflow-hidden rounded-lg bg-black sm:w-full"
         style={{
           aspectRatio: CROP_ASPECT[config.crop] ?? '9 / 16',
           maxHeight: '20rem',
@@ -330,12 +330,12 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
     <Dialog open={open} onClose={onClose} className={phase === 'form' ? 'max-w-3xl' : 'max-w-lg'}>
       {phase === 'form' ? (
         <>
-          <h2 className="text-lg font-semibold">Làm đẹp video</h2>
+          <h2 className="pr-8 text-lg font-semibold">Làm đẹp video</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Áp dụng cho video của {postIds.length} bài đã chọn · tạo file mới, giữ nguyên bản gốc
           </p>
 
-          <div className="mt-4 flex flex-col gap-5 sm:flex-row">
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:gap-5">
           <PreviewPanel
             config={config}
             watermarkOn={watermarkOn}
@@ -344,7 +344,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             previewSrc={previewSrc}
             loading={previewLoading}
           />
-          <div className="min-w-0 flex-1 max-h-[60vh] space-y-5 overflow-y-auto pr-1">
+          <div className="min-w-0 flex-1 space-y-5 sm:max-h-[60dvh] sm:overflow-y-auto sm:pr-1">
             {/* Bo loc mau */}
             <div>
               <div className="mb-1 text-sm font-medium">Bộ lọc màu sắc</div>
@@ -393,7 +393,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             </div>
 
             {/* Crop + xoay */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <div className="mb-1 text-sm font-medium">Crop khung hình</div>
                 <select
@@ -419,7 +419,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
                       type="button"
                       onClick={() => setConfig((c) => ({ ...c, rotate: deg }))}
                       className={cn(
-                        'flex-1 rounded-md border px-1 py-1.5 text-xs',
+                        'flex-1 rounded-md border px-1 py-2.5 text-xs sm:py-1.5',
                         config.rotate === deg
                           ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-input hover:bg-accent',
@@ -453,7 +453,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             />
 
             {/* Xoa metadata */}
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
               <div>
                 <div className="text-sm font-medium">Xóa metadata</div>
                 <div className="text-xs text-muted-foreground">
@@ -473,7 +473,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
                 <Switch checked={watermarkOn} onCheckedChange={setWatermarkOn} />
               </div>
               {watermarkOn && (
-                <div className="mt-2 space-y-2 rounded-lg border p-3">
+                <div className="mt-2 space-y-3 rounded-lg border p-3">
                   <Input
                     placeholder="Nội dung watermark (vd: @tenkenh)"
                     value={watermarkText}
@@ -488,10 +488,10 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
                       onChange={(e) => setWatermarkImage(e.target.files?.[0] ?? null)}
-                      className="mt-1 block w-full text-xs"
+                      className="mt-1 block w-full min-w-0 text-xs"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <div className="mb-1 text-xs font-medium text-muted-foreground">Vị trí</div>
                       <select
@@ -544,7 +544,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
           </div>
           </div>
 
-          <div className="mt-5 flex justify-end gap-2">
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={onClose}>
               Huỷ
             </Button>
@@ -556,7 +556,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
         </>
       ) : (
         <>
-          <h2 className="text-lg font-semibold">Đang làm đẹp video</h2>
+          <h2 className="pr-8 text-lg font-semibold">Đang làm đẹp video</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {postIds.length} bài · xử lý bằng ffmpeg trên server
           </p>
@@ -566,7 +566,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
               <span className="font-medium">
                 {finished ? 'Hoàn tất' : 'Đang chạy'} {job?.done ?? 0}/{job?.total ?? 0}
               </span>
-              <span className="text-muted-foreground">{pct}%</span>
+              <span className="tabular-nums text-muted-foreground">{pct}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
@@ -576,7 +576,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             </div>
           </div>
 
-          <ul className="mt-4 max-h-64 space-y-1.5 overflow-auto text-sm">
+          <ul className="mt-4 max-h-[40dvh] space-y-1.5 overflow-auto text-sm sm:max-h-64">
             {(job?.items ?? []).map((it, i) => (
               <li key={i} className="rounded-md border p-2">
                 <div className="flex items-center gap-2">
@@ -601,7 +601,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             )}
           </ul>
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
             <Button variant={finished ? 'default' : 'outline'} onClick={onClose}>
               {finished ? 'Đóng' : 'Chạy nền / Đóng'}
             </Button>

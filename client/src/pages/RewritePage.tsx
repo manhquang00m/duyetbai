@@ -37,6 +37,9 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/EmptyState'
+import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 
 const BATCH_KEY = 'rewrite_batch_id'
@@ -142,26 +145,23 @@ export function RewritePage() {
   const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Viết lại caption bằng AI</h1>
-          <p className="text-sm text-muted-foreground">
-            Tải file Excel lên (caption ở cột B) → AI viết lại → sửa tay nếu cần → tải file mới về
-            (cột B = bản viết lại, cột K = caption gốc)
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)}>
-          <Settings2 className="h-4 w-4" /> Giọng văn
-        </Button>
-      </div>
+    <div className="mx-auto max-w-8xl space-y-5 sm:space-y-6">
+      <PageHeader
+        title="Viết lại caption bằng AI"
+        description="Tải file Excel lên (caption ở cột B) → AI viết lại → sửa tay nếu cần → tải file mới về (cột B = bản viết lại, cột K = caption gốc)"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)}>
+            <Settings2 className="h-4 w-4" /> Giọng văn
+          </Button>
+        }
+      />
 
       <AiConfigBanner />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">1. Chọn file</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">1. Chọn file</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -170,7 +170,7 @@ export function RewritePage() {
             <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} />
             <Button
               variant="outline"
-              size="sm"
+              className="w-full sm:w-auto"
               disabled={uploadMut.isPending}
               onClick={() => fileRef.current?.click()}
             >
@@ -182,8 +182,8 @@ export function RewritePage() {
               Chọn file...
             </Button>
             {batch.data && (
-              <p className="text-xs text-muted-foreground">
-                Đang mở: {batch.data.fileName} · {rows.length} dòng
+              <p className="truncate text-xs text-muted-foreground">
+                Đang mở: {batch.data.fileName} · <span className="tabular-nums">{rows.length}</span> dòng
               </p>
             )}
           </CardContent>
@@ -191,13 +191,13 @@ export function RewritePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">2. Viết lại</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">2. Viết lại</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Cần có LLM_API_KEY trong server/.env. Link và hashtag được giữ nguyên.
             </p>
-            <Button size="sm" disabled={!batchId || running || rows.length === 0} onClick={run}>
+            <Button className="w-full sm:w-auto" disabled={!batchId || running || rows.length === 0} onClick={run}>
               {running ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -207,7 +207,7 @@ export function RewritePage() {
             </Button>
             {job && (
               <div>
-                <div className="mb-1 flex items-center justify-between text-xs">
+                <div className="mb-1 flex items-center justify-between text-xs tabular-nums">
                   <span>
                     {job.done}/{job.total}
                   </span>
@@ -226,7 +226,7 @@ export function RewritePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">3. Tải file mới</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">3. Tải file mới</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -235,17 +235,17 @@ export function RewritePage() {
             {batchId ? (
               <a
                 href={rewriteExportUrl(batchId)}
-                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-auto')}
               >
                 <FileDown className="h-4 w-4" /> Tải file
               </a>
             ) : (
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" className="w-full sm:w-auto" disabled>
                 <FileDown className="h-4 w-4" /> Tải file
               </Button>
             )}
             {rows.length > 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs tabular-nums text-muted-foreground">
                 Đã viết lại {doneCount}/{rows.length} dòng
               </p>
             )}
@@ -254,15 +254,27 @@ export function RewritePage() {
       </div>
 
       {batch.isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Đang tải...
-        </div>
+        <Card className="space-y-3 p-4">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </Card>
+      )}
+
+      {!batch.isLoading && rows.length === 0 && (
+        <Card>
+          <EmptyState
+            icon={Upload}
+            title="Chưa có file nào"
+            description="Chọn file ở bước 1 để bắt đầu đối chiếu và sửa caption."
+          />
+        </Card>
       )}
 
       {rows.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Đối chiếu &amp; sửa tay</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Đối chiếu &amp; sửa tay</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {rows.map((r) => {
@@ -279,9 +291,9 @@ export function RewritePage() {
                     </div>
                   </div>
                   <div>
-                    <div className="mb-1 flex items-center justify-between">
+                    <div className="mb-1 flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-muted-foreground">Bản mới</span>
-                      <div className="flex gap-1">
+                      <div className="flex shrink-0 gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -315,7 +327,7 @@ export function RewritePage() {
         </Card>
       )}
 
-      <div className="border-t pt-6">
+      <div className="border-t pt-5 sm:pt-6">
         <CaptionVariantCard />
       </div>
 
@@ -380,17 +392,17 @@ function PromptDialog({ open, onClose }: { open: boolean; onClose: () => void })
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
-      <h2 className="text-lg font-semibold">Giọng văn AI</h2>
+      <h2 className="pr-8 text-lg font-semibold">Giọng văn AI</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Hướng dẫn cho AI khi viết lại. Để trống rồi lưu sẽ quay về mặc định.
       </p>
       <Textarea
-        className="mt-3"
+        className="mt-3 max-h-[50dvh]"
         rows={14}
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <div className="mt-4 flex justify-end gap-2">
+      <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onClose}>
           Hủy
         </Button>
@@ -477,23 +489,32 @@ function CaptionVariantCard() {
   const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
-    <Card className="space-y-3 p-4">
+    <Card className="space-y-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-semibold">Viết lại caption kho bài</h2>
+        <div className="min-w-0 sm:max-w-2xl">
+          <h2 className="text-sm font-semibold text-muted-foreground">Viết lại caption kho bài</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {doneCount}/{rows.length} bài đã đủ 3 bản — mỗi lần 1 bài được phân phối lại cho tài
+            <span className="tabular-nums">
+              {doneCount}/{rows.length}
+            </span>{' '}
+            bài đã đủ 3 bản — mỗi lần 1 bài được phân phối lại cho tài
             khoản khác sẽ dùng luân phiên 1 bản khác nhau, tránh nhiều tài khoản đăng y hệt cùng
             caption.
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)}>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={() => setPromptOpen(true)}
+          >
             <Settings2 className="h-4 w-4" /> Giọng văn
           </Button>
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none"
             disabled={running || rows.length === 0}
             onClick={runAllForce}
           >
@@ -504,7 +525,12 @@ function CaptionVariantCard() {
             )}
             Viết lại tất cả ({rows.length})
           </Button>
-          <Button size="sm" disabled={running || missingCount === 0} onClick={() => runJob()}>
+          <Button
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={running || missingCount === 0}
+            onClick={() => runJob()}
+          >
             {running ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -532,42 +558,56 @@ function CaptionVariantCard() {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="text-xs text-muted-foreground hover:text-foreground"
+        aria-expanded={expanded}
+        className="-my-1 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:py-1"
       >
         {expanded ? 'Ẩn danh sách bài' : 'Xem danh sách bài'}
       </button>
 
-      {expanded && (
-        <div className="max-h-96 overflow-auto rounded-lg border">
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-muted/40 uppercase text-muted-foreground">
-              <tr>
-                <th className="w-8 p-2"></th>
-                <th className="p-2 text-left font-medium">Post ID</th>
-                <th className="p-2 text-left font-medium">Caption gốc</th>
-                <th className="p-2 text-center font-medium">Bản</th>
-                <th className="w-20 p-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <CaptionVariantRow
-                  key={r.post_id}
-                  row={r}
-                  onRewrite={() => runOneMut.mutate(r.post_id)}
-                  rewriting={runOneMut.isPending && runOneMut.variables === r.post_id}
-                />
-              ))}
-              {rows.length === 0 && (
+      {expanded && rows.length === 0 && (
+        <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+          Chưa có bài nào trong kho sạch.
+        </p>
+      )}
+
+      {expanded && rows.length > 0 && (
+        <>
+          <div className="max-h-[60dvh] divide-y overflow-y-auto rounded-lg border md:hidden">
+            {rows.map((r) => (
+              <CaptionVariantRow
+                key={r.post_id}
+                layout="card"
+                row={r}
+                onRewrite={() => runOneMut.mutate(r.post_id)}
+                rewriting={runOneMut.isPending && runOneMut.variables === r.post_id}
+              />
+            ))}
+          </div>
+          <div className="table-scroll hidden max-h-96 overflow-y-auto rounded-lg border md:block">
+            <table className="w-full min-w-[32rem] text-xs">
+              <thead className="sticky top-0 bg-muted uppercase text-muted-foreground">
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                    Chưa có bài nào trong kho sạch.
-                  </td>
+                  <th className="w-8 p-2"></th>
+                  <th className="p-2 text-left font-medium">Post ID</th>
+                  <th className="p-2 text-left font-medium">Caption gốc</th>
+                  <th className="p-2 text-center font-medium">Bản</th>
+                  <th className="w-20 p-2"></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <CaptionVariantRow
+                    key={r.post_id}
+                    layout="table"
+                    row={r}
+                    onRewrite={() => runOneMut.mutate(r.post_id)}
+                    rewriting={runOneMut.isPending && runOneMut.variables === r.post_id}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <VariantPromptDialog open={promptOpen} onClose={() => setPromptOpen(false)} />
@@ -580,10 +620,12 @@ function CaptionVariantRow({
   row,
   onRewrite,
   rewriting,
+  layout,
 }: {
   row: CaptionVariantStatus
   onRewrite: () => void
   rewriting: boolean
+  layout: 'table' | 'card'
 }) {
   const [open, setOpen] = useState(false)
   const variants = useQuery({
@@ -591,6 +633,65 @@ function CaptionVariantRow({
     queryFn: () => fetchCaptionVariants(row.post_id),
     enabled: open,
   })
+
+  const details = (
+    <>
+      {variants.isLoading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang tải...
+        </div>
+      )}
+      {!variants.isLoading &&
+        (variants.data ?? []).map((v) => (
+          <div key={v.variant_index} className="rounded-md border bg-background p-2">
+            <span className="mr-1.5 font-medium text-muted-foreground">Bản {v.variant_index}:</span>
+            {v.caption}
+          </div>
+        ))}
+      {!variants.isLoading && (variants.data ?? []).length === 0 && (
+        <p className="text-muted-foreground">Chưa có bản nào.</p>
+      )}
+    </>
+  )
+
+  if (layout === 'card') {
+    return (
+      <div className={cn('p-3 text-xs', open && 'bg-muted/30')}>
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            disabled={row.variant_count === 0}
+            aria-expanded={open}
+            aria-label="Xem các bản caption"
+            className="-ml-1.5 -mt-1.5 shrink-0 rounded-md p-2.5 text-muted-foreground hover:bg-accent disabled:opacity-30"
+          >
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">{row.post_id}</span>
+              <span
+                className={cn(
+                  'shrink-0 font-medium tabular-nums',
+                  row.variant_count < 3 && 'text-amber-600 dark:text-amber-400',
+                )}
+              >
+                {row.variant_count}/3
+              </span>
+            </div>
+            <div className="line-clamp-2">
+              {row.caption || <em className="text-muted-foreground">(trống)</em>}
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" className="shrink-0" disabled={rewriting} onClick={onRewrite}>
+            {rewriting && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Viết lại
+          </Button>
+        </div>
+        {open && <div className="mt-2 space-y-1.5">{details}</div>}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -628,23 +729,7 @@ function CaptionVariantRow({
       {open && (
         <tr className="border-b bg-muted/30 last:border-0">
           <td colSpan={5} className="space-y-1.5 p-2.5">
-            {variants.isLoading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang tải...
-              </div>
-            )}
-            {!variants.isLoading &&
-              (variants.data ?? []).map((v) => (
-                <div key={v.variant_index} className="rounded-md border bg-background p-2">
-                  <span className="mr-1.5 font-medium text-muted-foreground">
-                    Bản {v.variant_index}:
-                  </span>
-                  {v.caption}
-                </div>
-              ))}
-            {!variants.isLoading && (variants.data ?? []).length === 0 && (
-              <p className="text-muted-foreground">Chưa có bản nào.</p>
-            )}
+            {details}
           </td>
         </tr>
       )}
@@ -675,13 +760,18 @@ function VariantPromptDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
-      <h2 className="text-lg font-semibold">Giọng văn viết lại caption kho bài</h2>
+      <h2 className="pr-8 text-lg font-semibold">Giọng văn viết lại caption kho bài</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Hướng dẫn cho AI khi viết 3 bản caption khác nhau cho 1 bài. Để trống rồi lưu sẽ quay về
         mặc định.
       </p>
-      <Textarea className="mt-3" rows={14} value={text} onChange={(e) => setText(e.target.value)} />
-      <div className="mt-4 flex justify-end gap-2">
+      <Textarea
+        className="mt-3 max-h-[50dvh]"
+        rows={14}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onClose}>
           Hủy
         </Button>

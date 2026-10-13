@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { FileText, Image, ShoppingBag, Users } from 'lucide-react'
+import { ChevronRight, FileText, Image, Inbox, ShoppingBag, Users } from 'lucide-react'
 import { fetchStats, fetchPosts } from '@/lib/api'
 import { StatCard } from '@/components/StatCard'
+import { PageHeader } from '@/components/PageHeader'
+import { EmptyState } from '@/components/EmptyState'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -14,15 +16,12 @@ export function OverviewPage() {
   })
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Tổng quan</h1>
-        <p className="text-sm text-muted-foreground">Thống kê nhanh toàn bộ dữ liệu đã thu thập</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
+      <PageHeader title="Tổng quan" description="Thống kê nhanh toàn bộ dữ liệu đã thu thập" />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {isLoading || !stats ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl sm:h-28" />)
         ) : (
           <>
             <StatCard label="Bài viết" value={stats.posts} icon={FileText} />
@@ -33,37 +32,54 @@ export function OverviewPage() {
         )}
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Bài gần đây</h2>
-          <Link to="/posts" className="text-sm text-primary hover:underline">
-            Xem tất cả →
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold sm:text-lg">Bài gần đây</h2>
+          <Link
+            to="/posts"
+            className="inline-flex min-h-10 items-center gap-0.5 text-sm text-primary hover:underline sm:min-h-0"
+          >
+            Xem tất cả <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
-        <Card className="divide-y">
+        <Card className="divide-y overflow-hidden rounded-xl shadow-sm">
+          {!recent &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-3">
+                <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              </div>
+            ))}
           {(recent?.items ?? []).map((p) => (
             <Link
               key={p.post_id}
               to="/posts"
-              className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50"
+              className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/50 active:bg-muted/70"
             >
               {p.thumb ? (
-                <img src={`/media/${p.thumb}`} alt="" className="h-10 w-10 rounded-md object-cover" />
+                <img
+                  src={`/media/${p.thumb}`}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-md object-cover ring-1 ring-border"
+                />
               ) : (
-                <div className="h-10 w-10 rounded-md bg-muted" />
+                <div className="h-10 w-10 shrink-0 rounded-md bg-muted" />
               )}
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">@{p.username || '—'}</div>
+                <div className="truncate text-sm font-medium">@{p.username || '—'}</div>
                 <div className="truncate text-sm text-muted-foreground">{p.caption}</div>
               </div>
-              <div className="shrink-0 text-xs text-muted-foreground">{p.post_date}</div>
+              <div className="shrink-0 text-xs tabular-nums text-muted-foreground">{p.post_date}</div>
             </Link>
           ))}
           {recent && recent.items.length === 0 && (
-            <div className="p-6 text-center text-sm text-muted-foreground">Chưa có bài nào.</div>
+            <EmptyState icon={Inbox} title="Chưa có bài nào" description="Sang tab Thu thập để tải bài về." />
           )}
         </Card>
-      </div>
+      </section>
     </div>
   )
 }

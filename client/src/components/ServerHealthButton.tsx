@@ -90,7 +90,7 @@ export function ServerHealthButton() {
           void check(true)
         }}
         aria-label="Kiểm tra server"
-        className="inline-flex h-9 items-center gap-2 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="inline-flex h-10 items-center gap-2 rounded-md px-2.5 sm:h-9 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <span className="relative flex h-2.5 w-2.5">
           {state.kind === 'down' && (
@@ -98,9 +98,9 @@ export function ServerHealthButton() {
           )}
           <span className={cn('relative inline-flex h-2.5 w-2.5 rounded-full', dot)} />
         </span>
-        {label}
+        <span className="hidden sm:inline">{label}</span>
       </button>
-      <PopoverPanel popover={popover} className="w-72 p-3 text-xs">
+      <PopoverPanel popover={popover} className="w-72 max-w-[calc(100vw-1rem)] p-3 text-xs">
         <div className="mb-2 flex items-center justify-between">
           <span className="font-medium">Trạng thái server</span>
           <button

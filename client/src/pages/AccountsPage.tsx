@@ -44,6 +44,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
+import { PageHeader } from '@/components/PageHeader'
+import { FloatingBar } from '@/components/FloatingBar'
 import { AccountFormDialog } from '@/components/AccountFormDialog'
 import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
 import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
@@ -70,9 +72,11 @@ function ProxyCell({
 }) {
   if (!proxy) return <span className="text-muted-foreground">—</span>
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="space-y-0.5">
-        <div className="max-w-[9rem] truncate text-xs text-muted-foreground">{proxy}</div>
+    <div className="flex min-w-0 items-center gap-1">
+      <div className="min-w-0 space-y-0.5">
+        <div className="max-w-[12rem] truncate text-xs text-muted-foreground md:max-w-[9rem]">
+          {proxy}
+        </div>
         {status === 'live' ? (
           <span className="inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
             Live
@@ -96,18 +100,20 @@ function ProxyCell({
           )
         }}
         title="Copy proxy"
-        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        aria-label="Copy proxy"
+        className="shrink-0 rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground md:p-1.5"
       >
-        <Copy className="h-3 w-3" />
+        <Copy className="h-3.5 w-3.5" />
       </button>
       <button
         type="button"
         onClick={() => onRecheck(proxy)}
         disabled={checking}
         title="Kiểm tra lại proxy này"
-        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+        aria-label="Kiểm tra lại proxy này"
+        className="shrink-0 rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 md:p-1.5"
       >
-        <RefreshCw className={cn('h-3 w-3', checking && 'animate-spin')} />
+        <RefreshCw className={cn('h-3.5 w-3.5', checking && 'animate-spin')} />
       </button>
     </div>
   )
@@ -125,11 +131,11 @@ function ImportHelp() {
         onClick={() => popover.setOpen(!popover.open)}
         onMouseEnter={() => popover.setOpen(true)}
         onMouseLeave={() => popover.setOpen(false)}
-        className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground sm:p-1.5"
       >
         <Info className="h-4 w-4" />
       </button>
-      <PopoverPanel popover={popover} className="w-96 p-3 text-xs leading-relaxed">
+      <PopoverPanel popover={popover} className="w-96 max-w-[calc(100vw-1.5rem)] p-3 text-xs leading-relaxed">
         <p className="mb-1 font-medium">Định dạng file import</p>
         <p className="text-muted-foreground">
           Cột A→L lần lượt là Profile, Thiết bị, Trạng thái, Ngày tạo, Pass_Threads, Gmail,
@@ -176,7 +182,7 @@ function BulkStatusButton({
               popover.setOpen(false)
               onPick(s)
             }}
-            className="flex w-full items-center rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
+            className="flex w-full items-center rounded px-2 py-2 text-left text-xs hover:bg-accent sm:py-1.5"
           >
             <AppealBadge status={s} />
           </button>
@@ -208,6 +214,46 @@ function AppealBadge({ status }: { status: string | null }) {
     >
       {status}
     </span>
+  )
+}
+
+function PlatformBadge({ platform }: { platform: string | null }) {
+  if (!platform) return <span className="text-muted-foreground">—</span>
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+        platform === 'Global'
+          ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
+          : 'bg-muted text-muted-foreground',
+      )}
+    >
+      {platform}
+    </span>
+  )
+}
+
+function RowActions({
+  onEdit,
+  onClone,
+  onDelete,
+}: {
+  onEdit: () => void
+  onClone: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Sửa account" title="Sửa account">
+        <Pencil className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={onClone} aria-label="Clone account" title="Clone account">
+        <CopyPlus className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Xoá account" title="Xoá account">
+        <Trash2 className="h-4 w-4 text-destructive" />
+      </Button>
+    </div>
   )
 }
 
@@ -484,57 +530,93 @@ export function AccountsPage() {
     }
   }
 
+  const confirmDelete = (a: Account) => {
+    if (confirm(`Xoá account "${a.name}"?`)) delMut.mutate(a.id)
+  }
+  const fmtDate = (a: Account) =>
+    a.created_at ? new Date(a.created_at).toLocaleDateString('vi-VN') : '—'
+  const proxyCell = (a: Account) => (
+    <ProxyCell
+      proxy={a.proxy}
+      status={a.proxy_status}
+      checking={recheckMut.isPending && recheckMut.variables === a.proxy}
+      onRecheck={(proxy) => recheckMut.mutate(proxy)}
+    />
+  )
+  const topicsCell = (a: Account) => (
+    <PostingTopicsCell
+      accountId={a.id}
+      topics={topicsById.get(a.id) ?? []}
+      compact={2}
+      onChanged={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
+    />
+  )
+  const emptyState = (
+    <EmptyState
+      icon={Users}
+      title={allAccounts.length === 0 ? 'Chưa có account' : 'Không có account khớp bộ lọc'}
+      description={
+        allAccounts.length === 0
+          ? 'Thêm account thủ công hoặc import từ file Excel.'
+          : 'Thử đổi từ khoá tìm kiếm hoặc bộ lọc.'
+      }
+    />
+  )
+
   return (
-    <div className="mx-auto max-w-8xl space-y-6 pb-20">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Accounts</h1>
-          <p className="text-sm text-muted-foreground">
-            Kho quản lý account Threads (profile, thiết bị, trạng thái ban, proxy...)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={onImportFile}
-          />
-          <Button variant="outline" size="sm" onClick={() => setGpmSyncOpen(true)}>
-            <Plug className="h-4 w-4" /> Đồng bộ proxy GPM
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRecheckAllOpen(true)}
-            disabled={allProxies.length === 0}
-          >
-            <RefreshCw className="h-4 w-4" /> Kiểm tra lại tất cả proxy
-          </Button>
-          <div className="flex items-center">
-            <Button variant="outline" size="sm" onClick={pickImportFile} disabled={importing}>
-              <Upload className="h-4 w-4" /> {importing ? 'Đang import...' : 'Import Excel'}
+    <div className={cn('mx-auto max-w-8xl space-y-4 sm:space-y-6', sel.size > 0 ? 'pb-40 sm:pb-24' : 'pb-6')}>
+      <PageHeader
+        title="Accounts"
+        description="Kho quản lý account Threads (profile, thiết bị, trạng thái ban, proxy...)"
+        actions={
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={onImportFile}
+            />
+            <Button variant="outline" size="sm" onClick={() => setGpmSyncOpen(true)}>
+              <Plug className="h-4 w-4" />
+              <span className="sm:hidden">Sync GPM</span>
+              <span className="hidden sm:inline">Đồng bộ proxy GPM</span>
             </Button>
-            <ImportHelp />
-          </div>
-          <a href={exportAccountsUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-            <Download className="h-4 w-4" /> Xuất Excel
-          </a>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Thêm account
-          </Button>
-        </div>
-      </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRecheckAllOpen(true)}
+              disabled={allProxies.length === 0}
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="sm:hidden">Kiểm tra proxy</span>
+              <span className="hidden sm:inline">Kiểm tra lại tất cả proxy</span>
+            </Button>
+            <div className="flex items-center">
+              <Button variant="outline" size="sm" onClick={pickImportFile} disabled={importing}>
+                <Upload className="h-4 w-4" /> {importing ? 'Đang import...' : 'Import Excel'}
+              </Button>
+              <ImportHelp />
+            </div>
+            <a href={exportAccountsUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              <Download className="h-4 w-4" /> Xuất Excel
+            </a>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4" /> Thêm account
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            type="search"
             placeholder="Tìm Profile / thiết bị / gmail..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 pl-8 text-xs"
+            className="pl-9 text-sm"
           />
         </div>
         <SingleFilterDropdown
@@ -591,13 +673,80 @@ export function AccountsPage() {
           ]}
         />
         <StatusCheckboxFilter selected={appealFilter} onChange={setAppealFilter} includeNone />
-        <span className="text-xs text-muted-foreground">{items.length}/{allAccounts.length} account</span>
+        <span className="text-xs tabular-nums text-muted-foreground sm:ml-auto">
+          {items.length}/{allAccounts.length} account
+        </span>
       </div>
 
-      <Card className="overflow-hidden p-0">
+      {/* Mobile: danh sach dang the */}
+      <div className="space-y-2 md:hidden">
+        {!isLoading && items.length > 0 && (
+          <label className="flex items-center gap-2.5 px-1 py-1 text-xs font-medium text-muted-foreground">
+            <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
+            Chọn tất cả ({items.length})
+          </label>
+        )}
+        {isLoading &&
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="space-y-2 rounded-xl p-3 shadow-xs">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/3" />
+            </Card>
+          ))}
+        {!isLoading &&
+          items.map((a) => (
+            <Card
+              key={a.id}
+              className={cn(
+                'rounded-xl p-3 shadow-xs transition-colors',
+                sel.has(a.id) && 'border-primary/40 bg-primary/5',
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className="pt-0.5">
+                  <Checkbox checked={sel.has(a.id)} onCheckedChange={() => toggle(a.id)} />
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{a.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {a.device || '—'} · {fmtDate(a)}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <AppealBadge status={a.appeal_status} />
+                      <Switch
+                        checked={a.active === 1}
+                        onCheckedChange={(v) => activeMut.mutate({ id: a.id, active: v })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <PlatformBadge platform={a.platform} />
+                    {proxyCell(a)}
+                  </div>
+                  {topicsCell(a)}
+                </div>
+              </div>
+              <div className="mt-2 border-t pt-1">
+                <RowActions
+                  onEdit={() => openEdit(a)}
+                  onClone={() => setCloningFrom(a)}
+                  onDelete={() => confirmDelete(a)}
+                />
+              </div>
+            </Card>
+          ))}
+        {!isLoading && items.length === 0 && <Card className="rounded-xl shadow-xs">{emptyState}</Card>}
+      </div>
+
+      {/* Desktop: bang voi header dinh tren cung */}
+      <Card className="hidden overflow-hidden rounded-xl p-0 shadow-sm md:block">
         {/* Chieu cao co dinh theo man hinh: bang tu cuon ben trong, header dinh tren cung. */}
-        <div className="max-h-[calc(100vh-16rem)] min-h-[20rem] overflow-auto">
-          <table className="w-full text-sm">
+        <div className="table-scroll max-h-[calc(100dvh-16rem)] min-h-[20rem] overflow-y-auto">
+          <table className="w-full min-w-[60rem] text-sm">
             <thead className="sticky top-0 z-10 bg-muted">
               <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="p-2.5 text-left font-medium">
@@ -640,44 +789,17 @@ export function AccountsPage() {
                     </td>
                     <td className="p-2.5 font-medium">{a.name}</td>
                     <td className="p-2.5 text-xs text-muted-foreground">{a.device || '—'}</td>
-                    <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
-                      {a.created_at ? new Date(a.created_at).toLocaleDateString('vi-VN') : '—'}
+                    <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
+                      {fmtDate(a)}
                     </td>
-                    <td className="p-2.5">
-                      <ProxyCell
-                        proxy={a.proxy}
-                        status={a.proxy_status}
-                        checking={recheckMut.isPending && recheckMut.variables === a.proxy}
-                        onRecheck={(proxy) => recheckMut.mutate(proxy)}
-                      />
-                    </td>
+                    <td className="p-2.5">{proxyCell(a)}</td>
                     <td className="p-2.5 text-center">
-                      {a.platform ? (
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
-                            a.platform === 'Global'
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
-                              : 'bg-muted text-muted-foreground',
-                          )}
-                        >
-                          {a.platform}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <PlatformBadge platform={a.platform} />
                     </td>
                     <td className="whitespace-nowrap p-2.5 text-center">
                       <AppealBadge status={a.appeal_status} />
                     </td>
-                    <td className="p-2.5">
-                      <PostingTopicsCell
-                        accountId={a.id}
-                        topics={topicsById.get(a.id) ?? []}
-                        compact={2}
-                        onChanged={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
-                      />
-                    </td>
+                    <td className="p-2.5">{topicsCell(a)}</td>
                     <td className="p-2.5 text-center">
                       <Switch
                         checked={a.active === 1}
@@ -685,29 +807,11 @@ export function AccountsPage() {
                       />
                     </td>
                     <td className="p-2.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setCloningFrom(a)}
-                          aria-label="Clone account"
-                          title="Clone account"
-                        >
-                          <CopyPlus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`Xoá account "${a.name}"?`)) delMut.mutate(a.id)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        onEdit={() => openEdit(a)}
+                        onClone={() => setCloningFrom(a)}
+                        onDelete={() => confirmDelete(a)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -715,15 +819,7 @@ export function AccountsPage() {
               {!isLoading && items.length === 0 && (
                 <tr>
                   <td colSpan={COLSPAN} className="p-0">
-                    <EmptyState
-                      icon={Users}
-                      title={allAccounts.length === 0 ? 'Chưa có account' : 'Không có account khớp bộ lọc'}
-                      description={
-                        allAccounts.length === 0
-                          ? 'Thêm account thủ công hoặc import từ file Excel.'
-                          : 'Thử đổi từ khoá tìm kiếm hoặc bộ lọc.'
-                      }
-                    />
+                    {emptyState}
                   </td>
                 </tr>
               )}
@@ -733,8 +829,8 @@ export function AccountsPage() {
       </Card>
 
       {sel.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-2 shadow-lg">
-          <span className="px-2 text-sm font-medium">{sel.size} đã chọn</span>
+        <FloatingBar>
+          <span className="px-2 text-sm font-medium tabular-nums">{sel.size} đã chọn</span>
           {selectedWithoutProxy.length > 0 && (
             <Button size="sm" variant="outline" onClick={autoAssignProxies}>
               <Wand2 className="h-4 w-4" /> Tự động gán proxy ({selectedWithoutProxy.length})
@@ -753,7 +849,7 @@ export function AccountsPage() {
           <Button size="sm" variant="ghost" onClick={() => setSel(new Set())}>
             Bỏ chọn
           </Button>
-        </div>
+        </FloatingBar>
       )}
 
       <AssignPostingTopicsDialog

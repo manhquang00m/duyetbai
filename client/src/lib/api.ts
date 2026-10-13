@@ -45,6 +45,8 @@ export interface PostListItem {
   posted_at: string | null
   topic: string | null
   variant_count: number // so ban caption AI da viet lai (0..3)
+  click_count: number // so click affiliate cua bai
+  posted_count: number // so lan da dang thanh cong
 }
 
 export interface PostsResponse {
@@ -216,7 +218,7 @@ export interface PostFilterParams {
   notUpdated?: boolean
   oneShopee?: boolean
   postStatus?: 'unposted' | 'posted'
-  mediaFilter?: 'complete' | 'missing'
+  mediaFilter?: MediaFilter
   linkStatus?: LinkStatusFilter
   cleanOnly?: boolean
   rewritten?: 'yes' | 'no'
@@ -224,6 +226,8 @@ export interface PostFilterParams {
   scrapedTo?: string // 'YYYY-MM-DD', bao gom ca ngay nay
   topics?: string[]
 }
+
+export type MediaFilter = 'complete' | 'missing' | 'imageOnly' | 'videoOnly'
 
 function postFilterQueryParams(filters: PostFilterParams) {
   return {
@@ -243,9 +247,18 @@ function postFilterQueryParams(filters: PostFilterParams) {
   }
 }
 
-export async function fetchPosts(params: PostFilterParams & { limit?: number; offset?: number }) {
+export type PostSort = 'newest' | 'likes' | 'clicks' | 'posted'
+
+export async function fetchPosts(
+  params: PostFilterParams & { limit?: number; offset?: number; sort?: PostSort },
+) {
   const { data } = await api.get<PostsResponse>('/api/posts', {
-    params: { ...postFilterQueryParams(params), limit: params.limit, offset: params.offset },
+    params: {
+      ...postFilterQueryParams(params),
+      limit: params.limit,
+      offset: params.offset,
+      sort: params.sort === 'newest' ? undefined : params.sort,
+    },
   })
   return data
 }
@@ -667,6 +680,8 @@ export const ACCOUNT_TOPICS = [
   'Hút view',
   'Khác',
   'Gây war',
+  'Nhiều click',
+  'Nhiều tim',
 ] as const
 
 export type AccountTopic = (typeof ACCOUNT_TOPICS)[number]
@@ -702,6 +717,12 @@ export async function setAuthorTopic(username: string, topic: string | null) {
 /** Gan/bo chu de cho DUNG 1 bai (topic=null de bo gan) - dung cho o "Chủ đề" tren trang Bài viết. */
 export async function setPostTopic(postId: string, topic: string | null) {
   await api.post('/api/account-topics/post', { postId, topic })
+}
+
+/** Gan/bo chu de cho NHIEU bai cung luc (toi da 500) - dung cho thanh thao tac chon nhieu o trang Bai viet. */
+export async function setPostsTopic(postIds: string[], topic: string | null) {
+  const { data } = await api.post<{ updated: number }>('/api/account-topics/posts', { postIds, topic })
+  return data
 }
 
 // ===== Phan phoi bai =====
@@ -942,7 +963,9 @@ export interface AffSummary {
   completedMilli: number
   unmatchedClicks: number
   byReferrer: { referrer: string; clicks: number }[]
-  daily: { date: string; clicks: number; orders: number }[]
+  daily: { date: string; clicks: number; orders: number; commission_milli: number }[]
+  dailyByOrderDate: { date: string; orders: number; commission_milli: number }[]
+  byOrderDate: { orders: number; cancelledOrders: number; pendingMilli: number; completedMilli: number }
 }
 
 export interface AffPostRow {
@@ -1020,6 +1043,20 @@ export async function importAffiliateFiles(files: File[]) {
 
 export async function fetchAffSummary(f: AffFilterParams) {
   const { data } = await api.get<AffSummary>('/api/affiliate/summary', { params: affParams(f) })
+  return data
+}
+
+export interface AffAccountRow {
+  account: string | null
+  clicks: number
+  exact_clicks: number
+  posts: number
+  orders: number
+  commission_milli: number
+}
+
+export async function fetchAffAccounts(f: AffFilterParams) {
+  const { data } = await api.get<AffAccountRow[]>('/api/affiliate/accounts', { params: affParams(f) })
   return data
 }
 

@@ -9,6 +9,8 @@ export const ACCOUNT_TOPICS = [
   'Hút view',
   'Khác',
   'Gây war',
+  'Nhiều click',
+  'Nhiều tim',
 ] as const;
 
 const ACCOUNT_TOPICS_SET = new Set<string>(ACCOUNT_TOPICS);
@@ -82,4 +84,19 @@ export function setPostTopic(postId: string, topic: string | null): { updated: n
   if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
   const result = updateOne.run(topic, trimmed);
   return { updated: Number(result.changes) };
+}
+
+/** Gan/bo chu de cho NHIEU bai cung luc trong 1 transaction (topic=null de bo gan). */
+export function setPostsTopic(postIds: string[], topic: string | null): { updated: number } {
+  if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
+  let updated = 0;
+  db.exec('BEGIN');
+  try {
+    for (const id of postIds) updated += Number(updateOne.run(topic, id).changes);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  return { updated };
 }

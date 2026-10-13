@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listAccountTopics, setAuthorTopic, setPostTopic } from '../db/accountTopics';
+import { ACCOUNT_TOPICS, listAccountTopics, setAuthorTopic, setPostTopic, setPostsTopic } from '../db/accountTopics';
 
 const router = Router();
 
@@ -35,6 +35,27 @@ router.post('/post', (req, res) => {
   }
   setPostTopic(postId, topic);
   res.json({ ok: true });
+});
+
+// POST /api/account-topics/posts { postIds, topic } -> gan/bo chu de cho NHIEU bai (toi da 500)
+router.post('/posts', (req, res) => {
+  const ids: unknown = req.body?.postIds;
+  const topicRaw: unknown = req.body?.topic;
+  const topic = typeof topicRaw === 'string' && topicRaw.trim() ? topicRaw.trim() : null;
+  if (
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    ids.length > 500 ||
+    !ids.every((i) => typeof i === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(i))
+  ) {
+    res.status(400).json({ error: 'Danh sách bài không hợp lệ' });
+    return;
+  }
+  if (topic !== null && !(ACCOUNT_TOPICS as readonly string[]).includes(topic)) {
+    res.status(400).json({ error: 'Chủ đề không hợp lệ' });
+    return;
+  }
+  res.json(setPostsTopic(ids as string[], topic));
 });
 
 export default router;

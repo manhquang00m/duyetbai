@@ -4,6 +4,23 @@ import { getPlan, getPlanItems, markPlanExported } from '../db/distribution';
 import { CLEAN_POST_COND } from '../db/queries';
 import { buildComment, mediaPaths } from './postExportFields';
 
+const NEWS_LINKS = [
+  'https://vnexpress.net',
+  'https://tuoitre.vn',
+  'https://thanhnien.vn',
+  'https://vietnamnet.vn',
+  'https://vtv.vn',
+  'https://dantri.com.vn',
+  'https://laodong.vn',
+  'https://tienphong.vn',
+  'https://nld.com.vn',
+  'https://vov.vn',
+  'https://baochinhphu.vn',
+  'https://znews.vn',
+  'https://cafef.vn',
+];
+const randomNewsLink = () => NEWS_LINKS[Math.floor(Math.random() * NEWS_LINKS.length)];
+
 interface PostRow {
   post_id: string;
   url: string;
@@ -36,7 +53,7 @@ export interface PlanExportResult {
  * Xuat file cho tool auto dang tu 1 ke hoach phan phoi.
  *
  * Cot A-I GIU NGUYEN Y HET posts.xlsx (tool ben ngoai map theo THU TU cot, doi la hong),
- * chi THEM cot J "Ngay dang". Sheet van ten 'posts'.
+ * chi THEM cot J "Ngay dang" va cot K "Link" (link bao ngau nhien). Sheet van ten 'posts'.
  */
 export async function exportPlanXlsx(
   planId: string,
@@ -59,6 +76,7 @@ export async function exportPlanXlsx(
     'POST_ID',
     'TrangThai',
     'Ngày đăng',
+    'Link',
   ]);
 
   let rows = 0;
@@ -111,6 +129,7 @@ export async function exportPlanXlsx(
       p.post_status === 'posted' ? 'Đã đăng' : 'Đã xuất',
       // Ghi CHUOI, khong phai Date: ExcelJS se xuat so serial (45678) va tool doc sai.
       it.post_date,
+      randomNewsLink(),
     ]);
     rows++;
   }

@@ -53,7 +53,7 @@ export function StatusCheckboxFilter({
           {options.map((o) => (
             <label
               key={o.value}
-              className="flex cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-sm hover:bg-accent"
+              className="flex cursor-pointer items-center gap-2.5 rounded-sm px-1.5 py-2 text-sm hover:bg-accent sm:gap-2 sm:py-1"
             >
               <Checkbox checked={selected.has(o.value)} onCheckedChange={() => toggle(o.value)} />
               {o.label}
@@ -66,7 +66,7 @@ export function StatusCheckboxFilter({
             <button
               type="button"
               onClick={() => onChange(new Set())}
-              className="w-full rounded-sm px-2 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="w-full rounded-sm px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground sm:py-1"
             >
               Bỏ lọc trạng thái
             </button>

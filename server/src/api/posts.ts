@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
-import { listPosts, getPostDetail, deletePost } from '../db/queries';
+import { listPosts, getPostDetail, deletePost, type PostSort } from '../db/queries';
 import { markPostsPosted } from '../db/repository';
 import { startRescrapeJob, startBeautifyJob, startShopeeLinkCheckJob } from '../services/jobs';
 import { BeautifyConfigSchema } from '../services/beautify';
@@ -23,11 +23,13 @@ const uploadWatermark = multer({
   }),
 });
 
-// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=unposted|posted&mediaFilter=complete|missing
+// GET /api/posts?search=&limit=&offset=&noShopee=1&notUpdated=1&postStatus=unposted|posted&mediaFilter=complete|missing|imageOnly|videoOnly
 router.get('/', (req, res) => {
-  const limit = Math.min(Number(req.query.limit ?? 20) || 20, 100);
+  const limit = Math.min(Number(req.query.limit ?? 20) || 20, 200);
   const offset = Number(req.query.offset ?? 0) || 0;
-  res.json(listPosts({ ...parsePostFilterQuery(req.query as Record<string, unknown>), limit, offset }));
+  const sortRaw = String(req.query.sort ?? '');
+  const sort: PostSort | undefined = (['likes', 'clicks', 'posted'] as const).find((s) => s === sortRaw);
+  res.json(listPosts({ ...parsePostFilterQuery(req.query as Record<string, unknown>), limit, offset, sort }));
 });
 
 // POST /api/posts/mark-posted { postIds: string[], posted?: boolean } -> danh dau (hoac bo danh dau) da dang

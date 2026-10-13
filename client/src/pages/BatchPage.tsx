@@ -30,12 +30,72 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/PageHeader'
+import { FloatingBar } from '@/components/FloatingBar'
+import { EmptyState } from '@/components/EmptyState'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 function isFailed(it: BatchItemResult): boolean {
   return !it.ok || (it.mediaFail ?? 0) > 0
+}
+
+const tabClass = (active: boolean) =>
+  cn(
+    'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:py-1.5',
+    active ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+  )
+
+function HistoryStatus({ r }: { r: CollectHistoryRow }) {
+  if (r.skipped)
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <SkipForward className="h-3.5 w-3.5" /> Đã tải rồi
+      </span>
+    )
+  if (r.ok)
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+        <CheckCircle2 className="h-3.5 w-3.5" /> Thành công
+      </span>
+    )
+  return (
+    <div className="min-w-0">
+      <span className="inline-flex items-center gap-1 text-xs text-destructive">
+        <XCircle className="h-3.5 w-3.5" /> Lỗi
+      </span>
+      {r.error && (
+        <div className="mt-0.5 max-w-xs truncate text-xs text-destructive/80" title={r.error}>
+          {r.error}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryActions({
+  r,
+  onRetry,
+  onRemove,
+}: {
+  r: CollectHistoryRow
+  onRetry: (urls: string[]) => void
+  onRemove: (id: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {!r.ok && (
+        <Button variant="ghost" size="icon" onClick={() => onRetry([r.url])} aria-label="Retry">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
+      <Button variant="ghost" size="icon" onClick={() => onRemove(r.id)} aria-label="Xoá">
+        <Trash2 className="h-4 w-4 text-destructive" />
+      </Button>
+    </div>
+  )
 }
 
 function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
@@ -83,8 +143,10 @@ function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
     qc.invalidateQueries({ queryKey: ['collect-history'] })
   }
 
+  const label = (r: CollectHistoryRow) => (r.post_id ? `@…/post/${r.post_id}` : r.url)
+
   return (
-    <div className="space-y-3 pb-16">
+    <div className={cn('space-y-3', sel.size > 0 && 'pb-24')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SingleFilterDropdown
           label="Trạng thái"
@@ -103,100 +165,90 @@ function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
       </div>
 
       <Card className="overflow-hidden p-0">
-        <div className="max-h-[32rem] overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-muted/60 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-2.5 text-left font-medium">
-                  <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
-                </th>
-                <th className="p-2.5 text-left font-medium">URL</th>
-                <th className="p-2.5 text-left font-medium">Trạng thái</th>
-                <th className="p-2.5 text-left font-medium">Thời gian</th>
-                <th className="p-2.5 text-right font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-                  </td>
-                </tr>
-              )}
-              {!isLoading &&
-                rows.map((r: CollectHistoryRow) => (
-                  <tr
-                    key={r.id}
-                    className={cn('border-b last:border-0', sel.has(r.id) && 'bg-primary/5')}
-                  >
-                    <td className="p-2.5">
-                      <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggle(r.id)} />
-                    </td>
-                    <td className="max-w-xs truncate p-2.5 font-mono text-xs">
-                      {r.post_id ? `@…/post/${r.post_id}` : r.url}
-                    </td>
-                    <td className="p-2.5">
-                      {r.skipped ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <SkipForward className="h-3.5 w-3.5" /> Đã tải rồi
+        {isLoading ? (
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <EmptyState icon={History} title="Chưa có lịch sử thu thập." />
+        ) : (
+          <>
+            <div className="max-h-[70dvh] overflow-auto md:hidden">
+              <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+                <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
+                Chọn tất cả
+              </div>
+              <ul className="divide-y">
+                {rows.map((r) => (
+                  <li key={r.id} className={cn('flex gap-3 p-3', sel.has(r.id) && 'bg-primary/5')}>
+                    <Checkbox className="mt-1" checked={sel.has(r.id)} onCheckedChange={() => toggle(r.id)} />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="break-all font-mono text-xs">{label(r)}</div>
+                      <HistoryStatus r={r} />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {new Date(r.attempted_at).toLocaleString('vi-VN')}
                         </span>
-                      ) : r.ok ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Thành công
-                        </span>
-                      ) : (
-                        <div>
-                          <span className="inline-flex items-center gap-1 text-xs text-destructive">
-                            <XCircle className="h-3.5 w-3.5" /> Lỗi
-                          </span>
-                          {r.error && (
-                            <div className="mt-0.5 max-w-xs truncate text-xs text-destructive/80" title={r.error}>
-                              {r.error}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
-                      {new Date(r.attempted_at).toLocaleString('vi-VN')}
-                    </td>
-                    <td className="p-2.5">
-                      <div className="flex items-center justify-end gap-1">
-                        {!r.ok && (
-                          <Button variant="ghost" size="icon" onClick={() => onRetry([r.url])} aria-label="Retry">
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" onClick={() => removeOne(r.id)} aria-label="Xoá">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <HistoryActions r={r} onRetry={onRetry} onRemove={removeOne} />
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </li>
                 ))}
-              {!isLoading && rows.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                    Chưa có lịch sử thu thập.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </ul>
+            </div>
+
+            <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
+              <table className="w-full min-w-[40rem] text-sm">
+                <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="p-2.5 text-left font-medium">
+                      <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
+                    </th>
+                    <th className="p-2.5 text-left font-medium">URL</th>
+                    <th className="p-2.5 text-left font-medium">Trạng thái</th>
+                    <th className="p-2.5 text-left font-medium">Thời gian</th>
+                    <th className="p-2.5 text-right font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r: CollectHistoryRow) => (
+                    <tr key={r.id} className={cn('border-b last:border-0', sel.has(r.id) && 'bg-primary/5')}>
+                      <td className="p-2.5">
+                        <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggle(r.id)} />
+                      </td>
+                      <td className="max-w-xs truncate p-2.5 font-mono text-xs" title={r.url}>
+                        {label(r)}
+                      </td>
+                      <td className="p-2.5">
+                        <HistoryStatus r={r} />
+                      </td>
+                      <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
+                        {new Date(r.attempted_at).toLocaleString('vi-VN')}
+                      </td>
+                      <td className="p-2.5">
+                        <HistoryActions r={r} onRetry={onRetry} onRemove={removeOne} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </Card>
 
       {sel.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-2 shadow-lg">
-          <span className="px-2 text-sm font-medium">{sel.size} đã chọn</span>
+        <FloatingBar>
+          <span className="px-2 text-sm font-medium tabular-nums">{sel.size} đã chọn</span>
           <Button size="sm" variant="outline" onClick={retrySelected}>
             <RotateCcw className="h-4 w-4" /> Retry đã chọn
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setSel(new Set())}>
             Bỏ chọn
           </Button>
-        </div>
+        </FloatingBar>
       )}
     </div>
   )
@@ -212,24 +264,24 @@ function JobProgressCard({
   const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
-    <Card className="space-y-4 p-4">
+    <Card className="space-y-4 p-3 sm:p-4">
       <div>
         <div className="mb-1 flex items-center justify-between text-sm">
-          <span className="font-medium">
+          <span className="font-medium tabular-nums">
             Tiến trình {job.done}/{job.total}
           </span>
-          <span className="text-muted-foreground">{pct}%</span>
+          <span className="tabular-nums text-muted-foreground">{pct}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
-      <ul className="max-h-[32rem] space-y-2 overflow-auto">
+      <ul className="max-h-[60dvh] space-y-2 overflow-auto">
         {job.items.map((it, i) => {
           const logs = job.logs.filter((l) => l.url === it.url)
           return (
-            <li key={i} className="rounded-lg border p-3">
+            <li key={i} className="rounded-lg border p-2.5 sm:p-3">
               <div className="flex items-start gap-3">
                 {it.skipped ? (
                   <SkipForward className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -432,34 +484,17 @@ export function BatchPage() {
   const failedCount = (job?.items ?? []).filter(isFailed).length
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Thu thập</h1>
-        <p className="text-sm text-muted-foreground">
-          Dán URL bài Threads theo từng nhóm (mỗi dòng 1 URL) — mỗi nhóm chọn sẵn 1 chủ đề, cào
-          xong tự gán chủ đề đó cho tác giả của các bài trong nhóm. Bài đã tải sẽ tự bỏ qua.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
+      <PageHeader
+        title="Thu thập"
+        description="Dán URL bài Threads theo từng nhóm (mỗi dòng 1 URL) — mỗi nhóm chọn sẵn 1 chủ đề, cào xong tự gán chủ đề đó cho tác giả của các bài trong nhóm. Bài đã tải sẽ tự bỏ qua."
+      />
 
-      <div className="flex gap-0.5 rounded-md border p-0.5 w-fit">
-        <button
-          type="button"
-          onClick={() => setTab('collect')}
-          className={cn(
-            'flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors',
-            tab === 'collect' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
-          )}
-        >
+      <div className="flex w-full gap-0.5 rounded-lg border bg-muted/40 p-0.5 sm:w-fit">
+        <button type="button" onClick={() => setTab('collect')} className={tabClass(tab === 'collect')}>
           <Play className="h-3.5 w-3.5" /> Thu thập mới
         </button>
-        <button
-          type="button"
-          onClick={() => setTab('history')}
-          className={cn(
-            'flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors',
-            tab === 'history' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
-          )}
-        >
+        <button type="button" onClick={() => setTab('history')} className={tabClass(tab === 'history')}>
           <History className="h-3.5 w-3.5" /> Lịch sử thu thập
         </button>
       </div>
@@ -475,12 +510,12 @@ export function BatchPage() {
         <>
           <div className="space-y-3">
             {groups.map((g, i) => (
-              <div key={g.id} className="space-y-1.5 rounded-lg border p-3">
+              <div key={g.id} className="space-y-2 rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Nhóm {i + 1}</span>
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="shrink-0 text-xs font-medium text-muted-foreground">Nhóm {i + 1}</span>
                     <select
-                      className="flex h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:max-w-xs sm:flex-none sm:text-xs"
                       value={g.topic ?? ''}
                       onChange={(e) => updateGroup(g.id, { topic: e.target.value || null })}
                       disabled={running}
@@ -511,6 +546,7 @@ export function BatchPage() {
                   onChange={(e) => updateGroup(g.id, { text: e.target.value })}
                   rows={4}
                   disabled={running}
+                  className="font-mono text-xs"
                 />
               </div>
             ))}
@@ -520,7 +556,7 @@ export function BatchPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={run} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 {running ? 'Đang chạy...' : 'Chạy'}

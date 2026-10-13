@@ -5,7 +5,6 @@ import { Loader2, AlertTriangle } from 'lucide-react'
 import { syncGpmProxies, type ProxySyncResult } from '@/lib/api'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -60,7 +59,7 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
-      <h2 className="text-lg font-semibold">Đồng bộ proxy từ GPM Login</h2>
+      <h2 className="pr-8 text-lg font-semibold">Đồng bộ proxy từ GPM Login</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         So khớp tên account với tên profile trong GPM Login (Global cổng 9495, Stable cổng 19995
         theo cột Platform của account) — proxy đổi thì cập nhật và kiểm tra Live/Die ngay.
@@ -87,24 +86,24 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:flex sm:flex-wrap sm:gap-4">
             <span>
-              Đã đổi: <strong className="text-foreground">{result.changed.length}</strong>
+              Đã đổi: <strong className="tabular-nums text-foreground">{result.changed.length}</strong>
             </span>
             <span>
-              Không đổi: <strong className="text-foreground">{result.uncheckedCount}</strong>
+              Không đổi: <strong className="tabular-nums text-foreground">{result.uncheckedCount}</strong>
             </span>
             <span>
-              Không khớp tên: <strong className="text-foreground">{result.unmatchedAccounts.length}</strong>
+              Không khớp tên: <strong className="tabular-nums text-foreground">{result.unmatchedAccounts.length}</strong>
             </span>
             <span>
-              Chưa gán Platform: <strong className="text-foreground">{result.skippedNoPlatform.length}</strong>
+              Chưa gán Platform: <strong className="tabular-nums text-foreground">{result.skippedNoPlatform.length}</strong>
             </span>
           </div>
 
           {result.changed.length > 0 && (
-            <div className="max-h-72 overflow-auto rounded-lg border">
-              <table className="w-full text-xs">
+            <div className="table-scroll max-h-[45dvh] overflow-y-auto rounded-lg border">
+              <table className="w-full min-w-[30rem] text-xs">
                 <thead className="sticky top-0 bg-muted/40 uppercase text-muted-foreground">
                   <tr>
                     <th className="p-2 text-left font-medium">Account</th>
@@ -134,19 +133,19 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
           {result.unmatchedAccounts.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Không tìm thấy profile GPM trùng tên:{' '}
-              <span className={cn('font-mono')}>{result.unmatchedAccounts.join(', ')}</span>
+              <span className="break-words font-mono">{result.unmatchedAccounts.join(', ')}</span>
             </p>
           )}
           {result.skippedNoPlatform.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Chưa gán Platform (Stable/Global) nên bỏ qua:{' '}
-              <span className="font-mono">{result.skippedNoPlatform.join(', ')}</span>
+              <span className="break-words font-mono">{result.skippedNoPlatform.join(', ')}</span>
             </p>
           )}
         </div>
       )}
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button onClick={onClose} disabled={running}>
           Đóng
         </Button>

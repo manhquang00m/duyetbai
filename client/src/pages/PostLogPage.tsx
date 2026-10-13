@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
+import { PageHeader } from '@/components/PageHeader'
 import { StatusCheckboxFilter, STATUS_NONE } from '@/components/StatusCheckboxFilter'
+import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { cn } from '@/lib/utils'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -47,13 +49,59 @@ function StateBadge({ state }: { state: PostRunState }) {
   )
 }
 
+function RunThumb({ thumb }: { thumb: string | null }) {
+  return thumb ? (
+    <img src={`/media/${thumb}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-md object-cover sm:h-9 sm:w-9" />
+  ) : (
+    <div className="h-10 w-10 shrink-0 rounded-md bg-muted sm:h-9 sm:w-9" />
+  )
+}
+
+function RunCard({ r }: { r: PostRunDayRow }) {
+  return (
+    <div className="space-y-2 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-sm font-medium">{r.account_name}</span>
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.posted_at?.slice(11, 16) ?? '—'}</span>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <RunThumb thumb={r.thumb} />
+        <div className="min-w-0">
+          <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
+          <div className="truncate font-mono text-[10px] text-muted-foreground">
+            {r.post_id}
+            {r.caption_variant ? ` · bản ${r.caption_variant}` : ''}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <StateBadge state={r.state} />
+        {r.reports > 1 && <span className="text-[10px] text-muted-foreground">báo {r.reports} lần</span>}
+        <span className="min-w-0 max-w-full truncate text-xs text-muted-foreground">
+          {r.in_plan ? r.plan_name : 'Ngoài kế hoạch'}
+        </span>
+        {r.posted_url && (
+          <a
+            href={r.posted_url}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-auto inline-flex items-center gap-1 py-1 text-xs text-primary hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" /> Mở
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'warn' | 'good' }) {
   return (
-    <Card className="p-4">
+    <Card className="min-w-0 p-3 sm:p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div
         className={cn(
-          'mt-1.5 text-2xl font-semibold tabular-nums',
+          'mt-1 text-2xl font-semibold tabular-nums sm:mt-1.5',
           tone === 'warn' && value > 0 && 'text-amber-600 dark:text-amber-400',
           tone === 'good' && 'text-green-700 dark:text-green-400',
         )}
@@ -127,10 +175,10 @@ const SAMPLE_BODY = `{
 function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog open={open} onClose={onClose} className="max-w-3xl">
-      <h2 className="text-lg font-semibold">API cho tool auto đăng</h2>
-      <div className="mt-3 max-h-[70vh] space-y-4 overflow-auto pr-1 text-sm">
+      <h2 className="pr-8 text-lg font-semibold">API cho tool auto đăng</h2>
+      <div className="mt-3 max-h-[65dvh] space-y-4 overflow-auto pr-1 text-sm">
         <div className="space-y-1">
-          <code className="block rounded bg-muted px-2 py-1 text-xs">
+          <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
             POST http://localhost:3000/api/automation/post-results
           </code>
           <p className="text-xs text-muted-foreground">
@@ -141,8 +189,23 @@ function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void })
 
         <div>
           <h3 className="mb-1.5 text-sm font-medium">Các trường — lấy từ đâu trong file Excel</h3>
-          <div className="overflow-hidden rounded-md border">
-            <table className="w-full text-xs">
+          <div className="space-y-2 sm:hidden">
+            {FIELD_MAP.map((f) => (
+              <div key={f.field} className="rounded-lg border p-2.5 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-medium">{f.field}</span>
+                  <span className={cn('shrink-0', f.required ? 'font-medium' : 'text-muted-foreground')}>
+                    {f.required ? 'Bắt buộc' : 'Tuỳ chọn'}
+                  </span>
+                </div>
+                <div className="mt-0.5 text-muted-foreground">{f.source}</div>
+                <code className="mt-1 block break-all">{f.example}</code>
+                {f.note && <div className="mt-0.5 text-muted-foreground">{f.note}</div>}
+              </div>
+            ))}
+          </div>
+          <div className="table-scroll hidden rounded-md border sm:block">
+            <table className="w-full min-w-[32rem] text-xs">
               <thead className="bg-muted text-muted-foreground">
                 <tr>
                   <th className="p-2 text-left font-medium">Trường</th>
@@ -196,7 +259,7 @@ function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void })
           </li>
         </ul>
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
         <Button onClick={onClose}>Đóng</Button>
       </div>
     </Dialog>
@@ -212,6 +275,7 @@ export function PostLogPage() {
     () => new Set(['Kháng thành công', 'Live', 'Chưa kháng', 'Đang ngâm']),
   )
   const [docOpen, setDocOpen] = useState(false)
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'account'>('newest')
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ['post-runs-day', date],
@@ -247,55 +311,69 @@ export function PostLogPage() {
   const totalNicks = new Set(all.map((r) => r.account_name)).size
   const visibleAccounts = (accounts ?? []).filter((a) => matchAccount(a.account_name, a.appeal_status))
 
-  const visible = base.filter((r: PostRunDayRow) => {
+  const filtered = base.filter((r: PostRunDayRow) => {
     if (tab === 'extra') return !r.in_plan
     if (tab !== 'all') return r.in_plan && r.state === tab
     return true
   })
+  // Dong chua co gio (chua bao cao) luon xuong cuoi, ca khi sap cu nhat.
+  const visible = useMemo(() => {
+    if (sort === 'account') return filtered
+    const dir = sort === 'newest' ? -1 : 1
+    const timeOf = (r: PostRunDayRow) => r.posted_at ?? r.last_reported_at ?? ''
+    return [...filtered].sort((a, b) => {
+      const ta = timeOf(a)
+      const tb = timeOf(b)
+      if (!ta && !tb) return 0
+      if (!ta) return 1
+      if (!tb) return -1
+      return ta < tb ? dir : ta > tb ? -dir : 0
+    })
+  }, [filtered, sort])
 
   return (
-    <div className="mx-auto max-w-8xl space-y-5 pb-20">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Nhật ký đăng</h1>
-          <p className="text-sm text-muted-foreground">
-            Nick nào đăng bài gì trong ngày, đã comment chưa — do tool auto báo về qua API
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDocOpen(true)}>
-          <FileCode2 className="h-4 w-4" /> API cho tool auto
-        </Button>
-      </div>
+    <div className="mx-auto max-w-8xl space-y-4 sm:space-y-5">
+      <PageHeader
+        title="Nhật ký đăng"
+        description="Nick nào đăng bài gì trong ngày, đã comment chưa — do tool auto báo về qua API"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setDocOpen(true)}>
+            <FileCode2 className="h-4 w-4" /> API cho tool auto
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label="Ngày trước">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 w-40" />
-        <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label="Ngày sau">
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => setDate(fmt(new Date()))}>
-          Hôm nay
-        </Button>
-        <div className="relative ml-2 w-56">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label="Ngày trước">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-w-0 flex-1 sm:w-40 sm:flex-none" />
+          <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label="Ngày sau">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setDate(fmt(new Date()))}>
+            Hôm nay
+          </Button>
+        </div>
+        <div className="relative w-full sm:ml-2 sm:w-56">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Tìm tên tài khoản..."
             value={accountSearch}
             onChange={(e) => setAccountSearch(e.target.value)}
-            className="h-9 pl-8 text-xs"
+            className="pl-8 sm:text-xs"
           />
         </div>
         <StatusCheckboxFilter selected={statusFilter} onChange={setStatusFilter} includeNone />
         {(accountSearch || statusFilter.size > 0) && totalNicks > 0 && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs tabular-nums text-muted-foreground">
             {nickCount}/{totalNicks} nick
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5 [&>*:last-child]:col-span-2 md:[&>*:last-child]:col-span-1">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
@@ -315,24 +393,73 @@ export function PostLogPage() {
       )}
 
       <Card className="overflow-hidden p-0">
-        <div className="flex flex-wrap items-center gap-1 border-b p-2">
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setTab(t.value)}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                tab === t.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-          <span className="ml-auto pr-2 text-xs text-muted-foreground">{visible.length} dòng</span>
+        <div className="flex items-center gap-2 border-b p-2">
+          <div className="table-scroll flex min-w-0 flex-1 items-center gap-1">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setTab(t.value)}
+                className={cn(
+                  'shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors sm:py-1.5',
+                  tab === t.value ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <SingleFilterDropdown
+            label="Sắp xếp"
+            activeWhen="newest"
+            value={sort}
+            onChange={(v) => setSort(v as typeof sort)}
+            options={[
+              { value: 'newest', label: 'Mới nhất' },
+              { value: 'oldest', label: 'Cũ nhất' },
+              { value: 'account', label: 'Theo nick' },
+            ]}
+          />
+          <span className="shrink-0 whitespace-nowrap pr-1 text-xs tabular-nums text-muted-foreground">
+            {visible.length} dòng
+          </span>
         </div>
-        <div className="max-h-[calc(100vh-24rem)] min-h-[16rem] overflow-auto">
-          <table className="w-full text-sm">
+
+        {isLoading && (
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && visible.length === 0 && (
+          <EmptyState
+            icon={ClipboardList}
+            title={all.length === 0 ? 'Ngày này chưa có lịch đăng' : 'Không có dòng nào khớp'}
+            description={
+              all.length === 0
+                ? 'Tạo kế hoạch ở trang Phân phối bài, tool auto sẽ báo kết quả về đây.'
+                : 'Thử đổi bộ lọc hoặc từ khoá.'
+            }
+          />
+        )}
+
+        {!isLoading && visible.length > 0 && (
+          <div className="divide-y md:hidden">
+            {visible.map((r) => (
+              <RunCard key={`${r.account_name}|${r.post_id}`} r={r} />
+            ))}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            'table-scroll hidden max-h-[calc(100dvh-24rem)] min-h-[16rem] overflow-y-auto',
+            !isLoading && visible.length > 0 && 'md:block',
+          )}
+        >
+          <table className="w-full min-w-[48rem] text-sm">
             <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="p-2.5 text-left font-medium">Nick</th>
@@ -344,17 +471,12 @@ export function PostLogPage() {
               </tr>
             </thead>
             <tbody>
-              {!isLoading &&
-                visible.map((r) => (
+              {visible.map((r) => (
                   <tr key={`${r.account_name}|${r.post_id}`} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="whitespace-nowrap p-2.5 font-medium">{r.account_name}</td>
                     <td className="max-w-[22rem] p-2.5">
                       <div className="flex items-center gap-2.5">
-                        {r.thumb ? (
-                          <img src={`/media/${r.thumb}`} alt="" className="h-9 w-9 shrink-0 rounded object-cover" />
-                        ) : (
-                          <div className="h-9 w-9 shrink-0 rounded bg-muted" />
-                        )}
+                        <RunThumb thumb={r.thumb} />
                         <div className="min-w-0">
                           <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
                           <div className="font-mono text-[10px] text-muted-foreground">
@@ -392,21 +514,6 @@ export function PostLogPage() {
                     </td>
                   </tr>
                 ))}
-              {!isLoading && visible.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-0">
-                    <EmptyState
-                      icon={ClipboardList}
-                      title={all.length === 0 ? 'Ngày này chưa có lịch đăng' : 'Không có dòng nào khớp'}
-                      description={
-                        all.length === 0
-                          ? 'Tạo kế hoạch ở trang Phân phối bài, tool auto sẽ báo kết quả về đây.'
-                          : 'Thử đổi bộ lọc hoặc từ khoá.'
-                      }
-                    />
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -414,22 +521,22 @@ export function PostLogPage() {
 
       {visibleAccounts.length > 0 && (
         <Card className="overflow-hidden p-0">
-          <div className="border-b p-3">
-            <h2 className="text-sm font-semibold">
+          <div className="border-b p-3 sm:p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground">
               Tổng hợp theo nick · {rangeFrom.slice(8, 10)}/{rangeFrom.slice(5, 7)} → {date.slice(8, 10)}/
               {date.slice(5, 7)} (7 ngày)
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Mỗi dòng = 1 nick, đếm số bài theo lịch Phân phối bài trong 7 ngày trên. Nick có nhiều bài{' '}
               <b>thiếu CMT</b> + <b>chưa báo cáo</b> xếp lên đầu — nên kiểm tra proxy / checkpoint của nick đó. Slot của
               hôm nay chưa tới giờ chạy cũng tính là chưa báo cáo.
             </p>
           </div>
-          <div className="max-h-80 overflow-auto">
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-muted text-muted-foreground">
+          <div className="table-scroll max-h-[60dvh] overflow-y-auto sm:max-h-80">
+            <table className="w-full min-w-[28rem] text-xs">
+              <thead className="sticky top-0 z-20 bg-muted text-muted-foreground">
                 <tr>
-                  <th className="p-2 text-left font-medium">Nick</th>
+                  <th className="sticky left-0 bg-muted p-2 text-left font-medium">Nick</th>
                   <th className="p-2 text-right font-medium" title="Tổng số bài kế hoạch giao cho nick trong 7 ngày">Theo lịch</th>
                   <th className="p-2 text-right font-medium" title="Đăng bài + comment thành công">Hoàn tất</th>
                   <th className="p-2 text-right font-medium" title="Đăng bài xong nhưng chưa comment = bài không có link affiliate">Thiếu CMT</th>
@@ -440,7 +547,7 @@ export function PostLogPage() {
               <tbody>
                 {visibleAccounts.map((a) => (
                   <tr key={a.account_name} className="border-b last:border-0">
-                    <td className="p-2 font-medium">{a.account_name}</td>
+                    <td className="sticky left-0 z-10 max-w-[10rem] truncate bg-card p-2 font-medium">{a.account_name}</td>
                     <td className="p-2 text-right tabular-nums">{a.planned}</td>
                     <td className="p-2 text-right tabular-nums">{a.commented}</td>
                     <td

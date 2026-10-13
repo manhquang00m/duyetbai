@@ -42,8 +42,8 @@ export function TopicChipsCell({ topics, onToggle, compact }: Props) {
         onClick={() => popover.setOpen(!popover.open)}
         title={compact && topics.length > compact ? topics.join(', ') : undefined}
         className={cn(
-          'flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent',
-          compact ? 'flex-nowrap whitespace-nowrap' : 'max-w-[13rem] flex-wrap',
+          'flex min-h-8 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent sm:min-h-0',
+          compact ? 'flex-nowrap whitespace-nowrap' : 'max-w-[min(13rem,70vw)] flex-wrap',
         )}
       >
         {topics.length > 0 ? (
@@ -79,7 +79,7 @@ export function TopicChipsCell({ topics, onToggle, compact }: Props) {
                 onClick={() => handleToggle(t)}
                 disabled={pending === t}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-60',
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 sm:px-2 sm:py-1',
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent',

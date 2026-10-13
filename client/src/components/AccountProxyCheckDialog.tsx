@@ -117,7 +117,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-2xl">
-      <h2 className="text-lg font-semibold">Kiểm tra proxy</h2>
+      <h2 className="pr-8 text-lg font-semibold">Kiểm tra proxy</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {description ?? `${proxies.length} proxy (đã bỏ trùng) từ các account đã chọn`}
       </p>
@@ -131,7 +131,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
         <>
           {job && (
             <div className="mt-4">
-              <div className="mb-1 flex items-center justify-between text-sm">
+              <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 text-sm">
                 <span className="font-medium">
                   {checking ? 'Đang kiểm tra' : 'Hoàn tất'} {job.done}/{job.total}
                 </span>
@@ -147,7 +147,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
                 />
               </div>
               {inFlight.length > 0 && (
-                <div className="mt-1.5 truncate text-xs text-muted-foreground">
+                <div className="mt-1.5 truncate text-xs text-muted-foreground" title={inFlight.join(", ")}>
                   <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
                   Đang kiểm tra: {inFlight.join(', ')}
                 </div>
@@ -159,9 +159,9 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
             Kết quả được lưu thẳng vào kho proxy, không cần bấm lưu.
           </p>
 
-          <div className="mt-2 max-h-96 overflow-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <div className="table-scroll mt-2 max-h-[50dvh] overflow-y-auto rounded-lg border sm:max-h-96">
+            <table className="w-full min-w-[30rem] text-sm">
+              <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="p-2.5 text-left font-medium">Proxy</th>
                   <th className="p-2.5 text-left font-medium">Trạng thái</th>
@@ -179,11 +179,11 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
                 )}
                 {results.map((r) => (
                     <tr key={r.proxy} className="border-b last:border-0">
-                      <td className="max-w-[14rem] truncate p-2.5 font-mono text-xs">{r.proxy}</td>
+                      <td className="max-w-[14rem] truncate p-2.5 font-mono text-xs" title={r.proxy}>{r.proxy}</td>
                       <td className="p-2.5">
                         <StatusBadge status={r.status} />
                       </td>
-                      <td className="p-2.5 text-xs text-muted-foreground">
+                      <td className="max-w-[12rem] truncate p-2.5 text-xs text-muted-foreground">
                         {r.ip ?? r.error ?? '—'}
                       </td>
                       <td className="p-2.5 text-right text-xs tabular-nums text-muted-foreground">
@@ -197,7 +197,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
         </>
       )}
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button onClick={onClose}>Đóng</Button>
       </div>
     </Dialog>

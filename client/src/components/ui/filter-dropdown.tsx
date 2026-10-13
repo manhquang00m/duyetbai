@@ -59,7 +59,7 @@ export function SingleFilterDropdown<V extends string>({
               popover.setOpen(false)
             }}
             className={cn(
-              'flex w-full items-center justify-between gap-3 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
+              'flex w-full items-center justify-between gap-3 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent sm:py-1.5',
               opt.value === value && 'font-medium',
             )}
           >
@@ -116,7 +116,7 @@ export function TopicFilterDropdown({
         {isActive && <span className="font-semibold">: {selected.length}</span>}
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </button>
-      <PopoverPanel popover={popover} className="w-[26rem] max-w-[90vw] p-3">
+      <PopoverPanel popover={popover} className="w-[26rem] p-3">
         <div className="flex flex-wrap gap-2">
           {options.map((opt) => {
             const active = selected.includes(opt)
@@ -127,7 +127,7 @@ export function TopicFilterDropdown({
                 onClick={() => onToggle(opt)}
                 aria-pressed={active}
                 className={cn(
-                  'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                  'rounded-full border px-3 py-2 text-sm transition-colors sm:py-1.5',
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-input bg-background text-foreground hover:bg-accent',
@@ -143,7 +143,7 @@ export function TopicFilterDropdown({
               onClick={() => onToggle(unassignedValue)}
               aria-pressed={selected.includes(unassignedValue)}
               className={cn(
-                'rounded-full border border-dashed px-3 py-1.5 text-sm transition-colors',
+                'rounded-full border border-dashed px-3 py-2 text-sm transition-colors sm:py-1.5',
                 selected.includes(unassignedValue)
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-input bg-background text-muted-foreground hover:bg-accent',
@@ -159,7 +159,7 @@ export function TopicFilterDropdown({
             <button
               type="button"
               onClick={onClear}
-              className="w-full rounded-sm px-2 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="w-full rounded-sm px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground sm:py-1"
             >
               Xóa lọc chủ đề
             </button>
@@ -214,14 +214,14 @@ export function MultiFilterDropdown({ groups, activeCount, onClearAll }: MultiFi
             g.type === 'checkbox' ? (
               <label
                 key={g.key}
-                className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-accent"
+                className="flex cursor-pointer items-center gap-2.5 rounded-sm px-1.5 py-2 text-sm hover:bg-accent sm:gap-2 sm:py-1"
               >
                 <Checkbox checked={g.checked} onCheckedChange={g.onToggle} />
                 {g.label}
               </label>
             ) : (
               <div key={g.key}>
-                <div className="mb-1 px-1 text-xs font-medium text-muted-foreground">{g.label}</div>
+                <div className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g.label}</div>
                 <div className="space-y-0.5">
                   {g.options.map((opt) => (
                     <button
@@ -231,7 +231,7 @@ export function MultiFilterDropdown({ groups, activeCount, onClearAll }: MultiFi
                       aria-checked={opt.value === g.value}
                       onClick={() => g.onChange(opt.value)}
                       className={cn(
-                        'flex w-full items-center justify-between gap-3 rounded-sm px-2 py-1 text-left text-sm hover:bg-accent',
+                        'flex w-full items-center justify-between gap-3 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent sm:py-1',
                         opt.value === g.value && 'font-medium',
                       )}
                     >
@@ -253,7 +253,7 @@ export function MultiFilterDropdown({ groups, activeCount, onClearAll }: MultiFi
                 onClearAll()
                 popover.setOpen(false)
               }}
-              className="w-full rounded-sm px-2 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="w-full rounded-sm px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground sm:py-1"
             >
               Xóa lọc
             </button>

@@ -36,13 +36,13 @@ export function PostTopicCell({ topic, onChange }: Props) {
 
   return (
     // stopPropagation: tranh bam vao chip lai mo luon Sheet chi tiet bai (hang <tr> co onClick rieng)
-    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+    <div className="relative inline-block max-w-full" onClick={(e) => e.stopPropagation()}>
       <button
         ref={popover.triggerRef}
         type="button"
         onClick={() => popover.setOpen(!popover.open)}
         disabled={saving}
-        className="flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent disabled:opacity-60"
+        className="flex min-h-8 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent disabled:opacity-60 sm:min-h-0"
       >
         {saving ? (
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -62,7 +62,7 @@ export function PostTopicCell({ topic, onChange }: Props) {
             type="button"
             onClick={() => handlePick(null)}
             className={cn(
-              'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors',
+              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-2 sm:py-1',
               !topic
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-accent',
@@ -78,7 +78,7 @@ export function PostTopicCell({ topic, onChange }: Props) {
                 type="button"
                 onClick={() => handlePick(t)}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors',
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-2 sm:py-1',
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent',

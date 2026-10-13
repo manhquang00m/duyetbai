@@ -18,8 +18,8 @@ interface Where {
 }
 
 /** Dieu kien khoang thoi gian click + chu de bai (alias bang = t, bai = posts theo post_id). */
-function rangeWhere(f: AffFilter, alias: string): Where {
-  const conds = [`${alias}.clicked_at >= ?`, `${alias}.clicked_at <= ?`];
+function rangeWhere(f: AffFilter, alias: string, col = 'clicked_at'): Where {
+  const conds = [`${alias}.${col} >= ?`, `${alias}.${col} <= ?`];
   const args = [`${f.from} 00:00:00`, `${f.to} 23:59:59`];
   if (f.topics && f.topics.length > 0) {
     conds.push(
@@ -39,7 +39,32 @@ export interface AffSummary {
   completedMilli: number;
   unmatchedClicks: number;
   byReferrer: { referrer: string; clicks: number }[];
-  daily: { date: string; clicks: number; orders: number }[];
+  daily: { date: string; clicks: number; orders: number; commission_milli: number }[];
+  /** Don + hoa hong gom theo NGAY DAT HANG (giong dashboard Shopee); loc khoang ngay theo ordered_at. */
+  dailyByOrderDate: { date: string; orders: number; commission_milli: number }[];
+  /** Tong don + hoa hong loc theo NGAY DAT HANG - khop tong cua bieu do dailyByOrderDate. */
+  byOrderDate: { orders: number; cancelledOrders: number; pendingMilli: number; completedMilli: number };
+}
+
+function orderTotals(w: Where) {
+  return db
+    .prepare(
+      `SELECT COUNT(DISTINCT CASE WHEN o.order_status <> ? THEN o.order_id END) AS orders,
+              COUNT(DISTINCT CASE WHEN o.order_status = ? THEN o.order_id END) AS cancelled,
+              COUNT(DISTINCT CASE WHEN o.order_status <> ? THEN o.click_id END) AS converted,
+              COALESCE(SUM(CASE WHEN o.order_status = ? THEN o.net_commission_milli END), 0) AS completed,
+              COALESCE(SUM(CASE WHEN o.order_status NOT IN (?, ?) THEN o.net_commission_milli END), 0) AS pending
+         FROM aff_order_items o WHERE ${w.sql}`,
+    )
+    .get(
+      ORDER_CANCELLED,
+      ORDER_CANCELLED,
+      ORDER_CANCELLED,
+      ORDER_COMPLETED,
+      ORDER_COMPLETED,
+      ORDER_CANCELLED,
+      ...w.args,
+    ) as { orders: number; cancelled: number; converted: number; completed: number; pending: number };
 }
 
 export function affSummary(f: AffFilter): AffSummary {
@@ -53,24 +78,7 @@ export function affSummary(f: AffFilter): AffSummary {
       .prepare(`SELECT COUNT(*) AS n FROM aff_clicks c WHERE ${wc.sql} AND c.post_id IS NULL`)
       .get(...wc.args) as { n: number }
   ).n;
-  const o = db
-    .prepare(
-      `SELECT COUNT(DISTINCT CASE WHEN o.order_status <> ? THEN o.order_id END) AS orders,
-              COUNT(DISTINCT CASE WHEN o.order_status = ? THEN o.order_id END) AS cancelled,
-              COUNT(DISTINCT CASE WHEN o.order_status <> ? THEN o.click_id END) AS converted,
-              COALESCE(SUM(CASE WHEN o.order_status = ? THEN o.net_commission_milli END), 0) AS completed,
-              COALESCE(SUM(CASE WHEN o.order_status NOT IN (?, ?) THEN o.net_commission_milli END), 0) AS pending
-         FROM aff_order_items o WHERE ${wo.sql}`,
-    )
-    .get(
-      ORDER_CANCELLED,
-      ORDER_CANCELLED,
-      ORDER_CANCELLED,
-      ORDER_COMPLETED,
-      ORDER_COMPLETED,
-      ORDER_CANCELLED,
-      ...wo.args,
-    ) as { orders: number; cancelled: number; converted: number; completed: number; pending: number };
+  const o = orderTotals(wo);
 
   const byReferrer = db
     .prepare(
@@ -91,18 +99,43 @@ export function affSummary(f: AffFilter): AffSummary {
          FROM aff_order_items o WHERE ${wo.sql} AND o.order_status <> ? GROUP BY 1`,
     )
     .all(...wo.args, ORDER_CANCELLED) as { date: string; n: number }[];
+  const dailyCommission = db
+    .prepare(
+      `SELECT substr(o.clicked_at, 1, 10) AS date, COALESCE(SUM(o.net_commission_milli), 0) AS m
+         FROM aff_order_items o WHERE ${wo.sql} AND o.order_status <> ? GROUP BY 1`,
+    )
+    .all(...wo.args, ORDER_CANCELLED) as { date: string; m: number }[];
+  const wd = rangeWhere(f, 'o', 'ordered_at');
+  const od = orderTotals(wd);
+  const byOrderDate = db
+    .prepare(
+      `SELECT substr(o.ordered_at, 1, 10) AS date, COUNT(DISTINCT o.order_id) AS n,
+              COALESCE(SUM(o.net_commission_milli), 0) AS m
+         FROM aff_order_items o WHERE ${wd.sql} AND o.order_status <> ? GROUP BY 1`,
+    )
+    .all(...wd.args, ORDER_CANCELLED) as { date: string; n: number; m: number }[];
 
   // Du tat ca cac ngay trong khoang (ke ca ngay 0 click) de bieu do khong bi hut cot.
   const clickMap = new Map(dailyClicks.map((d) => [d.date, d.n]));
   const orderMap = new Map(dailyOrders.map((d) => [d.date, d.n]));
+  const commissionMap = new Map(dailyCommission.map((d) => [d.date, d.m]));
+  const orderDateMap = new Map(byOrderDate.map((d) => [d.date, d]));
   const daily: AffSummary['daily'] = [];
+  const dailyByOrderDate: AffSummary['dailyByOrderDate'] = [];
   for (
     let d = new Date(`${f.from}T00:00:00Z`);
     d <= new Date(`${f.to}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() + 1)
   ) {
     const key = d.toISOString().slice(0, 10);
-    daily.push({ date: key, clicks: clickMap.get(key) ?? 0, orders: orderMap.get(key) ?? 0 });
+    daily.push({
+      date: key,
+      clicks: clickMap.get(key) ?? 0,
+      orders: orderMap.get(key) ?? 0,
+      commission_milli: commissionMap.get(key) ?? 0,
+    });
+    const od = orderDateMap.get(key);
+    dailyByOrderDate.push({ date: key, orders: od?.n ?? 0, commission_milli: od?.m ?? 0 });
   }
 
   return {
@@ -115,6 +148,13 @@ export function affSummary(f: AffFilter): AffSummary {
     unmatchedClicks,
     byReferrer,
     daily,
+    dailyByOrderDate,
+    byOrderDate: {
+      orders: od.orders,
+      cancelledOrders: od.cancelled,
+      pendingMilli: od.pending,
+      completedMilli: od.completed,
+    },
   };
 }
 
@@ -282,6 +322,81 @@ export function affPostStats(f: AffFilter): { posts: AffPostRow[]; unmatched: Af
   }
 
   return { posts, unmatched };
+}
+
+export interface AffAccountRow {
+  account: string | null; // null = luc click chua co tai khoan nao dang bai trong nhat ky
+  clicks: number;
+  exact_clicks: number; // ngay click chi dung 1 tai khoan da dang bai -> chac chan
+  posts: number;
+  orders: number;
+  commission_milli: number;
+}
+
+// Sub_id chi mang post_id -> doi chieu nhat ky dang: moi click gan cho DUNG 1 tai khoan da dang bai
+// do truoc thoi diem click. Chac chan khi trong ngay click chi 1 tai khoan dang; con lai (nhieu tai
+// khoan cung ngay / click don tu bai dang hom truoc) gan cho tai khoan dang gan nhat truoc click.
+export function affAccountStats(f: AffFilter): AffAccountRow[] {
+  const wc = rangeWhere(f, 'c');
+  const wo = rangeWhere(f, 'o');
+  const runs = db
+    .prepare(
+      `SELECT post_id, account_name, COALESCE(posted_at, post_date || ' 00:00:00') AS t FROM post_runs
+        WHERE status IN ('posted', 'commented') ORDER BY t`,
+    )
+    .all() as { post_id: string; account_name: string; t: string }[];
+  const runsOf = new Map<string, { account: string; t: string }[]>();
+  for (const r of runs) {
+    if (!runsOf.has(r.post_id)) runsOf.set(r.post_id, []);
+    runsOf.get(r.post_id)!.push({ account: r.account_name, t: r.t });
+  }
+  const attribute = (postId: string, at: string): { account: string | null; exact: boolean } => {
+    const before = (runsOf.get(postId) ?? []).filter((r) => r.t <= at);
+    if (before.length === 0) return { account: null, exact: false };
+    const day = at.slice(0, 10);
+    const sameDay = new Set(before.filter((r) => r.t.slice(0, 10) === day).map((r) => r.account));
+    return { account: before[before.length - 1].account, exact: sameDay.size === 1 };
+  };
+
+  const acc = new Map<string | null, AffAccountRow & { postSet: Set<string> }>();
+  const row = (a: string | null) => {
+    let e = acc.get(a);
+    if (!e) {
+      e = { account: a, clicks: 0, exact_clicks: 0, posts: 0, orders: 0, commission_milli: 0, postSet: new Set() };
+      acc.set(a, e);
+    }
+    return e;
+  };
+
+  const clicks = db
+    .prepare(`SELECT c.post_id, c.clicked_at FROM aff_clicks c WHERE ${wc.sql} AND c.post_id IS NOT NULL`)
+    .all(...wc.args) as { post_id: string; clicked_at: string }[];
+  for (const c of clicks) {
+    const { account, exact } = attribute(c.post_id, c.clicked_at);
+    const e = row(account);
+    e.clicks++;
+    if (exact) e.exact_clicks++;
+    e.postSet.add(c.post_id);
+  }
+
+  const orders = db
+    .prepare(
+      `SELECT o.post_id, MIN(o.clicked_at) AS clicked_at, COALESCE(SUM(o.net_commission_milli), 0) AS m
+         FROM aff_order_items o
+        WHERE ${wo.sql} AND o.post_id IS NOT NULL AND o.order_status <> ?
+        GROUP BY o.order_id, o.post_id`,
+    )
+    .all(...wo.args, ORDER_CANCELLED) as { post_id: string; clicked_at: string; m: number }[];
+  for (const o of orders) {
+    const e = row(attribute(o.post_id, o.clicked_at).account);
+    e.orders++;
+    e.commission_milli += o.m;
+    e.postSet.add(o.post_id);
+  }
+
+  return [...acc.values()]
+    .map(({ postSet, ...e }) => ({ ...e, posts: postSet.size }))
+    .sort((a, b) => (a.account === null ? 1 : b.account === null ? -1 : b.clicks - a.clicks));
 }
 
 export interface AffOrderLine {

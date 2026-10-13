@@ -1,4 +1,4 @@
-import type { LinkStatusFilter, PostFilterOpts } from '../db/queries';
+import { MEDIA_FILTERS, type LinkStatusFilter, type PostFilterOpts } from '../db/queries';
 
 const truthy = (v: unknown): boolean => v === '1' || v === 'true';
 
@@ -30,8 +30,7 @@ export function parsePostFilterQuery(query: Record<string, unknown>): PostFilter
     oneShopee: truthy(query.oneShopee),
     postStatus:
       postStatusRaw === 'unposted' || postStatusRaw === 'posted' ? postStatusRaw : undefined,
-    mediaFilter:
-      mediaFilterRaw === 'complete' || mediaFilterRaw === 'missing' ? mediaFilterRaw : undefined,
+    mediaFilter: MEDIA_FILTERS.find((m) => m === mediaFilterRaw),
     linkStatus: LINK_STATUS_VALUES.includes(linkStatusRaw) ? linkStatusRaw : undefined,
     cleanOnly: truthy(query.cleanOnly),
     rewritten: rewrittenRaw === 'yes' || rewrittenRaw === 'no' ? rewrittenRaw : undefined,

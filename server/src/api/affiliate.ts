@@ -4,7 +4,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { ACCOUNT_TOPICS } from '../db/accountTopics';
-import { affSummary, affPostStats, affPostDetail, affCoverage, type AffFilter } from '../db/affiliate';
+import { affSummary, affPostStats, affAccountStats, affPostDetail, affCoverage, type AffFilter } from '../db/affiliate';
 import { importAffiliateCsv, AffImportError, type AffImportResult } from '../services/affiliateImport';
 import { EXPORT_DIR } from '../config';
 
@@ -77,6 +77,15 @@ router.get('/posts', (req, res) => {
     return;
   }
   res.json(affPostStats(f));
+});
+
+router.get('/accounts', (req, res) => {
+  const f = parseFilter(req.query);
+  if (!f) {
+    res.status(400).json({ error: 'Khoảng ngày không hợp lệ' });
+    return;
+  }
+  res.json(affAccountStats(f));
 });
 
 router.get('/posts/:postId', (req, res) => {

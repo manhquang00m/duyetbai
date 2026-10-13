@@ -63,17 +63,17 @@ export function RescrapeDialog({ open, postIds, onClose, onDone }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-lg">
-      <h2 className="text-lg font-semibold">Lấy lại comment</h2>
+      <h2 className="pr-8 text-lg font-semibold">Lấy lại comment</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {postIds.length} bài · cần mạng vào được threads.com
       </p>
 
       <div className="mt-4">
         <div className="mb-1 flex items-center justify-between text-sm">
-          <span className="font-medium">
+          <span className="font-medium tabular-nums">
             {finished ? 'Hoàn tất' : 'Đang chạy'} {job?.done ?? 0}/{job?.total ?? postIds.length}
           </span>
-          <span className="text-muted-foreground">{pct}%</span>
+          <span className="tabular-nums text-muted-foreground">{pct}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
@@ -83,7 +83,7 @@ export function RescrapeDialog({ open, postIds, onClose, onDone }: Props) {
         </div>
       </div>
 
-      <ul className="mt-4 max-h-64 space-y-1.5 overflow-auto text-sm">
+      <ul className="mt-4 max-h-[45dvh] space-y-1.5 overflow-auto text-sm">
         {(job?.items ?? []).map((it, i) => (
           <li key={i} className="rounded-md border p-2">
             <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function RescrapeDialog({ open, postIds, onClose, onDone }: Props) {
         )}
       </ul>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant={finished ? 'default' : 'outline'} onClick={onClose}>
           {finished ? 'Đóng' : 'Chạy nền / Đóng'}
         </Button>

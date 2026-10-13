@@ -81,7 +81,7 @@ db.exec(`
 
   -- Chu de cua ACCOUNT DANG BAI (accounts.id), nhieu-nhieu: 1 account nhan duoc nhieu chu de.
   -- KHAC HAN posts.topic o tren (gan theo TUNG BAI, tu tac gia bai cao ve). Hai tap ten nay roi
-  -- nhau hoan toan, chi dung chung bo 7 gia tri ACCOUNT_TOPICS - dung bao gio gop lam mot.
+  -- nhau hoan toan, chi dung chung bo gia tri ACCOUNT_TOPICS - dung bao gio gop lam mot.
   CREATE TABLE IF NOT EXISTS posting_account_topics (
     account_id  INTEGER NOT NULL,
     topic       TEXT NOT NULL,
@@ -254,6 +254,7 @@ db.exec(`
     UNIQUE (post_date, account_name, post_id)
   );
   CREATE INDEX IF NOT EXISTS idx_post_runs_date ON post_runs(post_date);
+  CREATE INDEX IF NOT EXISTS idx_post_runs_post ON post_runs(post_id);
 
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_sub_time ON aff_clicks(sub_id1, clicked_at);
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_post ON aff_clicks(post_id);

@@ -68,7 +68,8 @@ export function PasswordField({
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2 text-muted-foreground hover:text-foreground sm:right-1.5 sm:p-1.5"
+          aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
           tabIndex={-1}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -205,9 +206,9 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-lg">
-      <h2 className="text-lg font-semibold">{account ? 'Sửa account' : 'Thêm account'}</h2>
+      <h2 className="pr-8 text-lg font-semibold">{account ? 'Sửa account' : 'Thêm account'}</h2>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-3.5">
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">
             Profile (tên account)
@@ -229,12 +230,12 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
 
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Proxy</label>
-          <div className="mb-1.5 flex gap-0.5 rounded-md border p-0.5 w-fit">
+          <div className="mb-1.5 flex w-full gap-0.5 rounded-md border p-0.5 sm:w-fit">
             <button
               type="button"
               onClick={() => setProxyMode('select')}
               className={cn(
-                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                'flex-1 rounded px-2 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1',
                 proxyMode === 'select'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent',
@@ -246,7 +247,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
               type="button"
               onClick={() => setProxyMode('text')}
               className={cn(
-                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                'flex-1 rounded px-2 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1',
                 proxyMode === 'text'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent',
@@ -259,7 +260,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           {proxyMode === 'select' ? (
             <>
               <select
-                className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
                 value={form.proxy ?? ''}
                 onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value || null }))}
               >
@@ -301,7 +302,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           onChange={(v) => setForm((f) => ({ ...f, pass_threads: v }))}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Gmail</label>
             <Input
@@ -319,7 +320,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Platform</label>
           <select
-            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
             value={form.platform ?? ''}
             onChange={(e) =>
               setForm((f) => ({
@@ -334,13 +335,13 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
               Loại proxy
             </label>
             <select
-              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
               value={form.proxy_type ?? ''}
               onChange={(e) =>
                 setForm((f) => ({
@@ -362,7 +363,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
               Trạng thái
             </label>
             <select
-              className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
               value={form.appeal_status ?? ''}
               onChange={(e) =>
                 setForm((f) => ({
@@ -392,7 +393,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           />
         </div>
 
-        <div className="flex items-center gap-6 pt-1">
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-6">
           <div className="flex items-center gap-2">
             <Switch
               checked={!!form.active}
@@ -410,7 +411,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="ghost" onClick={onClose}>
           Huỷ
         </Button>

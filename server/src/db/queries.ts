@@ -28,7 +28,27 @@ export interface PostListItem {
   posted_at: string | null;
   topic: string | null; // chu de cua CHINH bai nay (cot posts.topic)
   variant_count: number; // so ban caption AI da viet lai (0..3), xem post_caption_variants
+  click_count: number; // so click affiliate khop bai nay (aff_clicks.post_id)
+  posted_count: number; // so lan bai da dang thanh cong (post_runs: posted + commented)
 }
+
+export type PostSort = 'newest' | 'likes' | 'clicks' | 'posted';
+
+// Allowlist ORDER BY - khong bao gio noi chuoi gia tri tu client vao SQL.
+// likes luu dang chuoi ('261', '3.2K', '1,5K') -> quy ve so; rong/NULL xuong cuoi (-1).
+const LIKES_NUM = `(CASE
+  WHEN p.likes IS NULL OR TRIM(p.likes) = '' THEN -1
+  WHEN UPPER(p.likes) LIKE '%K' THEN CAST(REPLACE(REPLACE(REPLACE(p.likes, 'K', ''), 'k', ''), ',', '.') AS REAL) * 1000
+  WHEN UPPER(p.likes) LIKE '%M' THEN CAST(REPLACE(REPLACE(REPLACE(p.likes, 'M', ''), 'm', ''), ',', '.') AS REAL) * 1000000
+  ELSE CAST(REPLACE(p.likes, ',', '') AS REAL)
+END)`;
+
+const ORDER_BY: Record<PostSort, string> = {
+  newest: 'p.scraped_at DESC',
+  likes: `${LIKES_NUM} DESC, p.scraped_at DESC`,
+  clicks: 'click_count DESC, p.scraped_at DESC',
+  posted: 'posted_count DESC, p.scraped_at DESC',
+};
 
 // Dieu kien "co it nhat 1 file video/anh tai thanh cong" cho 1 bai - dung chung cho filter danh
 // sach (listPosts) va filter khi xuat file (exporter.ts).
@@ -57,6 +77,9 @@ export const CLEAN_POST_COND = `(
  * Bo loc DUNG CHUNG cho danh sach bai (listPosts) VA xuat file (exportPosts/getExportWarnings) -
  * dam bao "loc the nao, xuat y nhu the" (1 nguon su that duy nhat cho dieu kien loc).
  */
+export const MEDIA_FILTERS = ['complete', 'missing', 'imageOnly', 'videoOnly'] as const;
+export type MediaFilter = (typeof MEDIA_FILTERS)[number];
+
 export interface PostFilterOpts {
   search?: string;
   username?: string; // dung CHINH XAC 1 tac gia (khac search: search la LIKE nen de dinh nham)
@@ -64,7 +87,7 @@ export interface PostFilterOpts {
   notUpdated?: boolean;
   oneShopee?: boolean;
   postStatus?: 'unposted' | 'posted';
-  mediaFilter?: 'complete' | 'missing';
+  mediaFilter?: MediaFilter;
   topics?: string[]; // loc theo chu de cua bai (posts.topic) - chon nhieu (OR)
   linkStatus?: LinkStatusFilter; // loc theo tinh trang link Shopee da kiem tra
   cleanOnly?: boolean; // chi bai du dieu kien phan phoi, xem CLEAN_POST_COND
@@ -126,6 +149,10 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
     conds.push(`(${HAS_VIDEO} AND ${HAS_IMAGE})`);
   } else if (opts.mediaFilter === 'missing') {
     conds.push(`NOT (${HAS_VIDEO} AND ${HAS_IMAGE})`);
+  } else if (opts.mediaFilter === 'imageOnly') {
+    conds.push(`(${HAS_IMAGE} AND NOT ${HAS_VIDEO})`);
+  } else if (opts.mediaFilter === 'videoOnly') {
+    conds.push(`(${HAS_VIDEO} AND NOT ${HAS_IMAGE})`);
   }
   if (opts.linkStatus) {
     conds.push(
@@ -188,6 +215,8 @@ const SELECT_LIST = `
          (SELECT COUNT(*) FROM shopee_entries s WHERE s.post_id = p.post_id
             AND s.link_status IS NOT NULL) AS checked_link_count,
          (SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) AS variant_count,
+         (SELECT COUNT(*) FROM aff_clicks c WHERE c.post_id = p.post_id) AS click_count,
+         (SELECT COUNT(*) FROM post_runs r WHERE r.post_id = p.post_id) AS posted_count,
          (SELECT comment FROM shopee_entries s WHERE s.post_id = p.post_id
             ORDER BY id LIMIT 1) AS comment,
          (SELECT file FROM media m WHERE m.post_id = p.post_id AND m.type = 'image' AND m.ok = 1
@@ -198,7 +227,7 @@ const SELECT_LIST = `
 `;
 
 export function listPosts(
-  opts: PostFilterOpts & { limit?: number; offset?: number } = {},
+  opts: PostFilterOpts & { limit?: number; offset?: number; sort?: PostSort } = {},
 ): {
   total: number;
   items: PostListItem[];
@@ -214,7 +243,7 @@ export function listPosts(
   ).n;
 
   const rows = db
-    .prepare(`${SELECT_LIST} ${where} ORDER BY p.scraped_at DESC LIMIT ? OFFSET ?`)
+    .prepare(`${SELECT_LIST} ${where} ORDER BY ${ORDER_BY[opts.sort ?? 'newest'] ?? ORDER_BY.newest} LIMIT ? OFFSET ?`)
     .all(...args, limit, offset) as (Omit<PostListItem, 'thumb'> & {
     thumb_file: string | null;
     any_file: string | null;

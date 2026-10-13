@@ -68,7 +68,7 @@ export function ShopeeLinkCheckDialog({ open, postIds, onClose, onDone }: Props)
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-xl">
-      <h2 className="text-lg font-semibold">Kiểm tra link Shopee</h2>
+      <h2 className="pr-8 text-lg font-semibold">Kiểm tra link Shopee</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {postIds.length} bài · link chết nhận ra ngay, còn hàng/hết hàng cần phiên đăng nhập Shopee
       </p>
@@ -76,7 +76,7 @@ export function ShopeeLinkCheckDialog({ open, postIds, onClose, onDone }: Props)
       <div className="mt-4 space-y-3">
         <div>
           <div className="mb-1 flex items-center justify-between text-sm">
-            <span className="font-medium">
+            <span className="font-medium tabular-nums">
               {finished ? 'Hoàn tất' : 'Đang kiểm tra'} {job?.done ?? 0}/{job?.total ?? postIds.length}
             </span>
             <span className="text-muted-foreground">{badCount} link hỏng</span>
@@ -89,16 +89,18 @@ export function ShopeeLinkCheckDialog({ open, postIds, onClose, onDone }: Props)
           </div>
         </div>
 
-        <ul className="max-h-80 space-y-1.5 overflow-auto text-sm">
+        <ul className="max-h-[45dvh] space-y-1.5 overflow-auto text-sm">
           {job?.items.map((it, i) => (
-            <li key={i} className="flex items-start gap-2 rounded-lg border p-2.5">
+            <li key={i} className="flex flex-wrap items-start gap-2 rounded-lg border p-2.5 sm:flex-nowrap">
               <ShopeeItemIcon status={it.shopeeStatus} />
               <div className="min-w-0 flex-1">
                 {it.shopeeTitle && <div className="truncate text-xs font-medium">{it.shopeeTitle}</div>}
                 <div className="truncate font-mono text-xs text-muted-foreground">{it.url}</div>
                 {it.error && <div className="text-xs text-muted-foreground">{it.error}</div>}
               </div>
-              <LinkStatusBadge status={it.shopeeStatus ?? null} message={it.error} />
+              <span className="ml-6 shrink-0 sm:ml-0">
+                <LinkStatusBadge status={it.shopeeStatus ?? null} message={it.error} />
+              </span>
             </li>
           ))}
           {!job && (
@@ -109,7 +111,7 @@ export function ShopeeLinkCheckDialog({ open, postIds, onClose, onDone }: Props)
         </ul>
       </div>
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant={finished ? 'default' : 'ghost'} onClick={onClose}>
           {finished ? 'Xong' : 'Đóng'}
         </Button>

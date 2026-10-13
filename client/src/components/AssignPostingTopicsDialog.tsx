@@ -48,7 +48,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
 
   return (
     <Dialog open={open} onClose={onClose} className="max-w-lg">
-      <h2 className="text-lg font-semibold">Gán chủ đề cho {accountIds.length} tài khoản</h2>
+      <h2 className="pr-8 text-lg font-semibold">Gán chủ đề cho {accountIds.length} tài khoản</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Chủ đề của tài khoản đăng quyết định nó được nhận bài thuộc chủ đề nào. Gán 2-3 chủ đề
         cho mỗi tài khoản để kho bài rộng hơn, tránh bị thiếu bài.
@@ -64,7 +64,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
                 type="button"
                 onClick={() => toggle(t)}
                 className={cn(
-                  'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                  'rounded-full border px-3 py-2 text-xs font-medium transition-colors sm:py-1',
                   picked.includes(t)
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent',
@@ -78,14 +78,14 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
 
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Cách áp</label>
-          <div className="flex gap-0.5 rounded-md border p-0.5 w-fit">
+          <div className="flex w-full gap-0.5 rounded-md border p-0.5 sm:w-fit">
             {MODES.map((m) => (
               <button
                 key={m.value}
                 type="button"
                 onClick={() => setMode(m.value)}
                 className={cn(
-                  'rounded px-3 py-1 text-xs font-medium transition-colors',
+                  'flex-1 rounded px-3 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1',
                   mode === m.value
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent',
@@ -101,7 +101,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="ghost" onClick={onClose}>
           Huỷ
         </Button>

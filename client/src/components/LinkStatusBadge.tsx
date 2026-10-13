@@ -19,13 +19,13 @@ export function LinkStatusBadge({
 }) {
   if (!status)
     return (
-      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
         Chưa kiểm tra
       </span>
     )
   return (
     <span
-      className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_CLASS[status])}
+      className={cn('inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', STATUS_CLASS[status])}
       title={message ?? undefined}
     >
       {SHOPEE_LINK_STATUS_LABEL[status]}
