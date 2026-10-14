@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { dayReport, accountRange } from '../db/postRuns';
+import { listViolations, resolveViolation } from '../db/violations';
 
 // Doc nhat ky dang bai cho UI (trang "Nhat ky dang").
 
@@ -26,6 +27,25 @@ router.get('/accounts', (req, res) => {
     return;
   }
   res.json(accountRange(f.data, t.data));
+});
+
+// GET /api/post-runs/violations - moi vi pham, moi nhat truoc
+router.get('/violations', (_req, res) => {
+  res.json(listViolations());
+});
+
+// POST /api/post-runs/violations/:id/resolve - nguoi van hanh danh dau da go vi pham
+router.post('/violations/:id/resolve', (req, res) => {
+  const id = z.coerce.number().int().positive().safeParse(req.params.id);
+  if (!id.success) {
+    res.status(400).json({ error: 'Mã vi phạm không hợp lệ' });
+    return;
+  }
+  if (!resolveViolation(id.data)) {
+    res.status(404).json({ error: 'Không tìm thấy vi phạm đang mở' });
+    return;
+  }
+  res.json({ ok: true });
 });
 
 export default router;

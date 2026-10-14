@@ -50,7 +50,7 @@ const readStatus = db.prepare(
  * Tach POST_ID cua file xuat ve (post_id, ban caption). Uu tien khop NGUYEN chuoi voi bang posts
  * (shortcode Threads co the chua '-'), chi cat hau to "-vN" khi nguyen chuoi khong phai 1 bai.
  */
-function splitPostId(raw: string): { postId: string; variant: number | null } {
+export function splitPostId(raw: string): { postId: string; variant: number | null } {
   if (postExists.get(raw)) return { postId: raw, variant: null };
   const m = raw.match(/^(.+)-v(\d{1,2})$/);
   if (m) return { postId: m[1], variant: Number(m[2]) };

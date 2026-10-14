@@ -1,4 +1,5 @@
 import { db } from './index';
+import { loadRuns, attribute } from './clickAttribution';
 
 // Truy van bao cao "Hieu qua Affiliate". Khoang ngay loc theo THOI GIAN CLICK cho ca click lan
 // don (nhat quan "click nao ra don nao"). Tien tra ve milli-dong (so nguyen), client tu doi.
@@ -333,30 +334,11 @@ export interface AffAccountRow {
   commission_milli: number;
 }
 
-// Sub_id chi mang post_id -> doi chieu nhat ky dang: moi click gan cho DUNG 1 tai khoan da dang bai
-// do truoc thoi diem click. Chac chan khi trong ngay click chi 1 tai khoan dang; con lai (nhieu tai
-// khoan cung ngay / click don tu bai dang hom truoc) gan cho tai khoan dang gan nhat truoc click.
+// Moi click/don gan cho DUNG 1 tai khoan, xem clickAttribution.ts.
 export function affAccountStats(f: AffFilter): AffAccountRow[] {
   const wc = rangeWhere(f, 'c');
   const wo = rangeWhere(f, 'o');
-  const runs = db
-    .prepare(
-      `SELECT post_id, account_name, COALESCE(posted_at, post_date || ' 00:00:00') AS t FROM post_runs
-        WHERE status IN ('posted', 'commented') ORDER BY t`,
-    )
-    .all() as { post_id: string; account_name: string; t: string }[];
-  const runsOf = new Map<string, { account: string; t: string }[]>();
-  for (const r of runs) {
-    if (!runsOf.has(r.post_id)) runsOf.set(r.post_id, []);
-    runsOf.get(r.post_id)!.push({ account: r.account_name, t: r.t });
-  }
-  const attribute = (postId: string, at: string): { account: string | null; exact: boolean } => {
-    const before = (runsOf.get(postId) ?? []).filter((r) => r.t <= at);
-    if (before.length === 0) return { account: null, exact: false };
-    const day = at.slice(0, 10);
-    const sameDay = new Set(before.filter((r) => r.t.slice(0, 10) === day).map((r) => r.account));
-    return { account: before[before.length - 1].account, exact: sameDay.size === 1 };
-  };
+  const runsOf = loadRuns();
 
   const acc = new Map<string | null, AffAccountRow & { postSet: Set<string> }>();
   const row = (a: string | null) => {
@@ -372,8 +354,8 @@ export function affAccountStats(f: AffFilter): AffAccountRow[] {
     .prepare(`SELECT c.post_id, c.clicked_at FROM aff_clicks c WHERE ${wc.sql} AND c.post_id IS NOT NULL`)
     .all(...wc.args) as { post_id: string; clicked_at: string }[];
   for (const c of clicks) {
-    const { account, exact } = attribute(c.post_id, c.clicked_at);
-    const e = row(account);
+    const { run, exact } = attribute(runsOf, c.post_id, c.clicked_at);
+    const e = row(run?.account ?? null);
     e.clicks++;
     if (exact) e.exact_clicks++;
     e.postSet.add(c.post_id);
@@ -388,7 +370,7 @@ export function affAccountStats(f: AffFilter): AffAccountRow[] {
     )
     .all(...wo.args, ORDER_CANCELLED) as { post_id: string; clicked_at: string; m: number }[];
   for (const o of orders) {
-    const e = row(attribute(o.post_id, o.clicked_at).account);
+    const e = row(attribute(runsOf, o.post_id, o.clicked_at).run?.account ?? null);
     e.orders++;
     e.commission_milli += o.m;
     e.postSet.add(o.post_id);

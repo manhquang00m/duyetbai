@@ -1,7 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
-import express, { Router, type RequestHandler } from 'express';
+import express, { Router, type Request, type RequestHandler, type Response } from 'express';
 import { z } from 'zod';
 import { recordPostRuns } from '../db/postRuns';
+import { recordViolations } from '../db/violations';
 import { AUTOMATION_API_KEY } from '../config';
 
 // API cho tool auto dang goi vao (khong phai UI). Bat buoc header X-Api-Key = AUTOMATION_API_KEY.
@@ -99,13 +100,8 @@ function normalizeBody(raw: unknown): unknown {
   return b;
 }
 
-/**
- * POST /api/automation/post-results
- * Header: X-Api-Key: <AUTOMATION_API_KEY>
- * Body: { results: [{ accountName, postId, postDate, status: 'posted'|'commented', postedUrl?, postedAt? }] }
- * Goi lai cung slot (postDate + accountName + postId) an toan: ghi de, chi nang trang thai.
- */
-router.post('/post-results', requireApiKey, (req, res) => {
+/** Chuan hoa + validate body; loi thi tu tra 400 va tra ve null. */
+function parseBody<T extends z.ZodTypeAny>(req: Request, res: Response, schema: T): z.infer<T> | null {
   let normalized: unknown;
   try {
     normalized = normalizeBody(req.body);
@@ -115,9 +111,9 @@ router.post('/post-results', requireApiKey, (req, res) => {
     res.status(400).json({
       error: `Body không phải JSON hợp lệ: ${detail}. Kiểm tra: chỉ dùng nháy kép "...", biến đã được thay giá trị, không thừa dấu phẩy.`,
     });
-    return;
+    return null;
   }
-  const parsed = BodySchema.safeParse(normalized);
+  const parsed = schema.safeParse(normalized);
   if (!parsed.success) {
     // Chi log Content-Type + TEN cac truong nhan duoc (khong log gia tri) - du de biet tool gui sai gi.
     const body = req.body as unknown;
@@ -136,9 +132,89 @@ router.post('/post-results', requireApiKey, (req, res) => {
       error: 'Dữ liệu không hợp lệ',
       issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
     });
-    return;
+    return null;
   }
-  res.json({ results: recordPostRuns(parsed.data.results) });
+  return parsed.data;
+}
+
+/**
+ * POST /api/automation/post-results
+ * Header: X-Api-Key: <AUTOMATION_API_KEY>
+ * Body: { results: [{ accountName, postId, postDate, status: 'posted'|'commented', postedUrl?, postedAt? }] }
+ * Goi lai cung slot (postDate + accountName + postId) an toan: ghi de, chi nang trang thai.
+ */
+router.post('/post-results', requireApiKey, (req, res) => {
+  const data = parseBody(req, res, BodySchema);
+  if (!data) return;
+  res.json({ results: recordPostRuns(data.results) });
+});
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+// Ngay dang bai doc tu giao dien Threads tieng Viet: "10 tháng 10, 2026" -> '2026-10-10'.
+// Nhan them 'YYYY-MM-DD'. NFC vi chu "á" tu tool co the o dang to hop (a + dau).
+const viDate = z
+  .string()
+  .trim()
+  .max(40)
+  .transform((s, ctx) => {
+    const t = s.normalize('NFC');
+    const vi = t.match(/^(\d{1,2})\s+tháng\s+(\d{1,2}),?\s+(\d{4})$/iu);
+    const iso = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const parts = vi ? [vi[3], vi[2], vi[1]] : iso ? [iso[1], iso[2], iso[3]] : null;
+    if (!parts) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Cần dạng '10 tháng 10, 2026' hoặc YYYY-MM-DD" });
+      return z.NEVER;
+    }
+    const [y, m, d] = parts.map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Ngày không tồn tại' });
+      return z.NEVER;
+    }
+    return `${y}-${pad(m)}-${pad(d)}`;
+  });
+
+const ViolationSchema = z.object({
+  accountName: z.string().trim().min(1).max(120),
+  detectedAt: dateTimeStr.nullish(),
+  postedAt: viDate.nullish(),
+  postId: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_-]{1,80}$/)
+    .nullish(),
+  postedUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .regex(/^https?:\/\//)
+    .nullish(),
+  message: z.string().trim().max(300).nullish(),
+});
+
+const ViolationBodySchema = z.object({ results: z.array(ViolationSchema).min(1).max(200) });
+
+/** Gio local cua server, 'YYYY-MM-DD HH:MM:SS' - dung khi tool khong gui detectedAt. */
+function localNow(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(
+    d.getMinutes(),
+  )}:${pad(d.getSeconds())}`;
+}
+
+/**
+ * POST /api/automation/violations
+ * Header: X-Api-Key: <AUTOMATION_API_KEY>
+ * Body: { results: [{ accountName, detectedAt?, postedAt?, postId?, postedUrl?, message? }] }
+ * postedAt: ngay dang bai, vd "10 tháng 10, 2026".
+ * Gui lai cung (ngay, nick, bai) -> chi tang so lan bao, khong sinh dong moi.
+ */
+router.post('/violations', requireApiKey, (req, res) => {
+  const data = parseBody(req, res, ViolationBodySchema);
+  if (!data) return;
+  const items = data.results.map((v) => ({ ...v, detectedAt: v.detectedAt ?? localNow() }));
+  res.json({ results: recordViolations(items) });
 });
 
 export default router;

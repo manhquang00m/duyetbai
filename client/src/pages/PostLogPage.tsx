@@ -1,7 +1,26 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, ExternalLink, FileCode2, ClipboardList, Search } from 'lucide-react'
-import { fetchPostRunsDay, fetchPostRunsAccounts, type PostRunDayRow, type PostRunState } from '@/lib/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  FileCode2,
+  ClipboardList,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+} from 'lucide-react'
+import {
+  fetchPostRunsDay,
+  fetchPostRunsAccounts,
+  fetchPostRunViolations,
+  resolvePostRunViolation,
+  type PostRunDayRow,
+  type PostRunState,
+  type PostRunViolation,
+} from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -95,6 +114,242 @@ function RunCard({ r }: { r: PostRunDayRow }) {
   )
 }
 
+const dmy = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '—')
+
+function ViolationPost({ v }: { v: PostRunViolation }) {
+  if (!v.post_id) return <span className="text-xs text-muted-foreground">Không rõ bài</span>
+  return (
+    <div className="min-w-0">
+      {v.caption && <div className="truncate text-xs">{v.caption}</div>}
+      <div className="font-mono text-[10px] text-muted-foreground">{v.post_id}</div>
+    </div>
+  )
+}
+
+function ViolationLink({ url }: { url: string | null }) {
+  if (!url) return <span className="text-muted-foreground">—</span>
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+      <ExternalLink className="h-3 w-3" /> Mở
+    </a>
+  )
+}
+
+const ddmmHHmm = (s: string) => `${s.slice(8, 10)}/${s.slice(5, 7)} ${s.slice(11, 16)}`
+/** Ngay de xem bai cua nick: ngay dang bai neu tool gui, khong thi ngay phat hien. */
+const violationDay = (v: PostRunViolation) => v.posted_at ?? v.detected_at.slice(0, 10)
+
+function ViewPostsButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={onClick}>
+      <Eye className="h-3.5 w-3.5" /> Xem bài
+    </Button>
+  )
+}
+
+function ResolveButton({ v, onResolve, pending }: { v: PostRunViolation; onResolve: (v: PostRunViolation) => void; pending: boolean }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-7 px-2 text-xs text-green-700 hover:text-green-700 dark:text-green-400"
+      disabled={pending}
+      onClick={() => onResolve(v)}
+    >
+      <CheckCircle2 className="h-3.5 w-3.5" /> Đã gỡ
+    </Button>
+  )
+}
+
+function AccountDayDialog({ v, onClose }: { v: PostRunViolation | null; onClose: () => void }) {
+  const [offset, setOffset] = useState(0)
+  const baseDay = v ? violationDay(v) : ''
+  const day = v ? shiftDate(baseDay, offset) : ''
+  const { data, isLoading } = useQuery({
+    queryKey: ['post-runs-day', day],
+    queryFn: () => fetchPostRunsDay(day),
+    enabled: !!v,
+  })
+  const runs = (data ?? []).filter((r) => r.account_name === v?.account_name)
+  return (
+    <Dialog open={!!v} onClose={onClose} className="max-w-2xl">
+      {v && (
+        <>
+          <h2 className="pr-8 text-lg font-semibold">{v.account_name}</h2>
+          <div className="mt-2 flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setOffset((o) => o - 1)} aria-label="Ngày trước">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-[7.5rem] text-center text-sm font-medium tabular-nums">
+              {dmy(day)}
+              {offset === 0 && <div className="text-[10px] font-normal text-muted-foreground">ngày gốc</div>}
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setOffset((o) => o + 1)} aria-label="Ngày sau">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            {offset !== 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setOffset(0)}>
+                Về ngày gốc
+              </Button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Ngày gốc ={' '}
+            {v.posted_at ? `ngày đăng bài bị gỡ (${dmy(baseDay)}).` : `ngày phát hiện vi phạm (${dmy(baseDay)}) — tool không gửi ngày đăng.`}
+            {v.post_id && ' Bài bị gỡ được tô đỏ.'}
+          </p>
+          <div className="mt-3 overflow-hidden rounded-lg border">
+            {isLoading ? (
+              <div className="space-y-2 p-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : runs.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Ngày này nick không có bài nào trong nhật ký.</p>
+            ) : (
+              <div className="divide-y">
+                {runs.map((r) => (
+                  <div
+                    key={r.post_id}
+                    className={cn(v.post_id && r.post_id === v.post_id && 'bg-red-50 ring-1 ring-inset ring-red-300 dark:bg-red-500/10 dark:ring-red-500/40')}
+                  >
+                    <RunCard r={r} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
+            <Button onClick={onClose}>Đóng</Button>
+          </div>
+        </>
+      )}
+    </Dialog>
+  )
+}
+
+function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; total: number; isLoading: boolean }) {
+  const [viewing, setViewing] = useState<PostRunViolation | null>(null)
+  const qc = useQueryClient()
+  const resolve = useMutation({
+    mutationFn: (id: number) => resolvePostRunViolation(id),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['post-runs-violations'] }),
+    onError: () => alert('Không đánh dấu được, thử lại sau.'),
+  })
+  const onResolve = (v: PostRunViolation) => {
+    if (confirm(`Đánh dấu đã gỡ vi phạm của nick ${v.account_name}? Dòng này sẽ ẩn khỏi danh sách.`)) resolve.mutate(v.id)
+  }
+  const nicks = new Set(rows.map((v) => v.account_name)).size
+  const clean = !isLoading && total === 0
+  return (
+    <Card
+      className={cn(
+        'overflow-hidden p-0',
+        clean ? 'border-green-200 dark:border-green-500/30' : 'border-red-200 dark:border-red-500/30',
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center gap-2 p-3 sm:px-4',
+          clean
+            ? 'bg-green-50 dark:bg-green-500/10'
+            : 'border-b border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10',
+        )}
+      >
+        {clean ? (
+          <ShieldCheck className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+        ) : (
+          <ShieldAlert className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+        )}
+        <h2 className={cn('text-sm font-semibold', clean ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400')}>
+          {clean ? 'Không có nick vi phạm' : `Nick vi phạm · ${nicks} nick`}
+        </h2>
+        <span className="ml-auto text-xs text-muted-foreground">Threads gỡ bài, tool báo về · mọi ngày</span>
+      </div>
+
+      {isLoading && (
+        <div className="p-3">
+          <Skeleton className="h-12 w-full" />
+        </div>
+      )}
+      {!isLoading && total > 0 && rows.length === 0 && (
+        <p className="p-4 text-center text-xs text-muted-foreground">Không có nick vi phạm khớp từ khoá.</p>
+      )}
+
+      <div className="divide-y md:hidden">
+        {rows.map((v) => (
+          <div key={v.id} className="space-y-1.5 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate text-sm font-medium">{v.account_name}</span>
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{ddmmHHmm(v.detected_at)}</span>
+            </div>
+            <ViolationPost v={v} />
+            {v.posted_at && <div className="text-xs text-muted-foreground">Đăng ngày {dmy(v.posted_at)}</div>}
+            {v.message && <div className="text-xs text-muted-foreground">{v.message}</div>}
+            <div className="flex items-center gap-2">
+              {v.reports > 1 && <span className="text-[10px] text-muted-foreground">báo {v.reports} lần</span>}
+              <span className="ml-auto flex items-center gap-3">
+                <ViolationLink url={v.posted_url} />
+                <ViewPostsButton onClick={() => setViewing(v)} />
+                <ResolveButton v={v} onResolve={onResolve} pending={resolve.isPending} />
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className={cn('table-scroll hidden max-h-80 overflow-y-auto', rows.length > 0 && 'md:block')}>
+        <table className="w-full min-w-[44rem] text-sm">
+          <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="p-2.5 text-left font-medium">Nick</th>
+              <th className="p-2.5 text-left font-medium">Phát hiện</th>
+              <th className="p-2.5 text-left font-medium">Ngày đăng</th>
+              <th className="p-2.5 text-left font-medium">Bài</th>
+              <th className="p-2.5 text-left font-medium">Link</th>
+              <th className="p-2.5 text-left font-medium">Ghi chú</th>
+              <th className="p-2.5 text-right font-medium">Số lần báo</th>
+              <th className="p-2.5" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((v) => (
+              <tr key={v.id} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="whitespace-nowrap p-2.5 font-medium">{v.account_name}</td>
+                <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
+                  {ddmmHHmm(v.detected_at)}
+                </td>
+                <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
+                  {dmy(v.posted_at)}
+                </td>
+                <td className="max-w-[20rem] p-2.5">
+                  <ViolationPost v={v} />
+                </td>
+                <td className="p-2.5">
+                  <ViolationLink url={v.posted_url} />
+                </td>
+                <td className="max-w-[14rem] truncate p-2.5 text-xs text-muted-foreground" title={v.message ?? undefined}>
+                  {v.message || '—'}
+                </td>
+                <td className="p-2.5 text-right text-xs tabular-nums">{v.reports}</td>
+                <td className="p-2.5">
+                  <div className="flex justify-end gap-1.5">
+                    <ViewPostsButton onClick={() => setViewing(v)} />
+                    <ResolveButton v={v} onResolve={onResolve} pending={resolve.isPending} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* key theo vi pham -> mo dong khac thi offset ngay reset ve ngay goc */}
+      <AccountDayDialog key={viewing?.id ?? 0} v={viewing} onClose={() => setViewing(null)} />
+    </Card>
+  )
+}
+
 function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'warn' | 'good' }) {
   return (
     <Card className="min-w-0 p-3 sm:p-4">
@@ -170,6 +425,15 @@ const SAMPLE_BODY = `{
       "postedAt": "2026-09-25 09:12:03"
     }
   ]
+}`
+
+const VIOLATION_XPATH = `//span[@role='heading' and @aria-label='Chúng tôi đã gỡ bài viết của bạn']`
+
+const VIOLATION_SAMPLE = `{
+  "accountName": "phuongnhabeby",
+  "detectedAt": "2026-09-25 09:15:40",
+  "postedAt": "10 tháng 10, 2026",
+  "postId": "DdnYsSQE8Ax-v2"
 }`
 
 function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -258,6 +522,33 @@ function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void })
             <code>unknownPost</code> = tên nick / mã bài không có trong hệ thống (thường do gửi sai cột).
           </li>
         </ul>
+
+        <div className="space-y-1.5 border-t pt-4">
+          <h3 className="text-sm font-medium">Báo nick bị gỡ bài do vi phạm</h3>
+          <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
+            POST http://localhost:3000/api/automation/violations
+          </code>
+          <p className="text-xs text-muted-foreground">
+            Cùng header <code>X-Api-Key</code>. Sau khi đăng, tool check element bên dưới; có thì gọi API này:
+          </p>
+          <code className="block break-all rounded bg-muted px-2 py-1 text-xs">{VIOLATION_XPATH}</code>
+          <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs">{VIOLATION_SAMPLE}</pre>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            <li>
+              Chỉ <code>accountName</code> là bắt buộc. <code>postId</code> (cột H), <code>postedUrl</code>,{' '}
+              <code>message</code> (≤300 ký tự) có thì gửi, không thì bỏ hẳn trường.
+            </li>
+            <li>
+              <code>detectedAt</code> dạng <code>YYYY-MM-DD HH:MM:SS</code>; bỏ trống thì lấy giờ server. Khối "Nick vi
+              phạm" hiện mọi ngày, mới nhất trước.
+            </li>
+            <li>
+              <code>postedAt</code> = ngày đăng bài, copy nguyên chuỗi Threads hiện, vd <code>10 tháng 10, 2026</code>{' '}
+              (cũng nhận <code>YYYY-MM-DD</code>). Không có thì bỏ trường.
+            </li>
+            <li>Gửi lại cùng ngày + nick + bài chỉ tăng số lần báo, không sinh dòng mới.</li>
+          </ul>
+        </div>
       </div>
       <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
         <Button onClick={onClose}>Đóng</Button>
@@ -288,6 +579,10 @@ export function PostLogPage() {
     queryFn: () => fetchPostRunsAccounts(rangeFrom, date),
     enabled: /^\d{4}-\d{2}-\d{2}$/.test(date),
   })
+  const { data: violations, isLoading: violationsLoading } = useQuery({
+    queryKey: ['post-runs-violations'],
+    queryFn: fetchPostRunViolations,
+  })
 
   const matchAccount = (name: string, status: string | null) => {
     const q = accountSearch.trim().toLowerCase()
@@ -310,6 +605,9 @@ export function PostLogPage() {
   const nickCount = new Set(base.map((r) => r.account_name)).size
   const totalNicks = new Set(all.map((r) => r.account_name)).size
   const visibleAccounts = (accounts ?? []).filter((a) => matchAccount(a.account_name, a.appeal_status))
+  // Chi loc theo ten - khong ap filter trang thai de nick vi pham khong bi giau.
+  const searchQ = accountSearch.trim().toLowerCase()
+  const visibleViolations = (violations ?? []).filter((v) => !searchQ || v.account_name.toLowerCase().includes(searchQ))
 
   const filtered = base.filter((r: PostRunDayRow) => {
     if (tab === 'extra') return !r.in_plan
@@ -391,6 +689,8 @@ export function PostLogPage() {
           Bài thiếu comment là bài KHÔNG có link affiliate — nên comment bù để không mất đơn.
         </p>
       )}
+
+      <ViolationsCard rows={visibleViolations} total={violations?.length ?? 0} isLoading={violationsLoading} />
 
       <Card className="overflow-hidden p-0">
         <div className="flex items-center gap-2 border-b p-2">

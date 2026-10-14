@@ -12,6 +12,7 @@ import {
   CalendarDays,
   TrendingUp,
   ClipboardList,
+  Lightbulb,
   Menu,
   X,
   PanelLeftClose,
@@ -54,6 +55,7 @@ const groups: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/shopee', label: 'Shopee & Export', icon: ShoppingBag },
       { to: '/affiliate', label: 'Hiệu quả Affiliate', icon: TrendingUp },
+      { to: '/insights', label: 'Phân tích & chiến lược', icon: Lightbulb },
     ],
   },
 ]

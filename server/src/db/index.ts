@@ -256,12 +256,43 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_post_runs_date ON post_runs(post_date);
   CREATE INDEX IF NOT EXISTS idx_post_runs_post ON post_runs(post_id);
 
+  -- ===== Nick bi go bai do vi pham noi dung: tool auto bao ve (api/automation.ts /violations) =====
+  -- post_id '' = khong ro bai nao (UNIQUE cua SQLite coi NULL la khac nhau -> khong dedup duoc).
+  CREATE TABLE IF NOT EXISTS account_violations (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_date          TEXT NOT NULL,
+    account_name       TEXT NOT NULL,
+    post_id            TEXT NOT NULL DEFAULT '',
+    posted_url         TEXT,
+    message            TEXT,
+    detected_at        TEXT NOT NULL,
+    reports            INTEGER NOT NULL DEFAULT 1,
+    first_reported_at  TEXT NOT NULL,
+    last_reported_at   TEXT NOT NULL,
+    UNIQUE (post_date, account_name, post_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_violations_date ON account_violations(post_date);
+
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_sub_time ON aff_clicks(sub_id1, clicked_at);
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_post ON aff_clicks(post_id);
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_time ON aff_clicks(clicked_at);
   CREATE INDEX IF NOT EXISTS idx_aff_orders_post ON aff_order_items(post_id);
   CREATE INDEX IF NOT EXISTS idx_aff_orders_sub_time ON aff_order_items(sub_id1, clicked_at);
 `);
+
+// Migration: ngay dang cua bai bi go ('YYYY-MM-DD'), tool doc tu giao dien Threads.
+try {
+  db.exec('ALTER TABLE account_violations ADD COLUMN posted_at TEXT');
+} catch {
+  // cot da ton tai -> bo qua
+}
+
+// Migration: thoi diem nguoi van hanh bam "Da go vi pham" (NULL = con vi pham).
+try {
+  db.exec('ALTER TABLE account_violations ADD COLUMN resolved_at TEXT');
+} catch {
+  // cot da ton tai -> bo qua
+}
 
 // Migration: them cot new_link cho shopee_entries neu chua co (DB cu).
 try {

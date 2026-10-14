@@ -16,6 +16,7 @@ import { ProxyPage } from '@/pages/ProxyPage'
 import { ShopeePage } from '@/pages/ShopeePage'
 import { RewritePage } from '@/pages/RewritePage'
 import { AffiliatePage } from '@/pages/AffiliatePage'
+import { InsightsPage } from './pages/InsightsPage'
 import { PostLogPage } from '@/pages/PostLogPage'
 
 initTheme()
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: 'shopee', element: <ShopeePage /> },
       { path: 'rewrite', element: <RewritePage /> },
       { path: 'affiliate', element: <AffiliatePage /> },
+      { path: 'insights', element: <InsightsPage /> },
       { path: 'post-log', element: <PostLogPage /> },
     ],
   },

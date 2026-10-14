@@ -1121,3 +1121,100 @@ export async function fetchPostRunsAccounts(from: string, to: string) {
   })
   return data
 }
+
+export interface PostRunViolation {
+  id: number
+  account_name: string
+  appeal_status: string | null
+  post_id: string // '' = khong ro bai
+  posted_url: string | null
+  posted_at: string | null // 'YYYY-MM-DD'
+  message: string | null
+  detected_at: string
+  reports: number
+  caption: string | null
+}
+
+export async function fetchPostRunViolations() {
+  const { data } = await api.get<PostRunViolation[]>('/api/post-runs/violations')
+  return data
+}
+
+export async function resolvePostRunViolation(id: number) {
+  await api.post(`/api/post-runs/violations/${id}/resolve`)
+}
+
+// ===== Phan tich hieu qua dang bai (/api/insights) =====
+export interface InsightCounts {
+  runs: number
+  clicks: number
+  hits: number
+}
+
+export interface InsightGroup extends InsightCounts {
+  key: string
+  label: string
+  orders: number
+  commission_milli: number
+}
+
+export interface InsightDimension {
+  id: string
+  title: string
+  note?: string
+  ordered: boolean
+  rows: InsightGroup[]
+}
+
+export interface InsightPost extends InsightCounts {
+  post_id: string
+  username: string | null
+  caption: string | null
+  topic: string | null
+  url: string | null
+  thumb: string | null
+  likes: string | null
+  total_runs: number
+  orders: number
+  commission_milli: number
+  last_run: string | null
+}
+
+export interface InsightAccount extends InsightCounts {
+  account: string
+  status: string | null
+  orders: number
+  commission_milli: number
+  recent: InsightCounts
+  previous: InsightCounts
+  last_click: string | null
+}
+
+export interface InsightsReport {
+  from: string
+  to: string
+  dataUntil: string | null
+  cutoff: string | null
+  overview: InsightCounts & {
+    orders: number
+    commission_milli: number
+    posts: number
+    accounts: number
+    unattributedClicks: number
+  }
+  trend: (InsightCounts & { date: string })[]
+  dimensions: InsightDimension[]
+  topPosts: InsightPost[]
+  repostCandidates: InsightPost[]
+  deadPosts: { count: number; runs: number; posts: InsightPost[] }
+  accounts: InsightAccount[]
+  lag: { label: string; clicks: number }[]
+  lagMedianHours: number | null
+  products: { item_name: string; shop_name: string | null; orders: number; commission_milli: number }[]
+  insights: { tone: 'good' | 'bad' | 'info'; title: string; detail: string }[]
+}
+
+export async function fetchInsights(from: string, to: string) {
+  const { data } = await api.get<InsightsReport>('/api/insights', { params: { from, to } })
+  return data
+}

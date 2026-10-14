@@ -15,6 +15,7 @@ import rewriteRouter from './api/rewrite';
 import distributionRouter from './api/distribution';
 import postCaptionVariantsRouter from './api/postCaptionVariants';
 import affiliateRouter from './api/affiliate';
+import insightsRouter from './api/insights';
 import automationRouter from './api/automation';
 import postRunsRouter from './api/postRuns';
 
@@ -77,6 +78,7 @@ app.use('/api/rewrite', rewriteRouter);
 app.use('/api/distribution', distributionRouter);
 app.use('/api/post-caption-variants', postCaptionVariantsRouter);
 app.use('/api/affiliate', affiliateRouter);
+app.use('/api/insights', insightsRouter);
 app.use('/api/automation', automationRouter);
 app.use('/api/post-runs', postRunsRouter);
 app.use('/api', shopeeRouter); // /api/export/*, /api/import/*, /api/shopee/*
