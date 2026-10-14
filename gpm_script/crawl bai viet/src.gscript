@@ -1,0 +1,456 @@
+{
+  "$type": "GPMAutomateEditor.Models.Editor, GPMAutomateEditor.Models",
+  "before_init": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "profileUrl",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "64245916-15d1-4530-8916-9fae92484319",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"https://www.threads.com/@username\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Link trang cá nhân Threads cần crawl (ví dụ https://www.threads.com/@abc -> dán nguyên link)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "outputPath",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "a4d121b8-81ea-40a3-8a15-3ba365e0989c",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Đường dẫn file CSV lưu kết quả (ví dụ D:\\threads\\abc.csv -> thư mục phải có sẵn, file chưa có sẽ tự tạo)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "maxPosts",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "ca5b54e8-eac6-4705-9980-9d15bfc35e9a",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"500\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số bài tối đa cần lấy (ví dụ 200 -> dừng khi đủ 200 bài)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "scrollTimes",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "0b743bf5-6530-49f0-b46f-6f0b08e3327e",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"200\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số vòng cuộn tối đa (mỗi vòng cuộn 3 lần, profile nhiều bài thì tăng lên)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "delay",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "b3eac7ff-b1cd-4d58-bde4-e6c73bdd8ea2",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"2000,3500\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Thời gian chờ sau mỗi lần cuộn (ví dụ chờ 2 đến 3.5 giây -> điền 2000,3500)"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "5e6c7c72-48a9-4469-b352-b3a2c7741563",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Before browser opened"
+  },
+  "main_logic": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "postCount",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "692b01cf-ba32-491d-b14c-8bde7ebe62fb",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "prevCount",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "b35360b0-1246-453e-b51f-7161f90d2c9f",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "stall",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "0793f9f1-2b46-420f-be0d-b1811f207eb0",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 13,
+            "element_xpath": null,
+            "output_variable_name": "exists",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "320a49bb-2e47-4c83-a81e-9bd5e545cbcf",
+            "display_text": "File exists",
+            "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}]",
+            "comment": "check output file"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$exists = \"false\"",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 68,
+                "element_xpath": null,
+                "output_variable_name": "header",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "5d310165-c052-49bc-9c3a-54d71bb4e7c1",
+                "display_text": "Execute JS code",
+                "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return \\\"\\\\uFEFF\\\" + \\\"url,date,pinned,likes,replies,reposts,views,status\\\";\"}]",
+                "comment": "build csv header"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 20,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "f68731ce-9c77-4b97-aa1b-07ba84afee5c",
+                "display_text": "File append line",
+                "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$header\"}]",
+                "comment": "write header"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "a873aacd-579c-4e36-a329-8544d9f01225",
+            "display_text": "If",
+            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$exists = \\\"false\\\"\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 39,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "",
+            "continue_on_error": false,
+            "id": "4b154c79-bd81-4fe2-92f6-fbad636063cd",
+            "display_text": "Go to URL",
+            "raw_input": "[{\"Key\": \"URL\", \"Value\": \"$profileUrl\"}, {\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+            "comment": "go to profile"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "//div[@data-pressable-container='true']",
+            "output_variable_name": null,
+            "delay": "",
+            "continue_on_error": false,
+            "id": "c8cbd611-19d4-45e7-a263-053d9108be7c",
+            "display_text": "Wait element",
+            "raw_input": "[{\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+            "comment": "wait posts..."
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "",
+            "continue_on_error": false,
+            "id": "49126b0c-33ce-4b8a-ab77-ad7d7bbafba0",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2000\"}, {\"Key\": \"MAX\", \"Value\": \"3000\"}]",
+            "comment": "wait render..."
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+            "start": "0",
+            "end": "$scrollTimes",
+            "step": "1",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.WhileBlockNode, GPMAutomateEditor.Models",
+                "condition": "hasElement(//div[@data-pressable-container='true'][not(@data-seen)][not(ancestor::div[@data-pressable-container='true'])])",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 68,
+                    "element_xpath": null,
+                    "output_variable_name": "ok",
+                    "delay": "",
+                    "continue_on_error": true,
+                    "id": "641c5a64-c28b-4eba-9ceb-49d28c19ecf7",
+                    "display_text": "Execute JS code",
+                    "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){\\nvar list=document.querySelectorAll(\\\"div[data-pressable-container='true']:not([data-seen])\\\"),c=null;\\nfor(var i=0;i<list.length;i++){if(list[i].parentElement.closest(\\\"[data-pressable-container]\\\")){list[i].setAttribute(\\\"data-seen\\\",\\\"1\\\");}else{c=list[i];break;}}\\nif(!c)return \\\"NONE\\\";\\nc.setAttribute(\\\"data-seen\\\",\\\"1\\\");\\nvar t=c.querySelector(\\\"a[href*='/post/'] time\\\");\\nif(!t)return \\\"SKIP\\\";\\nvar url=t.closest(\\\"a\\\").href.split(\\\"?\\\")[0];\\nwindow.__seen=window.__seen||{};\\nif(window.__seen[url])return \\\"SKIP\\\";\\nwindow.__seen[url]=1;\\nfunction own(el){return el.closest(\\\"[data-pressable-container]\\\")===c;}\\nfunction lbl(sv){var tt=sv.querySelector(\\\"title\\\");return (sv.getAttribute(\\\"aria-label\\\")||sv.getAttribute(\\\"title\\\")||(tt?tt.textContent:\\\"\\\")||\\\"\\\").trim();}\\nfunction cnt(labels){var s=c.querySelectorAll(\\\"[role='button'] svg\\\");for(var i=0;i<s.length;i++){if(own(s[i])&&labels.indexOf(lbl(s[i]))>-1){var n=s[i].closest(\\\"[role='button']\\\").querySelector(\\\"span[dir='auto']\\\");return n?(n.textContent.trim()||\\\"0\\\"):\\\"0\\\";}}return \\\"\\\";}\\nvar likes=cnt([\\\"Thích\\\",\\\"Bỏ thích\\\",\\\"Like\\\",\\\"Unlike\\\"]);\\nvar replies=cnt([\\\"Trả lời\\\",\\\"Bình luận\\\",\\\"Reply\\\",\\\"Comment\\\"]);\\nvar reposts=cnt([\\\"Đăng lại\\\",\\\"Repost\\\"]);\\nvar m=(c.innerText||c.textContent||\\\"\\\").match(/([\\\\d.,]+\\\\s*(?:K|M|B|N|Tr|nghìn|triệu)?)\\\\s*(?:views?|lượt xem)/i);\\nvar views=m?m[1].trim():\\\"\\\";\\nvar PIN=[\\\"Đã ghim\\\",\\\"Pinned\\\"],pinned=\\\"no\\\";\\nvar sp=c.querySelectorAll(\\\"span[dir='auto']\\\"),parts=[];\\nfor(var j=0;j<sp.length;j++){var s=sp[j];\\nif(!own(s)||s.closest(\\\"a\\\")||s.querySelector(\\\"a,time\\\")||s.closest(\\\"[role='button']\\\")||s.parentElement.closest(\\\"span[dir='auto']\\\"))continue;\\nvar x=(s.innerText||s.textContent||\\\"\\\").trim();\\nif(!x)continue;\\nif(PIN.indexOf(x)>-1){pinned=\\\"yes\\\";continue;}\\nparts.push(x);}\\nvar text=parts.join(\\\" \\\").replace(/\\\\s+/g,\\\" \\\").trim();\\nfunction q(v){return '\\\"'+String(v).replace(/\\\"/g,'\\\"\\\"')+'\\\"';}\\nwindow.__line=[url,t.getAttribute(\\\"datetime\\\")||\\\"\\\",pinned,likes,replies,reposts,views,text].map(q).join(\\\",\\\");\\nreturn \\\"OK\\\";}\\nreturn A();\"}]",
+                    "comment": "mark + extract first unseen post"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                    "condition": "$ok = \"OK\"",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 68,
+                        "element_xpath": null,
+                        "output_variable_name": "line",
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "b6077805-3a5a-4716-b1a4-6a2cea499dbe",
+                        "display_text": "Execute JS code",
+                        "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return window.__line;\"}]",
+                        "comment": "get csv line"
+                      },
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 20,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "735329bc-1972-4ee9-ba14-234694fb50de",
+                        "display_text": "File append line",
+                        "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$line\"}]",
+                        "comment": "save post"
+                      },
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 2,
+                        "element_xpath": null,
+                        "output_variable_name": "postCount",
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "6f1aa1cc-c7cb-4fba-a3f2-a561fca46988",
+                        "display_text": "Increase variable",
+                        "raw_input": "[{\"Key\": \"CURRENT_VAL\", \"Value\": \"$postCount\"}, {\"Key\": \"INCREASE_BY\", \"Value\": \"1\"}]",
+                        "comment": "count post"
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "25144e4b-d9d2-49b0-9887-aad8495de4a5",
+                    "display_text": "If",
+                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$ok = \\\"OK\\\"\"}]",
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                    "condition": "$postCount >= $maxPosts",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 5,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "a14b2811-1d17-455e-8034-9afc2b8fb531",
+                        "display_text": "Exit loop",
+                        "raw_input": "[]",
+                        "comment": "enough posts"
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "bf5c066b-e4be-4182-9410-47a81452d804",
+                    "display_text": "If",
+                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$postCount >= $maxPosts\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "13e4ee44-fc3d-45e2-afd0-92db6f87515d",
+                "display_text": "While",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@data-pressable-container='true'][not(@data-seen)][not(ancestor::div[@data-pressable-container='true'])])\"}]",
+                "comment": "extract visible posts"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$postCount >= $maxPosts",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 5,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "5ecce97c-f08e-44e6-9172-cb5bcd366d7c",
+                    "display_text": "Exit loop",
+                    "raw_input": "[]",
+                    "comment": "enough posts"
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "f3bfaead-c521-4c1c-8e12-891f8102271f",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$postCount >= $maxPosts\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$postCount = $prevCount",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 2,
+                    "element_xpath": null,
+                    "output_variable_name": "stall",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "29595f58-585f-4b2b-9ff9-40822d901bf9",
+                    "display_text": "Increase variable",
+                    "raw_input": "[{\"Key\": \"CURRENT_VAL\", \"Value\": \"$stall\"}, {\"Key\": \"INCREASE_BY\", \"Value\": \"1\"}]",
+                    "comment": "no new post"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                    "condition": "$stall >= 5",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 5,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "fce1a6d5-d1ce-4364-b3eb-3ef733488f48",
+                        "display_text": "Exit loop",
+                        "raw_input": "[]",
+                        "comment": "end of profile"
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "9bcf96ac-c83a-4d36-9465-483fa6a9e05c",
+                    "display_text": "If",
+                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$stall >= 5\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "cdcab94d-46f2-44e4-a58f-b842af7da666",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$postCount = $prevCount\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ElseBlockNode, GPMAutomateEditor.Models",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 1,
+                    "element_xpath": null,
+                    "output_variable_name": "stall",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "a3f5c9c7-10b0-408b-8263-d8c523221488",
+                    "display_text": "Set variable",
+                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "6dbd32a7-36cc-4cd4-a249-824cf5abb845",
+                "display_text": "Else",
+                "raw_input": null,
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "prevCount",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "95615615-222f-4838-abff-60b8ab33176c",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"$postCount\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 53,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "$delay",
+                "continue_on_error": false,
+                "id": "841d4d7c-e1f1-48e0-b72c-82379253a443",
+                "display_text": "Mouse scroll",
+                "raw_input": "[{\"Key\": \"SCROLL_NUM\", \"Value\": \"3\"}]",
+                "comment": "scroll down, loading..."
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "16d83268-49e8-43f6-95e6-ffde7f9418c3",
+            "display_text": "For",
+            "raw_input": "[{\"Key\": \"START\", \"Value\": \"0\"}, {\"Key\": \"END\", \"Value\": \"$scrollTimes\"}, {\"Key\": \"STEP\", \"Value\": \"1\"}]",
+            "comment": "scroll + extract"
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "267fbc66-21b0-4b41-84ff-484c1b8b44f7",
+        "display_text": "Normal block",
+        "raw_input": null,
+        "comment": "crawl threads profile"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "2e941e5d-2ed4-4a2f-8b90-d33bcacaa534",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Main logic"
+  },
+  "after_quit": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "3109333a-9f3a-4e97-9a55-0a5f35155fb4",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "After browser closed"
+  },
+  "name": "Main"
+}

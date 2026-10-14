@@ -1,0 +1,1400 @@
+{
+  "$type": "GPMAutomateEditor.Models.Editor, GPMAutomateEditor.Models",
+  "before_init": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "shopee",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "9526608a-1f69-48d6-b27d-f0f336522a82",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"//a[@role=\\\"link\\\" and @tabindex=\\\"0\\\" and contains(@href,\\\"shopee\\\")]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"}]",
+        "comment": "shopee"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "bntPost1",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "ab2b0e9f-8e94-449a-b637-7851465e6571",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"//div[normalize-space(text())='Đăng']\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"}]",
+        "comment": "bntPost1"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "bntPost2",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "43930832-3c4c-4b66-82b8-396ace82174c",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"(//*[local-name()='svg' and @aria-label='Tạo'])[2]/ancestor::*[@role='button'][1]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+        "comment": "bntPost2"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "btnExtend",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "2f344288-5089-44ac-bfce-346c3b517636",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"//div[@aria-label=\\\"Mở rộng công cụ soạn\\\" and @role=\\\"button\\\"]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+        "comment": "btnExtend"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "btnClose",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "82769b32-2017-446b-a70e-12eda79ea7a7",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"//div[@role=\\\"button\\\" and @tabindex=\\\"0\\\" and .//*/@aria-label=\\\"Gỡ/Xóa\\\"]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"}]",
+        "comment": "btnClose Gỡ/xóa"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "btnClose2",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "9edd4cb1-e782-4e76-8f7a-27538898266b",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"//div[@role=\\\"button\\\" and @tabindex=\\\"0\\\" and .//*/@title=\\\"Gỡ\\\"]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+        "comment": "btnClose Gỡ"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "renderProxy",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "5828d96f-e2b5-4c21-9ce5-92746139bc1f",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"True\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"}]",
+        "comment": "renderProxy"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "luotMxh",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "48e4c850-619d-409a-a61a-a138c17001ea",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"True\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"}]",
+        "comment": "0=chỉ đăng bài; 1 = đọc tin tức ; 2 = đăng bài + đọc tin tức"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "like",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "de4e3cc4-0671-4965-b5cd-9cd6ad673744",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"True\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+        "comment": "0= chỉ like và comment; 1 = like + comment + đăng bài"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "6ca2d2da-44fb-49ab-ba92-8f1528201278",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Before browser opened"
+  },
+  "main_logic": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+        "condition": "",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 22,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "35910fdc-0ebe-4c3b-88de-86157d6f17e9",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$inputExcelFileLocation\"},{\"Key\":\"SHEET_ID\",\"Value\":\"0\"},{\"Key\":\"COL_NAME_OR_INDEX\",\"Value\":\"H\"},{\"Key\":\"ROW_INDEX\",\"Value\":\"$inputExcelCurrentRow\"},{\"Key\":\"DATA\",\"Value\":\"$profileProxy\"}]",
+            "comment": null
+          }
+        ],
+        "expanded": false,
+        "continue_on_error": false,
+        "id": "2e0e292c-4b6e-410d-8c8b-28f7baa7a58d",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$renderProxy=1\"}]",
+        "comment": "Write Proxy"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+        "condition": "$luotMxh=1 || $luotMxh=2",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 36,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "9de4e386-03ef-49a3-b0d1-860ae8633e70",
+            "display_text": "New tab",
+            "raw_input": null,
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 39,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "b8ae3958-2911-40fe-b69c-e24a0ea909dc",
+            "display_text": "Go to URL",
+            "raw_input": "[{\"Key\":\"URL\",\"Value\":\"$inputExcel[K]\"},{\"Key\":\"TIME_OUT\",\"Value\":\"60\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "38134558-66fc-4432-aaab-2501262e0ce3",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"15000\"},{\"Key\":\"MAX\",\"Value\":\"20000\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "2000,3300",
+            "continue_on_error": false,
+            "id": "82c9edf2-c03e-40ef-9d86-7e69b9476290",
+            "display_text": "Mouse scroll",
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"30\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 39,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "c71c48d5-e016-443c-b761-853160a14cea",
+            "display_text": "Go to URL",
+            "raw_input": "[{\"Key\":\"URL\",\"Value\":\"https://www.instagram.com/\"},{\"Key\":\"TIME_OUT\",\"Value\":\"60\"}]",
+            "comment": "https://www.instagram.com/"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "868424e5-199e-4d43-9137-4aa7a65a690e",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"10000\"},{\"Key\":\"MAX\",\"Value\":\"20000\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "2000,3300",
+            "continue_on_error": false,
+            "id": "50b64714-e556-4a4e-bdba-1e97a8f0daea",
+            "display_text": "Mouse scroll",
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"30\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 39,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "b4be8794-befb-4e13-8ef7-ad4fb3a7106c",
+            "display_text": "Go to URL",
+            "raw_input": "[{\"Key\":\"URL\",\"Value\":\"https://www.youtube.com/\"},{\"Key\":\"TIME_OUT\",\"Value\":\"60\"}]",
+            "comment": "https://www.youtube.com/"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "5facc409-29de-435d-8b64-5fccf1c99d67",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"10000\"},{\"Key\":\"MAX\",\"Value\":\"20000\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "2000,3300",
+            "continue_on_error": false,
+            "id": "e548aafc-11db-4b77-826b-6594ef43e43f",
+            "display_text": "Mouse scroll",
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"30\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 38,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "371a194e-91c7-41c3-b847-343fac8fc893",
+            "display_text": "Close tab",
+            "raw_input": null,
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$luotMxh=1",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 76,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "de1160f2-2d3a-42bc-9b32-515f59e0a014",
+                "display_text": null,
+                "raw_input": "[]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "863fa2cf-6383-4f56-817f-b5c0aaeb7482",
+            "display_text": "If",
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$luotMxh=1\"}]",
+            "comment": null
+          }
+        ],
+        "expanded": false,
+        "continue_on_error": false,
+        "id": "c18210af-b8e3-4e02-b7e8-d25e4388e92c",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$luotMxh=1 || $luotMxh=2\"}]",
+        "comment": "luotMxh, đọc báo"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 68,
+        "element_xpath": null,
+        "output_variable_name": "linkSp",
+        "delay": "0,0",
+        "continue_on_error": false,
+        "id": "13da2daa-ca4b-49e7-be7c-62007f06854d",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"FILE_OR_CODE\",\"Value\":\"const b= `$inputExcel[E]`;\\r\\nconst res = b;\\r\\nreturn res;\"}]",
+        "comment": null
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 39,
+        "element_xpath": null,
+        "output_variable_name": null,
+        "delay": "12000,15000",
+        "continue_on_error": false,
+        "id": "52d5aa7e-8237-46b1-974c-5ee3fadc15c7",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"URL\",\"Value\":\"https://www.threads.com/\"},{\"Key\":\"TIME_OUT\",\"Value\":\"30\"}]",
+        "comment": null
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "//span[@role='heading' and @aria-label='Chúng tôi đã gỡ bài viết của bạn']",
+            "output_variable_name": null,
+            "delay": "500,800",
+            "continue_on_error": false,
+            "id": "4e2efd94-6b9b-4b14-93bc-f8312ea1bcfc",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"15\"}]",
+            "comment": "Chúng tôi đã gỡ bài viết của bạn"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "hasElement(//span[@role='heading' and @aria-label='Chúng tôi đã gỡ bài viết của bạn'])",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 46,
+                "element_xpath": "//span[@role='heading' and contains(@aria-label,'gỡ bài viết')]/parent::div/following-sibling::span[1]",
+                "output_variable_name": "bannedAt",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "7fd80f3c-0ec0-4867-bfd4-9a359e98a7f5",
+                "display_text": "Get element text",
+                "raw_input": null,
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 29,
+                "element_xpath": null,
+                "output_variable_name": "resBannedAt",
+                "delay": "3330,7330",
+                "continue_on_error": true,
+                "id": "043262b0-7e5d-4c5a-96cd-6be40bc9de88",
+                "display_text": "HTTP Request",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/violations\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n       \\\"postedAt\\\": \\\"$bannedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 76,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "5499418b-e71c-4e30-b3c8-7869e46156d7",
+                "display_text": "Stop",
+                "raw_input": null,
+                "comment": null
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "047faf45-ee5a-45e5-a406-f655cb4d7817",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement(//span[@role='heading' and @aria-label='Chúng tôi đã gỡ bài viết của bạn'])\"}]",
+            "comment": "Call API nếu phát hiện lỗi"
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "dddacc3a-8c5e-4ed1-95e3-122c43559e92",
+        "display_text": "Normal block",
+        "raw_input": null,
+        "comment": "Check vi phạm Content"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 44,
+        "element_xpath": "$bntPost1",
+        "output_variable_name": null,
+        "delay": "500,800",
+        "continue_on_error": false,
+        "id": "eb171a54-dd39-4e6f-bd90-f0df3091c8f3",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"15\"}]",
+        "comment": null
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+        "condition": "$like=0 || $like=1",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 11,
+            "element_xpath": null,
+            "output_variable_name": "randomLike1",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "134b2b44-6961-495b-a20a-1ce7ecb02d9b",
+            "display_text": "Random number",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"1\"},{\"Key\":\"MAX\",\"Value\":\"5\"}]",
+            "comment": "random 1->5"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "xPathRandom1",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "88b1638b-95cf-4f9f-84ac-f7387ca9d140",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"(//div[starts-with(@data-pagelet,'threads_feed_')])[$randomLike1]//div[@role='button'][.//*[name()='svg' and @aria-label='Thích']]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+            "comment": "xPathRandom1"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "hasElement($xPathRandom1)",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 48,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "3000,4000",
+                "continue_on_error": false,
+                "id": "ff4d9d99-c8f4-4bbf-8b35-339008895f8c",
+                "display_text": "Mouse click",
+                "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"$xPathRandom1\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "d6d094b0-95e0-4fb8-b287-3877ce8b286f",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($xPathRandom1)\"}]",
+            "comment": "hasElementXpath1"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "5000,10000",
+            "continue_on_error": false,
+            "id": "5b4697f7-1f5f-41f1-a72b-e30e9e129ee8",
+            "display_text": "Mouse scroll",
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"8\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 11,
+            "element_xpath": null,
+            "output_variable_name": "randomLike2",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "6b11e4ca-c8ce-4ef5-9c0c-2ea39cc50e96",
+            "display_text": "Random number",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"6\"},{\"Key\":\"MAX\",\"Value\":\"10\"}]",
+            "comment": "random 7 to 13"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "xPathRandom2",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "58a96763-8648-4ed5-ba65-4fa2a8bce018",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"(//div[starts-with(@data-pagelet,'threads_feed_')])[$randomLike2]//div[@role='button'][.//*[name()='svg' and @aria-label='Thích']]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+            "comment": "xPathRandom2"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "hasElement($xPathRandom2)",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 48,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "3000,4000",
+                "continue_on_error": false,
+                "id": "29fe910e-0382-4113-bb8c-be57484dc1cb",
+                "display_text": "Mouse click",
+                "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"$xPathRandom2\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "5cf2a73d-682f-4517-b985-1ce02719075e",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($xPathRandom2)\"}]",
+            "comment": "hasElementXpath2"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "314396f5-7bcd-4146-97fc-c150a6dd2464",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"4000\"},{\"Key\":\"MAX\",\"Value\":\"5000\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "5000,10000",
+            "continue_on_error": false,
+            "id": "68d30142-9ea0-4be6-9089-efc20b6e523e",
+            "display_text": "Mouse scroll",
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"10\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 11,
+            "element_xpath": null,
+            "output_variable_name": "randomLike3",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "92652d0a-c9bc-4c17-8726-7ceb08bab838",
+            "display_text": "Random number",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"11\"},{\"Key\":\"MAX\",\"Value\":\"15\"}]",
+            "comment": "random 14 to 20"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "xPathRandom3",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "f9667bc2-fc27-40c2-88d3-5dae2cf0f19c",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"(//div[starts-with(@data-pagelet,'threads_feed_')])[$randomLike3]//div[@role='button'][.//*[name()='svg' and @aria-label='Thích']]\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+            "comment": "xPathRandom3"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "hasElement($xPathRandom3)",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 48,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "3000,4000",
+                "continue_on_error": false,
+                "id": "057db5f4-7da5-451f-ba6e-ab6d2a62215a",
+                "display_text": "Mouse click",
+                "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"$xPathRandom3\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "f94e6edc-40d7-4748-8e47-c617a43de7d9",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($xPathRandom3)\"}]",
+            "comment": "hasElementXpath3"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$like=0",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 76,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "07b4cb83-5490-4f88-afc9-dc837f3e845f",
+                "display_text": null,
+                "raw_input": "[]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "f850d4eb-fdab-4242-b38c-73ff61cd1c7d",
+            "display_text": "If",
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$like=0\"}]",
+            "comment": "Like = 0 thi dừng đăng bài luôn"
+          }
+        ],
+        "expanded": false,
+        "continue_on_error": false,
+        "id": "179dbb92-14a3-4aad-9af3-e6cd47ad4b8f",
+        "display_text": null,
+        "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$like=0 || $like=1\"}]",
+        "comment": "Like bài viết"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ElseBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 11,
+            "element_xpath": null,
+            "output_variable_name": "randomScroll",
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "01a03c75-ed0d-45b2-ba7f-4d5df361323f",
+            "display_text": "Random number",
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"10\"},{\"Key\":\"MAX\",\"Value\":\"15\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 53,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "5000,10000",
+            "continue_on_error": true,
+            "id": "c99176af-59cf-4ae5-8e66-f52613a512a0",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"SCROLL_NUM\",\"Value\":\"$randomScroll\"}]",
+            "comment": null
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "2e863126-3e35-4b0d-92ff-85f7dfa9d3e8",
+        "display_text": "Else",
+        "raw_input": null,
+        "comment": null
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "hasElement($bntPost1)",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 48,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "2000,4000",
+                "continue_on_error": false,
+                "id": "6edd1f09-4064-4622-acd3-f582f8423182",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"//div[normalize-space(text())='Đăng']\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "f64409a3-302a-42da-a770-980a7e155a13",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($bntPost1)\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ElseBlockNode, GPMAutomateEditor.Models",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "hasElement($bntPost2)",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 7,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "0,0",
+                    "continue_on_error": false,
+                    "id": "e7065466-6e00-4cd5-b1ce-b652055e5755",
+                    "display_text": "Delay",
+                    "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"2000\"},{\"Key\":\"MAX\",\"Value\":\"3000\"}]",
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 48,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "2000,4000",
+                    "continue_on_error": false,
+                    "id": "dd24c3d1-ad4c-478f-9a41-195f39763b58",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"$bntPost2\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": false,
+                "continue_on_error": false,
+                "id": "4b8315d2-a1ed-489f-98ae-9417bc2c84a4",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($bntPost2)\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ElseBlockNode, GPMAutomateEditor.Models",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 41,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "0,0",
+                    "continue_on_error": false,
+                    "id": "beba6dfc-5a65-4da7-a8ec-0838832ddcd0",
+                    "display_text": null,
+                    "raw_input": null,
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 44,
+                    "element_xpath": "$bntPost1",
+                    "output_variable_name": null,
+                    "delay": "500,800",
+                    "continue_on_error": false,
+                    "id": "e360f69e-9ccd-4b47-b1fb-d0548c9f73b2",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"20\"}]",
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 48,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "500,800",
+                    "continue_on_error": false,
+                    "id": "aaae99e0-f36c-4ed5-aa79-c1b02b5cc7f2",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"//div[normalize-space(text())='Đăng']\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": false,
+                "continue_on_error": false,
+                "id": "376f4430-6521-4d03-b777-9df04fe2334d",
+                "display_text": "Else",
+                "raw_input": null,
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "d60cf59c-7e00-4fff-8afd-915c87ed5d0c",
+            "display_text": null,
+            "raw_input": null,
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "//div[@role='textbox']//p",
+            "output_variable_name": null,
+            "delay": "500,800",
+            "continue_on_error": false,
+            "id": "88e8d5ad-64e2-4197-b265-750028441f6a",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"30\"}]",
+            "comment": "wait caption"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 54,
+            "element_xpath": "//div[@role='textbox']//p",
+            "output_variable_name": null,
+            "delay": "1000,2000",
+            "continue_on_error": false,
+            "id": "71e4623a-2041-4ff3-81c7-e760337ab3f1",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TYPE\",\"Value\":\"TEXT\"},{\"Key\":\"KEY\",\"Value\":\"$inputExcel[B]\"},{\"Key\":\"DELAY_PRESS\",\"Value\":\"-1\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$inputExcel[C] contains \"videos\"",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 72,
+                "element_xpath": null,
+                "output_variable_name": "videos",
+                "delay": "220,430",
+                "continue_on_error": false,
+                "id": "b6c2afe8-bbcf-4378-b692-a36642ee709b",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"FOLDER_PATH\",\"Value\":\"$inputExcel[C]\"}]",
+                "comment": "video"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 4,
+                "element_xpath": null,
+                "output_variable_name": "lengthVideos",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "8a0f6a66-cc8e-4526-a467-08276ba48a9d",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"INPUT_ARRAY\",\"Value\":\"$videos\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+                "start": "",
+                "end": "",
+                "step": "",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 55,
+                    "element_xpath": "//input[@type='file']",
+                    "output_variable_name": null,
+                    "delay": "6000, 9000",
+                    "continue_on_error": false,
+                    "id": "61115623-44c2-4342-9cea-2f865d99c5c5",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$videos[$loopIndex]\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "71533ff8-4c54-4e69-904c-4977df18796d",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"START\",\"Value\":\"0\"},{\"Key\":\"END\",\"Value\":\"$lengthVideos\"},{\"Key\":\"INCREASE_BY\",\"Value\":\"1\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "ea48f1ed-e8c4-4c4a-95b0-0bc3c338670e",
+            "display_text": "If",
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$inputExcel[C] contains \\\"videos\\\"\"}]",
+            "comment": "check has path Video"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$inputExcel[D] contains \"img\"",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 72,
+                "element_xpath": null,
+                "output_variable_name": "images",
+                "delay": "220,430",
+                "continue_on_error": false,
+                "id": "b69f4619-7f8b-4e40-83d0-dd5e6c3dbbf5",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"FOLDER_PATH\",\"Value\":\"$inputExcel[D]\"}]",
+                "comment": "images"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 4,
+                "element_xpath": null,
+                "output_variable_name": "lengthImages",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "46ce5c06-9928-43f8-a648-07db32e69dc9",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"INPUT_ARRAY\",\"Value\":\"$images\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+                "start": "",
+                "end": "",
+                "step": "",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 55,
+                    "element_xpath": "//input[@type='file']",
+                    "output_variable_name": null,
+                    "delay": "6000, 9000",
+                    "continue_on_error": false,
+                    "id": "43bb59f3-9632-46c8-a9b2-571df0482cc4",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$images[$loopIndex]\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "3ae8c9f5-c1a7-4429-99bb-00b292ca7909",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"START\",\"Value\":\"0\"},{\"Key\":\"END\",\"Value\":\"$lengthImages\"},{\"Key\":\"INCREASE_BY\",\"Value\":\"1\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "42003ecc-ddc2-473f-9f14-251e6bf4eb83",
+            "display_text": "If",
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"$inputExcel[D] contains \\\"img\\\"\"}]",
+            "comment": "check has path Image"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "(//div[normalize-space(text())='Đăng'])[last()]",
+            "output_variable_name": null,
+            "delay": "3000,5000",
+            "continue_on_error": false,
+            "id": "687d23f6-c6f8-4ece-b478-c10d8811460b",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"3\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 48,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "2000,3000",
+            "continue_on_error": false,
+            "id": "37a3f6d1-2f03-4868-85aa-2f0043d9e346",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"(//div[normalize-space(text())='Đăng'])[last()]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+            "comment": "Đăng bài"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 22,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "8707cd23-688f-40db-8094-a98ff878a278",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$inputExcelFileLocation\"},{\"Key\":\"SHEET_ID\",\"Value\":\"0\"},{\"Key\":\"COL_NAME_OR_INDEX\",\"Value\":\"Z\"},{\"Key\":\"ROW_INDEX\",\"Value\":\"$inputExcelCurrentRow\"},{\"Key\":\"DATA\",\"Value\":\"OK\"}]",
+            "comment": "Ghi OK vào cột Z"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 22,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "eb2eae61-1229-4be3-b054-a6cc3ea17356",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$inputExcelFileLocation\"},{\"Key\":\"SHEET_ID\",\"Value\":\"0\"},{\"Key\":\"COL_NAME_OR_INDEX\",\"Value\":\"L\"},{\"Key\":\"ROW_INDEX\",\"Value\":\"$inputExcelCurrentRow\"},{\"Key\":\"DATA\",\"Value\":\"Đăng bài xong\"}]",
+            "comment": "Ghi Đăng bài xong vào cột L"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 68,
+                "element_xpath": null,
+                "output_variable_name": "postedAt",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "1de28e63-a535-4931-879f-fff29ae88e55",
+                "display_text": "Execute JS code",
+                "raw_input": "[{\"Key\":\"FILE_OR_CODE\",\"Value\":\"let now = new Date();\\n    \\n    let year = now.getFullYear();\\n    let month = String(now.getMonth() + 1).padStart(2, '0');\\n    let day = String(now.getDate()).padStart(2, '0');\\n    \\n    let hours = String(now.getHours()).padStart(2, '0');\\n    let minutes = String(now.getMinutes()).padStart(2, '0');\\n    let seconds = String(now.getSeconds()).padStart(2, '0');\\n    \\n    let formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;\\n    \\n    return formattedTime;\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "bb",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "472c610a-2658-47c7-9d7a-e4ef6fbe1d42",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"$postedAt\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 29,
+                "element_xpath": null,
+                "output_variable_name": "resPost",
+                "delay": "3330,7330",
+                "continue_on_error": true,
+                "id": "96298875-8b8d-467a-a8f4-94a07850f511",
+                "display_text": "HTTP Request",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"posted\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "db46f8a0-d8a2-4177-bd26-6426afa01a15",
+            "display_text": "Normal block",
+            "raw_input": null,
+            "comment": "API: posted"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "f536e5a4-8b34-46c3-9016-ec98a7d04a77",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"13000\"},{\"Key\":\"MAX\",\"Value\":\"15000\"}]",
+            "comment": null
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "4d575bde-1778-495f-881f-cbd8e26a4dc1",
+        "display_text": null,
+        "raw_input": "[]",
+        "comment": "đăng bài"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "(//a[@role='link' and starts-with(@href, '/@')])[1]",
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "6e068964-b883-47d6-9ca3-2a91b66f930e",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"15\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 48,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "4000,5000",
+            "continue_on_error": false,
+            "id": "08db8b79-2580-467a-addf-7f71b066ecde",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"(//a[@role='link' and starts-with(@href, '/@')])[1]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 41,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "3000,4000",
+            "continue_on_error": false,
+            "id": "67a7f40e-1d55-4bba-8223-672e3976cf8b",
+            "display_text": null,
+            "raw_input": "[]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "3000,3300",
+            "continue_on_error": false,
+            "id": "982fbe86-0711-45f3-a2b8-542aea8bcd62",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"MIN\",\"Value\":\"15000\"},{\"Key\":\"MAX\",\"Value\":\"19000\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 48,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "1000,2000",
+            "continue_on_error": false,
+            "id": "c5b8af45-6ce7-4902-a66c-80bf0994bd32",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"(//div[@role='button' and @tabindex='0' and .//*[@title='Trả lời']])[1]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+            "comment": "img click"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "//div[@role=\"textbox\" and @contenteditable=\"true\"]//p",
+            "output_variable_name": null,
+            "delay": "1000,2000",
+            "continue_on_error": false,
+            "id": "f0b81900-0f77-4e54-87e5-a4959d8a6c71",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"3\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 54,
+            "element_xpath": "//div[@role=\"textbox\" and @contenteditable=\"true\"]//p",
+            "output_variable_name": null,
+            "delay": "1000,2100",
+            "continue_on_error": false,
+            "id": "e9619996-e328-4184-97c3-94d097fc1828",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TYPE\",\"Value\":\"TEXT\"},{\"Key\":\"KEY\",\"Value\":\"$linkSp\"},{\"Key\":\"DELAY_PRESS\",\"Value\":\"-1\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "$btnExtend",
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "73720977-b534-42cc-853b-3134158a50bc",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"2\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 48,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "1000,2000",
+                "continue_on_error": false,
+                "id": "46357c68-81c2-4324-b532-1034e71abaf5",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"$btnExtend\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                "comment": "Nếu có nút mở rộng"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "a7d3805c-5d70-470a-9f58-f7f785089a5b",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($btnExtend)\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "$shopee",
+            "output_variable_name": null,
+            "delay": "3000,5000",
+            "continue_on_error": false,
+            "id": "2063d925-9838-42eb-8edd-551d7209e7f2",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"5\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.WhileBlockNode, GPMAutomateEditor.Models",
+            "condition": "",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 44,
+                    "element_xpath": "//div[@role=\"button\" and @tabindex=\"0\" and .//*/@aria-label=\"Gỡ/Xóa\"]",
+                    "output_variable_name": null,
+                    "delay": "0,0",
+                    "continue_on_error": false,
+                    "id": "f5c10af5-f2e5-4e7a-9932-b472b00ff987",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"3\"}]",
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 48,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "2000,3000",
+                    "continue_on_error": false,
+                    "id": "7b9c10e6-816b-4900-b231-699b1ce3f809",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"//div[@role=\\\"button\\\" and @tabindex=\\\"0\\\" and .//*/@aria-label=\\\"Gỡ/Xóa\\\"]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "dfec2989-bbd1-4ec3-b449-5fb6340e2c73",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($shopee)\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": false,
+            "continue_on_error": false,
+            "id": "27d9024c-d0c2-4c58-a321-94702af741c6",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($btnClose)\"}]",
+            "comment": "// Gỡ/xóa"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.WhileBlockNode, GPMAutomateEditor.Models",
+            "condition": "",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 44,
+                    "element_xpath": "//div[@role=\"button\" and @tabindex=\"0\" and .//*/@title=\"Gỡ\"]",
+                    "output_variable_name": null,
+                    "delay": "0,0",
+                    "continue_on_error": false,
+                    "id": "9610aaf8-5f87-423c-b5a0-6ef9b470b3bf",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"3\"}]",
+                    "comment": null
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 48,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "2000,3000",
+                    "continue_on_error": false,
+                    "id": "408415fb-15b3-4277-8031-90529fb5989b",
+                    "display_text": null,
+                    "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"//div[@role=\\\"button\\\" and @tabindex=\\\"0\\\" and .//*/@title=\\\"Gỡ\\\"]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "06c8e165-51a7-4e22-97a5-2e623b1c4bc8",
+                "display_text": null,
+                "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($shopee)\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "0525c1fd-3af1-4f83-8464-ab529619abcf",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CONDITION\",\"Value\":\"hasElement($btnClose2)\"}]",
+            "comment": "Gỡ"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 44,
+            "element_xpath": "(//div[@role='button' and @tabindex='0' and .='Đăng'])[last()]",
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "f68cbb6e-1166-43c1-ada9-0e16c099e162",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"TIME_OUT\",\"Value\":\"2\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 48,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "15000,19000",
+            "continue_on_error": false,
+            "id": "536e8cf8-9738-41a3-bfb2-633efd8e321f",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"CLICK_TYPE\",\"Value\":\"CLICK_XPATH\"},{\"Key\":\"XPATH\",\"Value\":\"(//div[@role='button' and @tabindex='0' and .='Đăng'])[last()]\"},{\"Key\":\"POS\",\"Value\":\"\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 22,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "0,0",
+            "continue_on_error": false,
+            "id": "9f7fde5e-4959-4eb6-b257-27da08b15037",
+            "display_text": null,
+            "raw_input": "[{\"Key\":\"FILE_PATH\",\"Value\":\"$inputExcelFileLocation\"},{\"Key\":\"SHEET_ID\",\"Value\":\"0\"},{\"Key\":\"COL_NAME_OR_INDEX\",\"Value\":\"L\"},{\"Key\":\"ROW_INDEX\",\"Value\":\"$inputExcelCurrentRow\"},{\"Key\":\"DATA\",\"Value\":\"Comment bài xong\"}]",
+            "comment": "Ghi Comment bài xong vào cột L"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 68,
+                "element_xpath": null,
+                "output_variable_name": "postedAt",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "34c3d244-0169-428d-b873-2603c7e4f0cd",
+                "display_text": "Execute JS code",
+                "raw_input": "[{\"Key\":\"FILE_OR_CODE\",\"Value\":\"let now = new Date();\\n    \\n    let year = now.getFullYear();\\n    let month = String(now.getMonth() + 1).padStart(2, '0');\\n    let day = String(now.getDate()).padStart(2, '0');\\n    \\n    let hours = String(now.getHours()).padStart(2, '0');\\n    let minutes = String(now.getMinutes()).padStart(2, '0');\\n    let seconds = String(now.getSeconds()).padStart(2, '0');\\n    \\n    let formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;\\n    \\n    return formattedTime;\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "bb",
+                "delay": "0,0",
+                "continue_on_error": false,
+                "id": "27497b51-eb02-40f1-93d4-616e17aafe34",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\":\"VALUE\",\"Value\":\"$postedAt\"},{\"Key\":\"ALLOW_USER_INPUT\",\"Value\":\"False\"},{\"Key\":\"USER_INPUT_TYPE\",\"Value\":\"Text\"},{\"Key\":\"COMBOBOX_DATA\",\"Value\":\"Item 1, Item 2, Item 3\"},{\"Key\":\"INPUT_REQUIRED\",\"Value\":\"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 29,
+                "element_xpath": null,
+                "output_variable_name": "resPost2",
+                "delay": "3330,7330",
+                "continue_on_error": true,
+                "id": "e595da99-c8d7-41df-bfef-855dfac51999",
+                "display_text": "HTTP Request",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"commented\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "comment": null
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "2eb3f357-0369-45c8-bd46-5f3e516daac1",
+            "display_text": "Normal block",
+            "raw_input": null,
+            "comment": "API: commented"
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "6e1f5693-244a-470c-94f1-c79a9a149319",
+        "display_text": null,
+        "raw_input": "[]",
+        "comment": "Tab profile -> comment"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "d946bb4c-4e27-43cd-9776-b3073e848a87",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Main logic"
+  },
+  "after_quit": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "bf28fd93-4f24-427f-bddb-5950eb02d13c",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "After browser closed"
+  },
+  "name": "Main"
+}
