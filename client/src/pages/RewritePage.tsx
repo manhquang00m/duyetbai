@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -14,6 +14,9 @@ import {
 } from 'lucide-react'
 import {
   batchStreamUrl,
+  captionVariantExportUrl,
+  importCaptionVariants,
+  type CaptionVariantImportResult,
   fetchAiConfig,
   fetchCaptionVariantStatus,
   fetchCaptionVariants,
@@ -161,7 +164,7 @@ export function RewritePage() {
       <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">1. Chọn file</CardTitle>
+            <CardTitle className="text-sm">Chọn file</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -191,7 +194,7 @@ export function RewritePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">2. Viết lại</CardTitle>
+            <CardTitle className="text-sm">Viết lại</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -215,7 +218,7 @@ export function RewritePage() {
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full bg-primary transition-all duration-300"
+                    className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -226,7 +229,7 @@ export function RewritePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">3. Tải file mới</CardTitle>
+            <CardTitle className="text-sm">Tải file mới</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -266,7 +269,7 @@ export function RewritePage() {
           <EmptyState
             icon={Upload}
             title="Chưa có file nào"
-            description="Chọn file ở bước 1 để bắt đầu đối chiếu và sửa caption."
+            description="Chọn file ở ô phía trên để bắt đầu đối chiếu và sửa caption."
           />
         </Card>
       )}
@@ -350,10 +353,10 @@ function AiConfigBanner() {
     <Card className="flex flex-wrap items-center gap-3 p-4 text-sm">
       <span
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+          'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs',
           data.keyCount > 0
-            ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400'
-            : 'bg-destructive/10 text-destructive',
+            ? 'text-muted-foreground before:h-1.5 before:w-1.5 before:rounded-full before:bg-positive'
+            : 'rounded-full bg-pill-negative px-2.5 py-1 font-medium text-pill-negative-ink',
         )}
       >
         {data.keyCount > 0 ? `Đã cấu hình ${data.keyCount} API key` : 'Chưa cấu hình API key'}
@@ -363,7 +366,7 @@ function AiConfigBanner() {
         {data.models.map((m) => (
           <span
             key={m}
-            className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+            className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2.5 py-1 text-xs font-medium text-pill-neutral-ink"
           >
             {m}
           </span>
@@ -429,6 +432,28 @@ function CaptionVariantCard() {
   const [running, setRunning] = useState(false)
   const [promptOpen, setPromptOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const importRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<CaptionVariantImportResult | null>(null)
+
+  const onImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImporting(true)
+    try {
+      const r = await importCaptionVariants(file)
+      setImportResult(r)
+      invalidate()
+      if (r.errors.length) toast.warning(`Đã lưu ${r.saved} bài, ${r.errors.length} dòng lỗi`)
+      else toast.success(`Đã lưu 3 bản cho ${r.saved} bài`)
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      toast.error(msg ?? 'Không nhập được file')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const rows = data ?? []
   const doneCount = rows.filter((r) => r.variant_count >= 3).length
@@ -511,6 +536,23 @@ function CaptionVariantCard() {
           >
             <Settings2 className="h-4 w-4" /> Giọng văn
           </Button>
+          <a
+            href={captionVariantExportUrl('missing')}
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 sm:flex-none')}
+            title="Xuất caption gốc của các bài chưa đủ 3 bản — viết lại bằng Claude rồi nhập lại, không tốn quota Gemini"
+          >
+            <FileDown className="h-4 w-4" /> Xuất file ({missingCount})
+          </a>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            disabled={importing}
+            onClick={() => importRef.current?.click()}
+          >
+            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Nhập file
+          </Button>
+          <input ref={importRef} type="file" accept=".xlsx" className="hidden" onChange={onImportFile} />
           <Button
             variant="outline"
             size="sm"
@@ -541,11 +583,45 @@ function CaptionVariantCard() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Tiết kiệm Gemini: <b>Xuất file</b> → đưa file cho Claude (sheet "Hướng dẫn" có sẵn prompt) để điền cột Bản
+        1/2/3 → <b>Nhập file</b>. Link trong caption đã thay bằng [[LINK1]]…, app tự gắn lại link thật khi nhập.{' '}
+        <a href={captionVariantExportUrl('all')} className="text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground">
+          Xuất tất cả {rows.length} bài
+        </a>
+      </p>
+
+      {importResult && (importResult.errors.length > 0 || importResult.skipped > 0) && (
+        <div className="rounded-md border p-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span>
+              Lần nhập gần nhất: lưu <b>{importResult.saved}</b> bài · bỏ qua {importResult.skipped} dòng trống ·{' '}
+              <span className={importResult.errors.length ? 'text-red-600 dark:text-red-400' : ''}>
+                {importResult.errors.length} dòng lỗi
+              </span>
+            </span>
+            <button type="button" className="text-muted-foreground hover:underline" onClick={() => setImportResult(null)}>
+              Ẩn
+            </button>
+          </div>
+          {importResult.errors.length > 0 && (
+            <ul className="mt-1.5 max-h-40 space-y-0.5 overflow-y-auto">
+              {importResult.errors.map((e) => (
+                <li key={e.row}>
+                  Dòng {e.row}
+                  {e.postId && <span className="font-mono"> ({e.postId})</span>}: {e.error}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {job && (
         <div className="space-y-1">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full bg-primary transition-all"
+              className="h-full bg-primary transition-[width,transform,opacity,background-color]"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -585,12 +661,12 @@ function CaptionVariantCard() {
           </div>
           <div className="table-scroll hidden max-h-96 overflow-y-auto rounded-lg border md:block">
             <table className="w-full min-w-[32rem] text-xs">
-              <thead className="sticky top-0 bg-muted uppercase text-muted-foreground">
+              <thead className="sticky top-0 bg-card text-muted-foreground">
                 <tr>
                   <th className="w-8 p-2"></th>
-                  <th className="p-2 text-left font-medium">Post ID</th>
-                  <th className="p-2 text-left font-medium">Caption gốc</th>
-                  <th className="p-2 text-center font-medium">Bản</th>
+                  <th className="p-2 text-left">Post ID</th>
+                  <th className="p-2 text-left">Caption gốc</th>
+                  <th className="p-2 text-center">Bản</th>
                   <th className="w-20 p-2"></th>
                 </tr>
               </thead>
@@ -674,7 +750,7 @@ function CaptionVariantRow({
               <span
                 className={cn(
                   'shrink-0 font-medium tabular-nums',
-                  row.variant_count < 3 && 'text-amber-600 dark:text-amber-400',
+                  row.variant_count < 3 && 'text-warning',
                 )}
               >
                 {row.variant_count}/3
@@ -715,7 +791,7 @@ function CaptionVariantRow({
         <td
           className={cn(
             'p-2 text-center tabular-nums',
-            row.variant_count < 3 && 'text-amber-600 dark:text-amber-400',
+            row.variant_count < 3 && 'text-warning',
           )}
         >
           {row.variant_count}/3

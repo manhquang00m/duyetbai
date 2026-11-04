@@ -41,6 +41,10 @@ const variantCaption = db.prepare(
   'SELECT caption FROM post_caption_variants WHERE post_id = ? AND variant_index = ?',
 );
 
+// Xuat lai sau khi viet lai caption -> file moi mang chu moi, tool dang theo file moi nhat ->
+// ghi de snapshot theo lan xuat gan nhat.
+const saveCaptionSnapshot = db.prepare('UPDATE distribution_items SET caption_text = ? WHERE id = ?');
+
 export interface PlanExportResult {
   rows: number;
   skippedGaps: number; // slot thieu bai (post_id NULL)
@@ -116,6 +120,7 @@ export async function exportPlanXlsx(
         missingVariant++;
       }
     }
+    saveCaptionSnapshot.run(caption, it.id);
 
     ws.addRow([
       it.account_name,

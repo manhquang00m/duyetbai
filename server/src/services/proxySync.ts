@@ -1,7 +1,8 @@
+import { db } from '../db';
 import { listAccounts, updateAccount } from '../db/accounts';
 import { saveProxies } from '../db/proxies';
 import { checkProxies } from './proxyCheck';
-import { fetchGpmProfiles, type GpmEdition } from './gpmLogin';
+import { fetchGpmProfiles, updateGpmProfileProxy, type GpmEdition, type GpmProfile } from './gpmLogin';
 import { GPM_GLOBAL_URL, GPM_STABLE_URL } from '../config';
 
 const PLATFORM_CONFIG: Record<string, { baseUrl: string; edition: GpmEdition }> = {
@@ -102,4 +103,73 @@ export async function syncProxiesFromGpm(): Promise<ProxySyncResult> {
   }
 
   return result;
+}
+
+export interface ProxyAssignResult {
+  accountId: number;
+  account: string | null;
+  ok: boolean;
+  error?: string;
+}
+
+const proxyInStore = db.prepare('SELECT 1 FROM proxies WHERE proxy = ?');
+
+/**
+ * Gan proxy moi cho account: doi raw_proxy cua profile GPM trung ten TRUOC, GPM bao thanh cong
+ * moi ghi accounts.proxy - khong de app va GPM lech nhau. Chi nhan proxy co trong kho proxy.
+ * Chay tuan tu; loi 1 account khong chan cac account con lai.
+ */
+export async function assignProxiesToAccounts(
+  items: { accountId: number; proxy: string }[],
+): Promise<ProxyAssignResult[]> {
+  const accounts = new Map(listAccounts().map((a) => [a.id, a]));
+  const profileCache = new Map<string, Promise<Map<string, GpmProfile>>>();
+  const profilesOf = (platform: string, baseUrl: string, edition: GpmEdition) => {
+    if (!profileCache.has(platform)) {
+      profileCache.set(
+        platform,
+        fetchGpmProfiles(baseUrl, edition).then((list) => new Map(list.map((p) => [p.name.trim(), p]))),
+      );
+    }
+    return profileCache.get(platform)!;
+  };
+
+  const out: ProxyAssignResult[] = [];
+  for (const { accountId, proxy } of items) {
+    const a = accounts.get(accountId);
+    const fail = (error: string) => out.push({ accountId, account: a?.name ?? null, ok: false, error });
+    if (!a) {
+      fail('Không tìm thấy account');
+      continue;
+    }
+    if (!proxyInStore.get(proxy)) {
+      fail('Proxy không có trong kho proxy');
+      continue;
+    }
+    const cfg = a.platform ? PLATFORM_CONFIG[a.platform] : undefined;
+    if (!cfg) {
+      fail('Account chưa khai báo platform Stable/Global');
+      continue;
+    }
+    let profile: GpmProfile | undefined;
+    try {
+      profile = (await profilesOf(a.platform!, cfg.baseUrl, cfg.edition)).get(a.name.trim());
+    } catch {
+      fail(`Không kết nối được GPM Login ${a.platform} — mở app GPM trước`);
+      continue;
+    }
+    if (!profile) {
+      fail(`Không thấy profile GPM ${a.platform} trùng tên`);
+      continue;
+    }
+    try {
+      await updateGpmProfileProxy(cfg.baseUrl, cfg.edition, profile, proxy);
+    } catch (err) {
+      fail(`GPM từ chối cập nhật: ${err instanceof Error ? err.message : 'lỗi không rõ'}`);
+      continue;
+    }
+    updateAccount(a.id, { proxy });
+    out.push({ accountId, account: a.name, ok: true });
+  }
+  return out;
 }

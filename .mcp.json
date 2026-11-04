@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "gpmlogin": {
+      "type": "http",
+      "url": "http://127.0.0.1:9495/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GPMLOGIN_MCP_TOKEN}"
+      }
+    }
+  }
+}

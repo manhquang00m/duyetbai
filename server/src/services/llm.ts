@@ -191,12 +191,16 @@ export async function chatComplete(system: string, user: string): Promise<string
       return await callModel(combo.model, LLM_API_KEYS[combo.keyIndex], system, user);
     } catch (err) {
       lastErr = err;
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
       const daily = axios.isAxiosError(err) && isDailyQuotaExhausted(err);
-      if (!daily) throw new Error(describeError(err, combo.model));
-      exhaustedToday.add(comboId(combo));
+      // 429 theo phut (da retry het luot) / 404 model bi khai tu: thu to hop ke tiep thay vi
+      // dung ca luong. Chi nho "het" voi loi ngay va 404; 429 phut lan sau thu lai binh thuong.
+      if (!daily && status !== 429 && status !== 404) throw new Error(describeError(err, combo.model));
+      if (daily || status === 404) exhaustedToday.add(comboId(combo));
+      const reason = daily ? 'het quota ngay' : status === 404 ? 'model khong con (404)' : 'van 429 sau retry';
       const next = tryList[tryList.indexOf(combo) + 1];
       console.warn(
-        `[llm] ${comboLabel(combo)} het quota ngay${
+        `[llm] ${comboLabel(combo)} ${reason}${
           next ? `, chuyen sang ${comboLabel(next)}` : ' (khong con to hop du phong)'
         }`,
       );

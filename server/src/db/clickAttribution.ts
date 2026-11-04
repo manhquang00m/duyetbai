@@ -10,15 +10,19 @@ export interface Run {
   post_id: string;
   t: string; // 'YYYY-MM-DD HH:MM:SS' gio dang thuc te (fallback post_date)
   variant: number | null;
+  caption_len: number | null; // do dai chu THAT da xuat cho tool (snapshot), null = khong co snapshot
   nth: number; // lan dang thu may cua bai nay (tinh tren toan bo nhat ky)
 }
 
 export function loadRuns(): Map<string, Run[]> {
   const rows = db
     .prepare(
-      `SELECT id, account_name AS account, post_id, caption_variant AS variant,
-              COALESCE(posted_at, post_date || ' 00:00:00') AS t
-         FROM post_runs WHERE status IN ('posted', 'commented') ORDER BY t, id`,
+      `SELECT r.id, r.account_name AS account, r.post_id, r.caption_variant AS variant,
+              length(d.caption_text) AS caption_len,
+              COALESCE(r.posted_at, r.post_date || ' 00:00:00') AS t
+         FROM post_runs r
+         LEFT JOIN distribution_items d ON d.id = r.dist_item_id
+        WHERE r.status IN ('posted', 'commented') ORDER BY t, r.id`,
     )
     .all() as unknown as Omit<Run, 'nth'>[];
   const runsOf = new Map<string, Run[]>();

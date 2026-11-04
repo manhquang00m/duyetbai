@@ -14,13 +14,9 @@ interface Props {
 function StatusBadge({ status }: { status?: 'live' | 'die' }) {
   if (!status) return <span className="text-xs text-muted-foreground">chưa kiểm tra</span>
   if (status === 'live')
-    return (
-      <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        Live
-      </span>
-    )
+    return <span className="whitespace-nowrap text-xs text-muted-foreground">Live</span>
   return (
-    <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
+    <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-negative px-2 py-0.5 text-[11px] font-medium text-pill-negative-ink">
       Die
     </span>
   )
@@ -104,12 +100,12 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
           {result.changed.length > 0 && (
             <div className="table-scroll max-h-[45dvh] overflow-y-auto rounded-lg border">
               <table className="w-full min-w-[30rem] text-xs">
-                <thead className="sticky top-0 bg-muted/40 uppercase text-muted-foreground">
+                <thead className="sticky top-0 bg-card text-muted-foreground">
                   <tr>
-                    <th className="p-2 text-left font-medium">Account</th>
-                    <th className="p-2 text-left font-medium">Proxy cũ</th>
-                    <th className="p-2 text-left font-medium">Proxy mới</th>
-                    <th className="p-2 text-left font-medium">Trạng thái</th>
+                    <th className="p-2 text-left">Account</th>
+                    <th className="p-2 text-left">Proxy cũ</th>
+                    <th className="p-2 text-left">Proxy mới</th>
+                    <th className="p-2 text-left">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>

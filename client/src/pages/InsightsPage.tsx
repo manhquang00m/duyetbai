@@ -41,7 +41,7 @@ function Section({ title, hint, children, className }: { title: string; hint?: s
   return (
     <Card className={cn('overflow-hidden p-0', className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b px-3 py-2.5 sm:px-4">
-        <h2 className="text-sm font-semibold">{title}</h2>
+        <h2 className="text-sm font-medium">{title}</h2>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
       {children}
@@ -49,20 +49,22 @@ function Section({ title, hint, children, className }: { title: string; hint?: s
   )
 }
 
+/** 1 o KPI trong strip chia vach 1px: nhan xam tren, so muc weight thuong. */
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <Card className="min-w-0 p-3 sm:p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-xl font-semibold tabular-nums sm:text-2xl">{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>}
-    </Card>
+    <div className="min-w-0 bg-card px-4 py-3 sm:px-5 sm:py-4">
+      <div className="truncate text-sm text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate text-2xl font-normal tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 truncate text-xs text-muted-foreground">{sub}</div>}
+    </div>
   )
 }
 
+// Icon tron, khong o mau: do = can xu ly, xanh = nen lam them, xam = thong tin.
 const TONE = {
-  bad: { icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/10' },
-  good: { icon: TrendingUp, cls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-  info: { icon: Info, cls: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-500/10' },
+  bad: { icon: AlertTriangle, cls: 'text-negative' },
+  good: { icon: TrendingUp, cls: 'text-positive' },
+  info: { icon: Info, cls: 'text-muted-foreground' },
 } as const
 
 function InsightList({ items }: { items: InsightsReport['insights'] }) {
@@ -75,12 +77,10 @@ function InsightList({ items }: { items: InsightsReport['insights'] }) {
         const t = TONE[it.tone]
         return (
           <li key={i} className="flex gap-3 px-3 py-3 sm:px-4">
-            <span className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', t.bg)}>
-              <t.icon className={cn('h-4 w-4', t.cls)} />
-            </span>
+            <t.icon className={cn('mt-0.5 h-4 w-4 shrink-0', t.cls)} aria-hidden />
             <div className="min-w-0">
               <div className="text-sm font-medium">{it.title}</div>
-              <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{it.detail}</div>
+              <div className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{it.detail}</div>
             </div>
           </li>
         )
@@ -93,7 +93,7 @@ function InsightList({ items }: { items: InsightsReport['insights'] }) {
 function Meter({ value, className }: { value: number; className?: string }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-      <div className={cn('h-full rounded-full bg-primary', className)} style={{ width: `${Math.min(100, value * 100)}%` }} />
+      <div className={cn('h-full rounded-full bg-chart-1', className)} style={{ width: `${Math.min(100, value * 100)}%` }} />
     </div>
   )
 }
@@ -102,14 +102,14 @@ function DimensionCard({ d, avg }: { d: InsightDimension; avg: number }) {
   const max = Math.max(0.01, ...d.rows.map(rate))
   return (
     <Section title={d.title} hint={d.note}>
-      <table className="w-full text-xs">
-        <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <table className="w-full text-[13px]">
+        <thead className="text-xs text-muted-foreground">
           <tr className="border-b">
-            <th className="px-3 py-2 text-left font-medium">Nhóm</th>
-            <th className="px-2 py-2 text-right font-medium">Lượt</th>
-            <th className="px-2 py-2 text-right font-medium">Click</th>
-            <th className="w-[38%] px-3 py-2 text-left font-medium">Click / lượt</th>
-            <th className="px-3 py-2 text-right font-medium" title="Tỉ lệ lượt đăng có ít nhất 1 click">
+            <th className="px-3 py-2 text-left">Nhóm</th>
+            <th className="px-2 py-2 text-right">Lượt</th>
+            <th className="px-2 py-2 text-right">Click</th>
+            <th className="w-[38%] px-3 py-2 text-left">Click / lượt</th>
+            <th className="px-3 py-2 text-right" title="Tỉ lệ lượt đăng có ít nhất 1 click">
               Có click
             </th>
           </tr>
@@ -125,10 +125,10 @@ function DimensionCard({ d, avg }: { d: InsightDimension; avg: number }) {
                 <td className="px-2 py-1.5 text-right tabular-nums">{num(g.clicks)}</td>
                 <td className="px-3 py-1.5">
                   <div className="flex items-center gap-2">
-                    <span className={cn('w-9 shrink-0 text-right font-semibold tabular-nums', r >= avg * 1.3 && 'text-emerald-600 dark:text-emerald-400', r <= avg * 0.5 && 'text-red-600 dark:text-red-400')}>
+                    <span className={cn('w-9 shrink-0 text-right font-medium tabular-nums', r <= avg * 0.5 && 'text-negative')}>
                       {dec(r)}
                     </span>
-                    <Meter value={r / max} className={r >= avg ? 'bg-emerald-500' : 'bg-primary/60'} />
+                    <Meter value={r / max} className={r >= avg ? 'bg-chart-1' : 'bg-muted-foreground/40'} />
                   </div>
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{pct(hitRate(g))}</td>
@@ -149,9 +149,9 @@ function TrendBars({ data }: { data: InsightsReport['trend'] }) {
         const r = rate(d)
         return (
           <div key={d.date} className="group flex min-w-0 flex-1 flex-col items-center gap-1" title={`${d.date}: ${dec(r)} click/lượt · ${num(d.clicks)} click / ${num(d.runs)} lượt · ${pct(hitRate(d))} lượt có click`}>
-            <span className="hidden text-[10px] font-medium tabular-nums sm:block">{dec(r)}</span>
-            <div className="w-full max-w-7 rounded-t bg-primary/80 group-hover:bg-primary" style={{ height: `${Math.max(2, (r / max) * 100)}px` }} />
-            <span className="text-[10px] text-muted-foreground">{d.date.slice(8, 10)}/{d.date.slice(5, 7)}</span>
+            <span className="hidden text-[11px] font-medium tabular-nums sm:block">{dec(r)}</span>
+            <div className="w-full max-w-7 rounded-t-sm bg-chart-1 group-hover:opacity-80" style={{ height: `${Math.max(2, (r / max) * 100)}px` }} />
+            <span className="text-[11px] text-muted-foreground">{d.date.slice(8, 10)}/{d.date.slice(5, 7)}</span>
           </div>
         )
       })}
@@ -169,9 +169,9 @@ function PostCell({ p }: { p: InsightPost }) {
       )}
       <div className="min-w-0">
         <div className="line-clamp-2 text-xs">{p.caption || <em className="text-muted-foreground">(không có caption)</em>}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] text-muted-foreground">
+        <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
           {p.topic && <span className="rounded bg-muted px-1.5 py-px">{p.topic}</span>}
-          {p.likes && <span>♥ {p.likes}</span>}
+          {p.likes && <span>{p.likes} tim</span>}
           {p.url && (
             <a href={p.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 hover:text-foreground" onClick={(e) => e.stopPropagation()}>
               bài gốc <ExternalLink className="h-3 w-3" />
@@ -205,8 +205,8 @@ function PostTable({
   }
   return (
     <div className="table-scroll max-h-[30rem] overflow-y-auto">
-      <table className="w-full min-w-[40rem] text-xs">
-        <thead className="sticky top-0 z-10 bg-muted text-[11px] uppercase tracking-wide text-muted-foreground">
+      <table className="w-full min-w-[40rem] text-[13px]">
+        <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
           <tr>
             {selectable && (
               <th className="w-8 py-2 pl-3">
@@ -217,14 +217,14 @@ function PostTable({
                 />
               </th>
             )}
-            <th className="px-3 py-2 text-left font-medium">Bài</th>
-            <th className="px-2 py-2 text-right font-medium" title="Lượt đăng trong khoảng / tổng số lần đã đăng">
+            <th className="px-3 py-2 text-left">Bài</th>
+            <th className="px-2 py-2 text-right" title="Lượt đăng trong khoảng / tổng số lần đã đăng">
               Lượt
             </th>
-            <th className="px-2 py-2 text-right font-medium">Click</th>
-            <th className="px-2 py-2 text-right font-medium">Click/lượt</th>
-            {showMoney && <th className="px-2 py-2 text-right font-medium">Đơn</th>}
-            {showMoney && <th className="px-3 py-2 text-right font-medium">Hoa hồng</th>}
+            <th className="px-2 py-2 text-right">Click</th>
+            <th className="px-2 py-2 text-right">Click/lượt</th>
+            {showMoney && <th className="px-2 py-2 text-right">Đơn</th>}
+            {showMoney && <th className="px-3 py-2 text-right">Hoa hồng</th>}
           </tr>
         </thead>
         <tbody>
@@ -244,7 +244,7 @@ function PostTable({
               </td>
               <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
                 {p.runs}
-                {p.total_runs !== p.runs && <span className="text-[10px]">/{p.total_runs}</span>}
+                {p.total_runs !== p.runs && <span className="text-[11px]">/{p.total_runs}</span>}
               </td>
               <td className="px-2 py-2 text-right font-semibold tabular-nums">{num(p.clicks)}</td>
               <td className="px-2 py-2 text-right tabular-nums">{dec(rate(p))}</td>
@@ -302,20 +302,20 @@ function DeadPosts({ dead }: { dead: InsightsReport['deadPosts'] }) {
 function AccountTable({ rows }: { rows: InsightsReport['accounts'] }) {
   return (
     <div className="table-scroll max-h-[32rem] overflow-y-auto">
-      <table className="w-full min-w-[48rem] text-xs">
-        <thead className="sticky top-0 z-10 bg-muted text-[11px] uppercase tracking-wide text-muted-foreground">
+      <table className="w-full min-w-[48rem] text-[13px]">
+        <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
           <tr>
-            <th className="px-3 py-2 text-left font-medium">Nick</th>
-            <th className="px-2 py-2 text-right font-medium">Lượt</th>
-            <th className="px-2 py-2 text-right font-medium">Click</th>
-            <th className="px-2 py-2 text-right font-medium">Click/lượt</th>
-            <th className="px-2 py-2 text-right font-medium">Có click</th>
-            <th className="px-3 py-2 text-center font-medium" title="Click/lượt: 7 ngày trước đó → 7 ngày gần nhất">
+            <th className="px-3 py-2 text-left">Nick</th>
+            <th className="px-2 py-2 text-right">Lượt</th>
+            <th className="px-2 py-2 text-right">Click</th>
+            <th className="px-2 py-2 text-right">Click/lượt</th>
+            <th className="px-2 py-2 text-right">Có click</th>
+            <th className="px-3 py-2 text-center" title="Click/lượt: 7 ngày trước đó → 7 ngày gần nhất">
               Xu hướng
             </th>
-            <th className="px-2 py-2 text-right font-medium">Đơn</th>
-            <th className="px-2 py-2 text-right font-medium">Hoa hồng</th>
-            <th className="px-3 py-2 text-right font-medium">Click gần nhất</th>
+            <th className="px-2 py-2 text-right">Đơn</th>
+            <th className="px-2 py-2 text-right">Hoa hồng</th>
+            <th className="px-3 py-2 text-right">Click gần nhất</th>
           </tr>
         </thead>
         <tbody>
@@ -325,11 +325,11 @@ function AccountTable({ rows }: { rows: InsightsReport['accounts'] }) {
             const cur = rate(a.recent)
             const falling = a.previous.runs >= 10 && a.recent.runs >= 5 && prev >= 0.3 && cur < prev * 0.5
             return (
-              <tr key={a.account} className={cn('border-b last:border-0', dead && 'bg-red-50/60 dark:bg-red-500/5')}>
+              <tr key={a.account} className={'border-b last:border-0'}>
                 <td className="px-3 py-2">
                   <div className="font-medium">{a.account}</div>
                   {(a.status || dead) && (
-                    <div className={cn('text-[10px]', dead ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
+                    <div className={cn('text-[11px]', dead ? 'text-negative' : 'text-muted-foreground')}>
                       {dead ? '0 click — kiểm tra reach' : a.status}
                     </div>
                   )}
@@ -340,7 +340,7 @@ function AccountTable({ rows }: { rows: InsightsReport['accounts'] }) {
                 <td className="px-2 py-2 text-right tabular-nums">{pct(hitRate(a))}</td>
                 <td className="px-3 py-2 text-center tabular-nums">
                   {a.previous.runs > 0 || a.recent.runs > 0 ? (
-                    <span className={cn('inline-flex items-center gap-1', falling && 'text-red-600 dark:text-red-400', cur > prev * 1.3 && a.recent.runs >= 5 && 'text-emerald-600 dark:text-emerald-400')}>
+                    <span className={cn('inline-flex items-center gap-1', falling && 'text-negative', cur > prev * 1.3 && a.recent.runs >= 5 && 'text-positive')}>
                       {a.previous.runs ? dec(prev) : '—'} <ArrowRight className="h-3 w-3" /> {a.recent.runs ? dec(cur) : '—'}
                     </span>
                   ) : (
@@ -391,7 +391,7 @@ export function InsightsPage() {
   const hourDim = byId('hour')
 
   return (
-    <div className="mx-auto max-w-8xl space-y-4 sm:space-y-5">
+    <div className="mx-auto max-w-8xl space-y-4">
       <PageHeader
         title="Phân tích & chiến lược"
         description="Nội dung nào, nick nào, giờ nào mang về click — tính từ nhật ký đăng + báo cáo click Shopee thật trong DB"
@@ -410,8 +410,9 @@ export function InsightsPage() {
               <Button
                 key={d}
                 size="sm"
-                variant={active ? 'default' : 'ghost'}
+                variant="ghost"
                 aria-pressed={active}
+                className={active ? 'bg-active text-foreground hover:bg-active' : 'text-muted-foreground'}
                 onClick={() => {
                   setFrom(localDate(-d))
                   setTo(localDate(0))
@@ -438,11 +439,7 @@ export function InsightsPage() {
       {isLoading || !data || !o ? (
         !isError && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
+            <Skeleton className="h-[86px] rounded-lg" />
             <Skeleton className="h-64 rounded-xl" />
           </div>
         )
@@ -450,7 +447,7 @@ export function InsightsPage() {
         <EmptyState icon={BarChart3} title="Chưa có lượt đăng nào trong khoảng này" description="Chọn khoảng ngày khác hoặc kiểm tra Nhật ký đăng." />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-3 xl:grid-cols-6">
             <Kpi label="Lượt đăng" value={num(o.runs)} sub={`${num(o.posts)} bài · ${o.accounts} nick`} />
             <Kpi label="Click" value={num(o.clicks)} sub={o.unattributedClicks ? `+ ${num(o.unattributedClicks)} click chưa gán được` : undefined} />
             <Kpi label="Click / lượt đăng" value={dec(avg)} />
@@ -459,11 +456,11 @@ export function InsightsPage() {
             <Kpi label="Hoa hồng" value={money(o.commission_milli)} sub="không tính đơn hủy" />
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
             <Section title="Nhận định & đề xuất" hint="Tự rút ra từ số liệu, cần ≥ 30 lượt mỗi nhóm" className="lg:col-span-3">
               <InsightList items={data.insights} />
             </Section>
-            <div className="space-y-3 lg:col-span-2">
+            <div className="space-y-4 lg:col-span-2">
               <Section title="Click / lượt đăng theo ngày" hint="rê chuột xem chi tiết">
                 <TrendBars data={data.trend} />
               </Section>
@@ -476,7 +473,7 @@ export function InsightsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Section title="Bài nên đăng tiếp" hint="Click/lượt cao, mới đăng ≤ 3 lần">
               {data.repostCandidates.length > 0 ? (
                 <PostTable posts={data.repostCandidates} />
@@ -495,11 +492,13 @@ export function InsightsPage() {
             <AccountTable rows={data.accounts} />
           </Section>
 
-          <div className="flex items-center gap-2 pt-1 text-sm font-semibold">
-            <Lightbulb className="h-4 w-4 text-amber-500" /> Content nào ra click
-            <span className="text-xs font-normal text-muted-foreground">Xanh = cao hơn trung bình {dec(avg)} click/lượt · mờ = ít dữ liệu</span>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-2">
+            <h2 className="inline-flex items-center gap-2 text-base font-medium">
+              <Lightbulb className="h-4 w-4 text-muted-foreground" aria-hidden /> Content nào ra click
+            </h2>
+            <span className="text-xs text-muted-foreground">Thanh cam = cao hơn trung bình {dec(avg)} click/lượt · đỏ = dưới một nửa · mờ = ít dữ liệu</span>
           </div>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {['topic', 'nth', 'likes', 'length', 'media', 'variant'].map((id) => {
               const d = byId(id)
               return d ? <DimensionCard key={id} d={d} avg={avg} /> : null
@@ -510,13 +509,13 @@ export function InsightsPage() {
           {data.products.length > 0 && (
             <Section title="Sản phẩm ra hoa hồng" hint="Top 10 trong khoảng">
               <div className="table-scroll">
-                <table className="w-full min-w-[32rem] text-xs">
-                  <thead className="bg-muted text-[11px] uppercase tracking-wide text-muted-foreground">
+                <table className="w-full min-w-[32rem] text-[13px]">
+                  <thead className="text-xs text-muted-foreground">
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium">Sản phẩm</th>
-                      <th className="px-2 py-2 text-left font-medium">Shop</th>
-                      <th className="px-2 py-2 text-right font-medium">Đơn</th>
-                      <th className="px-3 py-2 text-right font-medium">Hoa hồng</th>
+                      <th className="px-3 py-2 text-left">Sản phẩm</th>
+                      <th className="px-2 py-2 text-left">Shop</th>
+                      <th className="px-2 py-2 text-right">Đơn</th>
+                      <th className="px-3 py-2 text-right">Hoa hồng</th>
                     </tr>
                   </thead>
                   <tbody>

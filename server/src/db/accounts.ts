@@ -18,6 +18,8 @@ export interface Account {
   created_at: string;
   proxy_status?: string | null; // 'live' | 'die' | null - lay tu bang proxies (chi co trong listAccounts)
   proxy_checked_at?: string | null;
+  shadowban_verdict?: string | null; // lan check shadowban moi nhat (chi co trong listAccounts)
+  shadowban_checked_at?: string | null;
 }
 
 export interface AccountInput {
@@ -74,9 +76,16 @@ export function listAccounts(): Account[] {
     .prepare(
       `SELECT a.id, a.name, a.active, a.banned, a.device, a.pass_threads, a.gmail,
               a.gmail_password, a.proxy, a.platform, a.proxy_type, a.appeal_status, a.note,
-              a.created_at, p.status AS proxy_status, p.checked_at AS proxy_checked_at
+              a.created_at, p.status AS proxy_status, p.checked_at AS proxy_checked_at,
+              sc.verdict AS shadowban_verdict, sc.checked_at AS shadowban_checked_at
          FROM accounts a
          LEFT JOIN proxies p ON p.proxy = a.proxy
+         LEFT JOIN account_shadowban_checks sc ON sc.id = (
+           SELECT id FROM account_shadowban_checks
+            WHERE account_name = a.name
+            ORDER BY checked_at DESC, id DESC
+            LIMIT 1
+         )
         ORDER BY a.id`,
     )
     .all() as Account[];

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { bulkPostingTopics, ACCOUNT_TOPICS } from '@/lib/api'
+import { bulkPostingTopics } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,7 @@ const MODES = [
 ] as const
 
 export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }: Props) {
+  const topicOptions = useTopics()
   const [picked, setPicked] = useState<string[]>([])
   const [mode, setMode] = useState<'add' | 'remove' | 'replace'>('add')
   const [saving, setSaving] = useState(false)
@@ -58,7 +60,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Chủ đề</label>
           <div className="flex flex-wrap gap-1.5">
-            {ACCOUNT_TOPICS.map((t) => (
+            {topicOptions.map((t) => (
               <button
                 key={t}
                 type="button"
@@ -87,7 +89,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
                 className={cn(
                   'flex-1 rounded px-3 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1',
                   mode === m.value
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-active text-foreground'
                     : 'text-muted-foreground hover:bg-accent',
                 )}
               >
@@ -95,7 +97,7 @@ export function AssignPostingTopicsDialog({ open, accountIds, onClose, onSaved }
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             {MODES.find((m) => m.value === mode)?.hint}
           </p>
         </div>

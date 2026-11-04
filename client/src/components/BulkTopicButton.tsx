@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Tag } from 'lucide-react'
-import { ACCOUNT_TOPICS, setPostsTopic } from '@/lib/api'
+import { setPostsTopic } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Button } from '@/components/ui/button'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
 
@@ -12,6 +13,7 @@ interface Props {
 
 /** Nut tren thanh chon nhieu bai: chon 1 chu de de gan cho tat ca bai dang chon (ghi de chu de cu). */
 export function BulkTopicButton({ postIds, onDone }: Props) {
+  const topicOptions = useTopics()
   const popover = usePopover()
   const [saving, setSaving] = useState(false)
 
@@ -36,17 +38,17 @@ export function BulkTopicButton({ postIds, onDone }: Props) {
         type="button"
         onClick={() => popover.setOpen(!popover.open)}
         disabled={saving}
-        className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 text-xs font-medium shadow-xs hover:bg-accent disabled:opacity-50"
+        className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent disabled:opacity-50 sm:h-8"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
         Gán chủ đề
       </button>
       <PopoverPanel popover={popover} className="w-56 p-2">
-        <div className="mb-1.5 px-1 text-[11px] text-muted-foreground">
+        <div className="mb-1.5 px-1 text-xs text-muted-foreground">
           Gán cho {postIds.length} bài (ghi đè chủ đề cũ)
         </div>
         <div className="flex flex-wrap gap-1">
-          {ACCOUNT_TOPICS.map((t) => (
+          {topicOptions.map((t) => (
             <Button key={t} size="sm" variant="outline" className="rounded-full" onClick={() => apply(t)}>
               {t}
             </Button>

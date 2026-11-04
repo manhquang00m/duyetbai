@@ -154,7 +154,7 @@ export function dayReport(date: string): DayRow[] {
               d.post_id, d.caption_variant,
               COALESCE(pl.name, 'Kế hoạch ' || substr(pl.id, 1, 8)) AS plan_name,
               r.status, r.posted_url, r.posted_at, r.reports, r.last_reported_at,
-              p.caption, ${THUMB_COLS}
+              COALESCE(d.caption_text, p.caption) AS caption, ${THUMB_COLS}
          FROM distribution_items d
          JOIN distribution_plans pl ON pl.id = d.plan_id
          LEFT JOIN post_runs r

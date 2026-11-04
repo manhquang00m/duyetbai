@@ -41,7 +41,7 @@ export function StatusCheckboxFilter({
         aria-haspopup="menu"
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          selected.size > 0 && 'border-primary text-foreground',
+          selected.size > 0 && 'border-foreground/60 text-foreground',
         )}
       >
         Trạng thái

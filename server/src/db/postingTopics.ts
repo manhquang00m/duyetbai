@@ -1,11 +1,9 @@
 import { db } from './index';
-import { ACCOUNT_TOPICS } from './accountTopics';
+import { isTopic } from './topics';
 
-// Chu de cua ACCOUNT DANG BAI. Dung chung bo 7 gia tri voi posts.topic nhung la
+// Chu de cua ACCOUNT DANG BAI. Dung chung danh muc chu de (bang topics) voi posts.topic nhung la
 // KHAI NIEM KHAC: posts.topic gan theo TUNG BAI (tu tac gia bai cao ve), bang nay gan theo
 // TAI KHOAN DUNG DE DANG. Hai tap ten roi nhau hoan toan.
-
-const TOPIC_SET = new Set<string>(ACCOUNT_TOPICS);
 
 export interface PostingAccount {
   id: number;
@@ -118,7 +116,7 @@ export function setPostingTopicsUnsafe(accountId: number, topics: string[]): voi
   delTopics.run(accountId);
   const now = new Date().toISOString();
   for (const t of new Set(topics)) {
-    if (!TOPIC_SET.has(t)) continue; // gia tri la -> bo qua, khong nhet rac vao DB
+    if (!isTopic(t)) continue; // gia tri la -> bo qua, khong nhet rac vao DB
     insTopic.run(accountId, t, now);
   }
 }
@@ -141,7 +139,7 @@ export function bulkSetPostingTopics(
   topics: string[],
   mode: 'add' | 'remove' | 'replace',
 ): { updated: number } {
-  const valid = [...new Set(topics)].filter((t) => TOPIC_SET.has(t));
+  const valid = [...new Set(topics)].filter((t) => isTopic(t));
   const now = new Date().toISOString();
   db.exec('BEGIN');
   try {

@@ -1,0 +1,1479 @@
+{
+  "$type": "GPMAutomateEditor.Models.Editor, GPMAutomateEditor.Models",
+  "before_init": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "targetList",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "20c66c64-428e-4736-9039-c3ec3d08f219",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Danh sách tài khoản cần like/comment chéo (username hoặc link, ngăn cách bằng dấu phẩy, ví dụ: acc1,acc2,acc3 -> liệt kê TẤT CẢ tài khoản trong nhóm, tool tự bỏ qua chính mình)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "selfUser",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "595355ed-058b-47d5-92ae-869c0c8fb2a2",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"$inputExcel[B]\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Username Threads của chính profile đang chạy (mặc định lấy cột B Excel -> để nguyên nếu dùng Excel, không thì điền tay)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "outputPath",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "13bb7549-87b2-4e22-8ad9-66ef3afa7208",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "File log .csv ghi lại mọi lượt like/comment để đối soát (ví dụ D:\\gpm\\cross-engage-log.csv)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "doLike",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "044fdbe6-c914-4552-a8eb-59f47b70b909",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"True\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Checkbox\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Tích -> like bài"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "doComment",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "4d651abe-af4a-4bc4-a4cf-c30949d6e4da",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"True\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Checkbox\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Tích -> comment bài (bỏ tích để chỉ like)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "maxAgeHours",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "1a5a0cd8-bf6d-4879-90b2-d0a95e88134d",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"24\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Chỉ tương tác bài đăng trong vòng bao nhiêu giờ (ví dụ 24)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "postsPerAccount",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "ad44956f-c4f8-4dda-9d1e-cccb01c05843",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"1\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số bài mới nhất của mỗi tài khoản cần tương tác (ví dụ 1)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "scrollTimes",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "cfb5fc27-d359-49dd-8734-c9931a97063d",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"4\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số lần cuộn tối đa trên trang cá nhân để tìm bài (ví dụ 4)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "maxLikes",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "27d3d1b6-6782-4df4-872d-76485701f5d9",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"10\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số like tối đa mỗi lần chạy (nên để thấp)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "maxComments",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "9dc2c4f0-0a1a-42f4-b466-c2bac4b6b3fb",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"5\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Số comment tối đa mỗi lần chạy (nên để thấp)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "readTime",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "10bc91c9-2535-44f6-bd71-91fa6e85b9bd",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"2000,5000\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Thời gian xem bài trước khi tương tác (ví dụ 2 đến 5 giây -> điền 2000,5000)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "actionDelay",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "5f53ebe2-f555-4b94-ab49-f3d1da0eaec8",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"1000,2500\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Thời gian chờ sau mỗi thao tác click/gõ (ví dụ 1000,2500)"
+      },
+      {
+        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+        "type": 1,
+        "element_xpath": null,
+        "output_variable_name": "accountDelay",
+        "delay": "",
+        "continue_on_error": false,
+        "id": "0f064286-9f7a-4bfd-ae39-e3057b0effff",
+        "display_text": "Set variable",
+        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"8000,20000\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"True\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"True\"}]",
+        "comment": "Thời gian nghỉ giữa các tài khoản (ví dụ 8 đến 20 giây -> điền 8000,20000)"
+      }
+    ],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "5c4ed33a-a783-4350-b9a7-343c91585ae7",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Before browser opened"
+  },
+  "main_logic": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "likeCount",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "25dc1784-7d56-42d1-ba4f-773207d40326",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "cmtCount",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "c1d0f918-98c9-422f-8083-12f9e2ef714b",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "lastComment",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "ce3c96fe-b3b3-477a-b5c2-05848b20c9b8",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "liked",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "7ef28121-9e29-46f1-977c-1fe92ab595f5",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"skip\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "commented",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "329d14b8-1ad2-4b39-80a6-dc08cc609949",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"skip\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "cmtLog",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "ef9cfdb4-ee0a-40ba-8115-761e5a4ba8c3",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"-\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "picked",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "3ba3b130-9df1-42b9-a987-c6dda65772f2",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 1,
+            "element_xpath": null,
+            "output_variable_name": "scanDone",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "ca4ab170-a9ec-4ef3-ae1f-417215de778f",
+            "display_text": "Set variable",
+            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+            "comment": null
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 39,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "",
+            "continue_on_error": false,
+            "id": "a0bc3ea0-6276-4cf4-967f-bea1485b8932",
+            "display_text": "Go to URL",
+            "raw_input": "[{\"Key\": \"URL\", \"Value\": \"https://www.threads.com/\"}, {\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+            "comment": "go to threads home"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 7,
+            "element_xpath": null,
+            "output_variable_name": null,
+            "delay": "",
+            "continue_on_error": false,
+            "id": "a7d013ec-ec79-41cb-a6cc-29c01e53e977",
+            "display_text": "Delay",
+            "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2500\"}, {\"Key\": \"MAX\", \"Value\": \"4500\"}]",
+            "comment": "wait home..."
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 68,
+            "element_xpath": null,
+            "output_variable_name": "targetsJoined",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "5ea679d5-fbcb-49be-b411-19502d6e10eb",
+            "display_text": "Execute JS code",
+            "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){\\nvar self=String.raw`$selfUser`.trim().replace(/^@/,\\\"\\\").toLowerCase(),seen={},out=[];\\nString.raw`$targetList`.split(/[\\\\r\\\\n,;]+/).forEach(function(v){\\nv=v.trim();var m=v.match(/threads\\\\.(?:com|net)\\\\/@([^\\\\/?#\\\\s]+)/i);if(m)v=m[1];v=v.replace(/^@/,\\\"\\\");\\nif(!/^[A-Za-z0-9._]{1,30}$/.test(v))return;\\nvar k=v.toLowerCase();if(k===self||seen[k])return;seen[k]=1;out.push(v);});\\nfor(var i=out.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=out[i];out[i]=out[j];out[j]=t;}\\ntry{sessionStorage.removeItem(\\\"__seen\\\");}catch(e){}\\nreturn out.join(\\\",\\\");}\\nreturn A();\"}]",
+            "comment": "build target list (validate, dedupe, shuffle) -> keep in GPM var, page reloads wipe window"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 68,
+            "element_xpath": null,
+            "output_variable_name": "targetCount",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "18737681-ceaa-4e12-a200-b8c56aef28f4",
+            "display_text": "Execute JS code",
+            "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"var s=String.raw`$targetsJoined`;return s?s.split(\\\",\\\").length:0;\"}]",
+            "comment": "count targets"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$targetCount = 0",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 117,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "ca7f550e-6fd0-43fd-822a-c798250ae921",
+                "display_text": "Throw",
+                "raw_input": "[{\"Key\": \"MESSAGE\", \"Value\": \"Không có tài khoản hợp lệ trong targetList (cần username Threads, ngăn cách bằng dấu phẩy, khác tài khoản của chính profile)\"}]",
+                "comment": "stop: empty target list"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "673b7e45-1ad2-4809-8cd3-a833b01e0ba2",
+            "display_text": "If",
+            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$targetCount = 0\"}]",
+            "comment": "no valid target -> stop"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 13,
+            "element_xpath": null,
+            "output_variable_name": "existsRaw",
+            "delay": "",
+            "continue_on_error": false,
+            "id": "bd2fc868-c50b-405e-8ef4-8ed0640069c7",
+            "display_text": "File exists",
+            "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}]",
+            "comment": "check log file"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+            "type": 68,
+            "element_xpath": null,
+            "output_variable_name": "exists",
+            "delay": "",
+            "continue_on_error": true,
+            "id": "7d20ba6c-d1e4-4aa4-a445-c9ae026f5870",
+            "display_text": "Execute JS code",
+            "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return String.raw`$existsRaw`.trim().toLowerCase()===\\\"true\\\"?\\\"yes\\\":\\\"no\\\";\"}]",
+            "comment": "normalize to yes/no"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+            "condition": "$exists = \"no\"",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 68,
+                "element_xpath": null,
+                "output_variable_name": "header",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "650630bd-0338-4092-9a7b-30b85d2284c4",
+                "display_text": "Execute JS code",
+                "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return \\\"\\\\uFEFF\\\" + \\\"time,actor,target,postUrl,liked,commented,detail\\\";\"}]",
+                "comment": "build csv header"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 20,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "3303d7b7-71ae-4c94-a38c-23a408a0f724",
+                "display_text": "File append line",
+                "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$header\"}]",
+                "comment": "write header"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "6daaa878-a9a0-432c-98d8-37356c5fa279",
+            "display_text": "If",
+            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$exists = \\\"no\\\"\"}]",
+            "comment": "new log -> header on line 1"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+            "start": "0",
+            "end": "$targetCount",
+            "step": "1",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 68,
+                "element_xpath": null,
+                "output_variable_name": "target",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "18ccdbd0-bf63-4d36-b22b-cdd88af783c9",
+                "display_text": "Execute JS code",
+                "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return String.raw`$targetsJoined`.split(\\\",\\\")[$loopIndex]||\\\"\\\";\"}]",
+                "comment": "get target username"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$likeCount >= $maxLikes && $cmtCount >= $maxComments",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 5,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "10936c72-8090-4646-a68f-2ee24e7f93ed",
+                    "display_text": "Exit loop",
+                    "raw_input": "[]",
+                    "comment": "run limits reached"
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "c479754c-816f-4e7c-a139-f0c5afc985f1",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$likeCount >= $maxLikes && $cmtCount >= $maxComments\"}]",
+                "comment": "caps reached -> stop run"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "picked",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "a6756dd7-ec78-4f49-a02c-84f0c13dc793",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                "comment": "reset"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "scanDone",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "0d023344-5710-4f1a-aa6d-b1c1a20b47f4",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"0\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                "comment": "reset"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 39,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "dab8e563-f719-4e31-a209-9eb9e6d70589",
+                "display_text": "Go to URL",
+                "raw_input": "[{\"Key\": \"URL\", \"Value\": \"https://www.threads.com/@$target\"}, {\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+                "comment": "go to target profile"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 7,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "2b9815da-a4f8-4974-9924-0b776f894225",
+                "display_text": "Delay",
+                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"3000\"}, {\"Key\": \"MAX\", \"Value\": \"5000\"}]",
+                "comment": "wait page..."
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "hasElement(//span[contains(text(),'Liên kết không hoạt động')])",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 68,
+                    "element_xpath": null,
+                    "output_variable_name": "logLine",
+                    "delay": "",
+                    "continue_on_error": true,
+                    "id": "b68b9959-dc16-4530-ab92-95ef425ff72c",
+                    "display_text": "Execute JS code",
+                    "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){function q(v){var s=String(v);if(/^[=+\\\\-@]/.test(s))s=\\\"'\\\"+s;return '\\\"'+s.replace(/\\\"/g,'\\\"\\\"')+'\\\"';}\\nvar d=new Date();function p(n){return (n<10?\\\"0\\\":\\\"\\\")+n;}\\nvar ts=d.getFullYear()+\\\"-\\\"+p(d.getMonth()+1)+\\\"-\\\"+p(d.getDate())+\\\" \\\"+p(d.getHours())+\\\":\\\"+p(d.getMinutes())+\\\":\\\"+p(d.getSeconds());\\nreturn [ts,String.raw`$profileName`,String.raw`$target`,\\\"\\\",\\\"-\\\",\\\"-\\\",\\\"profile not found\\\"].map(q).join(\\\",\\\");}\\nreturn A();\"}]",
+                    "comment": "build log line"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 20,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": true,
+                    "id": "fd2e52aa-2f3e-48f8-8ec6-c7a0e6cf134e",
+                    "display_text": "File append line",
+                    "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$logLine\"}]",
+                    "comment": "log dead profile"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 6,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "03980a17-5963-4d7d-9ffb-d3ce714babd0",
+                    "display_text": "Next loop",
+                    "raw_input": "[]",
+                    "comment": "next account"
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "21be32c1-53e6-4583-8a1e-ba930c881d86",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//span[contains(text(),'Liên kết không hoạt động')])\"}]",
+                "comment": "dead link -> skip account"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 44,
+                "element_xpath": "//div[@data-pressable-container='true']",
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "a1ca544e-2720-42f7-9be2-f2e8b538cd24",
+                "display_text": "Wait element",
+                "raw_input": "[{\"Key\": \"TIME_OUT\", \"Value\": \"25\"}]",
+                "comment": "wait posts..."
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 7,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "352c5654-6c97-4cd6-9f88-6e1648e1afd6",
+                "display_text": "Delay",
+                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2000\"}, {\"Key\": \"MAX\", \"Value\": \"3000\"}]",
+                "comment": "wait render..."
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "hasElement(//div[@data-pressable-container='true'])",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+                    "start": "0",
+                    "end": "$scrollTimes",
+                    "step": "1",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.WhileBlockNode, GPMAutomateEditor.Models",
+                        "condition": "hasElement(//div[@data-pressable-container='true'][not(@data-seen)][not(ancestor::div[@data-pressable-container='true'])])",
+                        "nodes": [
+                          {
+                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                            "type": 68,
+                            "element_xpath": null,
+                            "output_variable_name": "ok",
+                            "delay": "",
+                            "continue_on_error": true,
+                            "id": "d6be27c5-476a-4ffd-b9b0-b7cb41df5042",
+                            "display_text": "Execute JS code",
+                            "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){\\ndocument.querySelectorAll(\\\"[data-cur]\\\").forEach(function(e){e.removeAttribute(\\\"data-cur\\\");});\\nvar list=document.querySelectorAll(\\\"div[data-pressable-container='true']:not([data-seen])\\\"),c=null;\\nfor(var i=0;i<list.length;i++){if(list[i].parentElement.closest(\\\"[data-pressable-container]\\\")){list[i].setAttribute(\\\"data-seen\\\",\\\"1\\\");}else{c=list[i];break;}}\\nif(!c)return \\\"NONE\\\";\\nc.setAttribute(\\\"data-seen\\\",\\\"1\\\");\\nvar a=c.querySelector(\\\"a[href*='/post/'] time\\\");\\nif(!a)return \\\"SKIP\\\";\\nvar sp=c.querySelectorAll(\\\"span[dir='auto']\\\");\\nfor(var j=0;j<sp.length;j++){if(sp[j].closest(\\\"[data-pressable-container]\\\")===c&&[\\\"Đã ghim\\\",\\\"Pinned\\\"].indexOf((sp[j].innerText||\\\"\\\").trim())>-1)return \\\"SKIP\\\";}\\nvar url=a.closest(\\\"a\\\").href.split(\\\"?\\\")[0];\\nvar m=url.match(/\\\\/@([^\\\\/]+)\\\\/post\\\\//);\\nif(!m||m[1].toLowerCase()!==String.raw`$target`.toLowerCase())return \\\"SKIP\\\";\\nvar S={};try{S=JSON.parse(sessionStorage.getItem(\\\"__seen\\\")||\\\"{}\\\");}catch(e){}\\nif(S[url])return \\\"SKIP\\\";\\nS[url]=1;try{sessionStorage.setItem(\\\"__seen\\\",JSON.stringify(S));}catch(e){}\\nvar t=new Date(a.getAttribute(\\\"datetime\\\")).getTime();\\nif(Date.now()-t>$maxAgeHours*3600000)return \\\"STOP\\\";\\nwindow.__curUrl=url;\\nc.setAttribute(\\\"data-cur\\\",\\\"1\\\");\\nc.scrollIntoView({behavior:\\\"smooth\\\",block:\\\"center\\\"});\\nreturn \\\"OK\\\";}\\nreturn A();\"}]",
+                            "comment": "mark + validate next post"
+                          },
+                          {
+                            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                            "condition": "$ok = \"STOP\"",
+                            "nodes": [
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 1,
+                                "element_xpath": null,
+                                "output_variable_name": "scanDone",
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "82448314-485f-4e2e-98ce-b9a7b4543301",
+                                "display_text": "Set variable",
+                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"1\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                "comment": null
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 5,
+                                "element_xpath": null,
+                                "output_variable_name": null,
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "eee4f42a-57a0-407b-b456-49bda595bd62",
+                                "display_text": "Exit loop",
+                                "raw_input": "[]",
+                                "comment": "posts older than maxAgeHours"
+                              }
+                            ],
+                            "expanded": true,
+                            "continue_on_error": false,
+                            "id": "ded3a4d5-4d64-4a88-bc4b-e8a8ba443b5a",
+                            "display_text": "If",
+                            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$ok = \\\"STOP\\\"\"}]",
+                            "comment": "too old -> stop"
+                          },
+                          {
+                            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                            "condition": "$ok = \"OK\"",
+                            "nodes": [
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 68,
+                                "element_xpath": null,
+                                "output_variable_name": "postUrl",
+                                "delay": "",
+                                "continue_on_error": true,
+                                "id": "46aa2d76-2a6b-4942-afc2-7043ce8f1566",
+                                "display_text": "Execute JS code",
+                                "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"return window.__curUrl||\\\"\\\";\"}]",
+                                "comment": "get post url"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 11,
+                                "element_xpath": null,
+                                "output_variable_name": "rd",
+                                "delay": "$readTime",
+                                "continue_on_error": false,
+                                "id": "ea27dca7-87b7-432e-91cb-95d87c229740",
+                                "display_text": "Random number",
+                                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"1\"}, {\"Key\": \"MAX\", \"Value\": \"100\"}]",
+                                "comment": "read post..."
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 1,
+                                "element_xpath": null,
+                                "output_variable_name": "liked",
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "a942647d-b8b2-4892-aaa1-55e43327d6c6",
+                                "display_text": "Set variable",
+                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"skip\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                "comment": "reset like status"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 1,
+                                "element_xpath": null,
+                                "output_variable_name": "commented",
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "131d17aa-25c2-4ce8-89be-b15e7e06cbe5",
+                                "display_text": "Set variable",
+                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"skip\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                "comment": "reset comment status"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 1,
+                                "element_xpath": null,
+                                "output_variable_name": "cmtLog",
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "a19e59ba-8d14-4773-87ea-6d104ff89dbc",
+                                "display_text": "Set variable",
+                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"-\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                "comment": "reset comment text"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                "condition": "$doLike = \"True\" && $likeCount < $maxLikes && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Thích']])",
+                                "nodes": [
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 48,
+                                    "element_xpath": "//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Thích']]",
+                                    "output_variable_name": null,
+                                    "delay": "$actionDelay",
+                                    "continue_on_error": true,
+                                    "id": "d353eff6-fd8b-4bbd-beea-06e946366664",
+                                    "display_text": "Mouse click",
+                                    "raw_input": "[{\"Key\": \"CLICK_TYPE\", \"Value\": \"CLICK_XPATH\"}, {\"Key\": \"XPATH\", \"Value\": \"//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Thích']]\"}, {\"Key\": \"POS\", \"Value\": \"\"}]",
+                                    "comment": "click like"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 2,
+                                        "element_xpath": null,
+                                        "output_variable_name": "likeCount",
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "ee9988c3-ca51-4af2-98cd-25ffc7c89508",
+                                        "display_text": "Increase variable",
+                                        "raw_input": "[{\"Key\": \"CURRENT_VAL\", \"Value\": \"$likeCount\"}, {\"Key\": \"INCREASE_BY\", \"Value\": \"1\"}]",
+                                        "comment": "count like"
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 1,
+                                        "element_xpath": null,
+                                        "output_variable_name": "liked",
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "83603d62-40a1-4a38-b375-ddd6420e37ba",
+                                        "display_text": "Set variable",
+                                        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"yes\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                        "comment": null
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "182833e1-000b-4a23-b79d-f0bf5a623ccf",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])\"}]",
+                                    "comment": "like confirmed"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "!hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 1,
+                                        "element_xpath": null,
+                                        "output_variable_name": "liked",
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "e97ef36f-5a9f-443a-9e9a-611f2c3cf38f",
+                                        "display_text": "Set variable",
+                                        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"fail\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                        "comment": null
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "6423c91e-d93d-42d9-a2e4-aecfdcd8f272",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"!hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])\"}]",
+                                    "comment": "like not confirmed"
+                                  }
+                                ],
+                                "expanded": true,
+                                "continue_on_error": false,
+                                "id": "e34a660b-3ad6-4db2-b02c-21ab8c31661a",
+                                "display_text": "If",
+                                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$doLike = \\\"True\\\" && $likeCount < $maxLikes && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Thích']])\"}]",
+                                "comment": "like post"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                "condition": "$liked = \"skip\" && $doLike = \"True\" && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])",
+                                "nodes": [
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 1,
+                                    "element_xpath": null,
+                                    "output_variable_name": "liked",
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "dc9eb549-b7b3-4ce2-acf1-2940a023ee06",
+                                    "display_text": "Set variable",
+                                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"already\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                    "comment": null
+                                  }
+                                ],
+                                "expanded": true,
+                                "continue_on_error": false,
+                                "id": "98bdf9d9-0a91-490c-809f-8a508ef192df",
+                                "display_text": "If",
+                                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$liked = \\\"skip\\\" && $doLike = \\\"True\\\" && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Bỏ thích']])\"}]",
+                                "comment": "already liked"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                "condition": "$doComment = \"True\" && hasElement(//div[@data-cur='1']//*[local-name()='svg'][@aria-label='Đã trả lời'])",
+                                "nodes": [
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 1,
+                                    "element_xpath": null,
+                                    "output_variable_name": "commented",
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "1612ac37-c270-4064-bde2-5ec2254c9da5",
+                                    "display_text": "Set variable",
+                                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"already\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                    "comment": null
+                                  }
+                                ],
+                                "expanded": true,
+                                "continue_on_error": false,
+                                "id": "45740e46-109f-4cc4-805e-56c71d2b7bef",
+                                "display_text": "If",
+                                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$doComment = \\\"True\\\" && hasElement(//div[@data-cur='1']//*[local-name()='svg'][@aria-label='Đã trả lời'])\"}]",
+                                "comment": "already replied by this account"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                "condition": "$doComment = \"True\" && $cmtCount < $maxComments && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Trả lời']])",
+                                "nodes": [
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 7,
+                                    "element_xpath": null,
+                                    "output_variable_name": null,
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "d0a3abaa-643a-49a4-9884-3450b230af9b",
+                                    "display_text": "Delay",
+                                    "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"1500\"}, {\"Key\": \"MAX\", \"Value\": \"3500\"}]",
+                                    "comment": "think before reply..."
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 48,
+                                    "element_xpath": "//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Trả lời']]",
+                                    "output_variable_name": null,
+                                    "delay": "$actionDelay",
+                                    "continue_on_error": true,
+                                    "id": "e10f994b-55e2-43ff-8f3a-77b671f71824",
+                                    "display_text": "Mouse click",
+                                    "raw_input": "[{\"Key\": \"CLICK_TYPE\", \"Value\": \"CLICK_XPATH\"}, {\"Key\": \"XPATH\", \"Value\": \"//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Trả lời']]\"}, {\"Key\": \"POS\", \"Value\": \"\"}]",
+                                    "comment": "click reply"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 44,
+                                    "element_xpath": "//div[@contenteditable='true'][@role='textbox'][starts-with(@aria-placeholder,'Trả lời')]",
+                                    "output_variable_name": null,
+                                    "delay": "",
+                                    "continue_on_error": true,
+                                    "id": "dc5b21e3-c824-440d-a5eb-5aef4f603fb1",
+                                    "display_text": "Wait element",
+                                    "raw_input": "[{\"Key\": \"TIME_OUT\", \"Value\": \"15\"}]",
+                                    "comment": "wait reply box..."
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 1,
+                                    "element_xpath": null,
+                                    "output_variable_name": "boxFound",
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "2ebb23a9-4fff-4cc7-868b-feb1027ec49d",
+                                    "display_text": "Set variable",
+                                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"no\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                    "comment": null
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "hasElement(//div[@contenteditable='true'][@role='textbox'][starts-with(@aria-placeholder,'Trả lời')])",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 1,
+                                        "element_xpath": null,
+                                        "output_variable_name": "boxFound",
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "6df61d4e-1b84-4f1b-adcf-a2ad50e27bf1",
+                                        "display_text": "Set variable",
+                                        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"yes\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                        "comment": null
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "35a4b0ff-ea60-4e3f-ae27-9d5ef2acb17c",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@contenteditable='true'][@role='textbox'][starts-with(@aria-placeholder,'Trả lời')])\"}]",
+                                    "comment": "reply box found?"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "$boxFound = \"yes\"",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 68,
+                                        "element_xpath": null,
+                                        "output_variable_name": "comment",
+                                        "delay": "",
+                                        "continue_on_error": true,
+                                        "id": "90edffab-1ac4-4296-bc5d-9c12e44e38c0",
+                                        "display_text": "Execute JS code",
+                                        "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){var L=[\\\"Bài viết hay quá, cảm ơn bạn đã chia sẻ nhé.\\\", \\\"Đọc xong thấy có nhiều điều bổ ích, cảm ơn bạn.\\\", \\\"Nội dung rất tâm huyết, chúc bạn luôn giữ được phong độ này.\\\", \\\"Chia sẻ hay và dễ hiểu, mình ủng hộ bạn nhé.\\\", \\\"Bài này viết rất có duyên, đọc là cuốn luôn.\\\", \\\"Cảm ơn bạn đã dành thời gian chia sẻ, rất hữu ích.\\\", \\\"Hay lắm bạn ơi, mong được đọc thêm nhiều bài như vậy.\\\", \\\"Góc nhìn rất thú vị, mình học hỏi được nhiều.\\\", \\\"Viết gọn mà đủ ý, rất thích cách bạn trình bày.\\\", \\\"Đúng là bài đáng đọc, cảm ơn bạn nhiều.\\\", \\\"Quá tuyệt vời, chúc bạn một ngày thật nhiều năng lượng.\\\", \\\"Nội dung chất lượng, mình đã lưu lại để đọc lại sau.\\\", \\\"Bài viết tích cực quá, đọc xong thấy vui hẳn.\\\", \\\"Cảm ơn bạn, đây là chia sẻ mà mình đang cần.\\\", \\\"Làm tốt lắm, cố gắng phát huy nhé bạn.\\\", \\\"Mình rất ấn tượng với cách bạn chia sẻ, tiếp tục nhé.\\\", \\\"Hay và ý nghĩa, cảm ơn bạn đã lan tỏa điều tốt đẹp.\\\", \\\"Đọc mà thấy được truyền cảm hứng, cảm ơn bạn.\\\", \\\"Bài viết có tâm quá, xin chúc mừng bạn.\\\", \\\"Rất đáng khen, mong bạn sẽ còn nhiều bài hay nữa.\\\"];\\nvar last=String.raw`$lastComment`,P=L.filter(function(c){return c!==last;});\\nreturn P[Math.floor(Math.random()*P.length)];}\\nreturn A();\"}]",
+                                        "comment": "pick random approved comment (hardcoded list)"
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                        "condition": "$comment contains \"`\" || $comment contains \"{\"",
+                                        "nodes": [
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 1,
+                                            "element_xpath": null,
+                                            "output_variable_name": "commented",
+                                            "delay": "",
+                                            "continue_on_error": false,
+                                            "id": "dfcb83f6-7593-4464-b527-c463f765f5be",
+                                            "display_text": "Set variable",
+                                            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"bad-comment\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                            "comment": null
+                                          }
+                                        ],
+                                        "expanded": true,
+                                        "continue_on_error": false,
+                                        "id": "a3868dc6-334b-4dc4-b870-37086725ac29",
+                                        "display_text": "If",
+                                        "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$comment contains \\\"`\\\" || $comment contains \\\"{\\\"\"}]",
+                                        "comment": "unsafe char in comment -> skip"
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                        "condition": "$comment = \"\"",
+                                        "nodes": [
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 1,
+                                            "element_xpath": null,
+                                            "output_variable_name": "commented",
+                                            "delay": "",
+                                            "continue_on_error": false,
+                                            "id": "ed97d013-3fcc-4993-bc5e-c17131663652",
+                                            "display_text": "Set variable",
+                                            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"empty-comment\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                            "comment": null
+                                          }
+                                        ],
+                                        "expanded": true,
+                                        "continue_on_error": false,
+                                        "id": "90a78879-ce2e-4803-a6e9-3ea8cdb076be",
+                                        "display_text": "If",
+                                        "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$comment = \\\"\\\"\"}]",
+                                        "comment": "empty comment -> skip"
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                        "condition": "$commented = \"skip\"",
+                                        "nodes": [
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 48,
+                                            "element_xpath": "//div[@contenteditable='true'][@role='textbox'][starts-with(@aria-placeholder,'Trả lời')]",
+                                            "output_variable_name": null,
+                                            "delay": "$actionDelay",
+                                            "continue_on_error": true,
+                                            "id": "f4f13927-15d2-4bf8-b164-8b029faaa4da",
+                                            "display_text": "Mouse click",
+                                            "raw_input": "[{\"Key\": \"CLICK_TYPE\", \"Value\": \"CLICK_XPATH\"}, {\"Key\": \"XPATH\", \"Value\": \"//div[@contenteditable='true'][@role='textbox'][starts-with(@aria-placeholder,'Trả lời')]\"}, {\"Key\": \"POS\", \"Value\": \"\"}]",
+                                            "comment": "focus reply box"
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 68,
+                                            "element_xpath": null,
+                                            "output_variable_name": null,
+                                            "delay": "",
+                                            "continue_on_error": true,
+                                            "id": "f22f8c0a-b5b3-474f-847c-d2f85a9d6dc7",
+                                            "display_text": "Execute JS code",
+                                            "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"document.execCommand(\\\"insertText\\\", false, String.raw`$comment`);\"}]",
+                                            "comment": "type comment"
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 44,
+                                            "element_xpath": "//div[@role='button'][.//*[local-name()='svg' and @aria-label='Câu trả lời']]",
+                                            "output_variable_name": null,
+                                            "delay": "",
+                                            "continue_on_error": true,
+                                            "id": "4fdfd196-b6e2-48e8-a628-154c807e058f",
+                                            "display_text": "Wait element",
+                                            "raw_input": "[{\"Key\": \"TIME_OUT\", \"Value\": \"10\"}]",
+                                            "comment": "wait send button..."
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                            "type": 1,
+                                            "element_xpath": null,
+                                            "output_variable_name": "sendFound",
+                                            "delay": "",
+                                            "continue_on_error": false,
+                                            "id": "79f06d24-1d33-43ec-a9db-cb420522181f",
+                                            "display_text": "Set variable",
+                                            "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"no\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                            "comment": null
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                            "condition": "hasElement(//div[@role='button'][.//*[local-name()='svg' and @aria-label='Câu trả lời']])",
+                                            "nodes": [
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 1,
+                                                "element_xpath": null,
+                                                "output_variable_name": "sendFound",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "f16a878f-94ec-46c7-a44a-081832187f48",
+                                                "display_text": "Set variable",
+                                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"yes\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                                "comment": null
+                                              }
+                                            ],
+                                            "expanded": true,
+                                            "continue_on_error": false,
+                                            "id": "b4d846e3-ca30-491c-a8b3-2c67aef5c31a",
+                                            "display_text": "If",
+                                            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@role='button'][.//*[local-name()='svg' and @aria-label='Câu trả lời']])\"}]",
+                                            "comment": "send button found?"
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                            "condition": "$sendFound = \"yes\"",
+                                            "nodes": [
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 7,
+                                                "element_xpath": null,
+                                                "output_variable_name": null,
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "e6db437a-eda8-4d3e-8b3c-d57df86d4eca",
+                                                "display_text": "Delay",
+                                                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"1500\"}, {\"Key\": \"MAX\", \"Value\": \"3500\"}]",
+                                                "comment": "re-read comment..."
+                                              },
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 48,
+                                                "element_xpath": "//div[@role='button'][.//*[local-name()='svg' and @aria-label='Câu trả lời']]",
+                                                "output_variable_name": null,
+                                                "delay": "3000,5000",
+                                                "continue_on_error": true,
+                                                "id": "bd680d1c-200e-4059-bff3-17152f17cd83",
+                                                "display_text": "Mouse click",
+                                                "raw_input": "[{\"Key\": \"CLICK_TYPE\", \"Value\": \"CLICK_XPATH\"}, {\"Key\": \"XPATH\", \"Value\": \"//div[@role='button'][.//*[local-name()='svg' and @aria-label='Câu trả lời']]\"}, {\"Key\": \"POS\", \"Value\": \"\"}]",
+                                                "comment": "click send"
+                                              },
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 2,
+                                                "element_xpath": null,
+                                                "output_variable_name": "cmtCount",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "e54daf6b-78b8-4b71-a6d1-8732a3a742b5",
+                                                "display_text": "Increase variable",
+                                                "raw_input": "[{\"Key\": \"CURRENT_VAL\", \"Value\": \"$cmtCount\"}, {\"Key\": \"INCREASE_BY\", \"Value\": \"1\"}]",
+                                                "comment": "count comment"
+                                              },
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 1,
+                                                "element_xpath": null,
+                                                "output_variable_name": "commented",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "b3020f15-905a-4958-b8f5-c9c251492de1",
+                                                "display_text": "Set variable",
+                                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"yes\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                                "comment": null
+                                              },
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 1,
+                                                "element_xpath": null,
+                                                "output_variable_name": "cmtLog",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "0d94e677-7e1d-47a0-a1a6-6788556934a8",
+                                                "display_text": "Set variable",
+                                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"$comment\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                                "comment": null
+                                              },
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 1,
+                                                "element_xpath": null,
+                                                "output_variable_name": "lastComment",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "8aed9ccc-ab11-427a-9193-3eb36928a1f0",
+                                                "display_text": "Set variable",
+                                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"$comment\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                                "comment": null
+                                              }
+                                            ],
+                                            "expanded": true,
+                                            "continue_on_error": false,
+                                            "id": "6c474625-8195-4cca-af86-5b5c7b6e32c7",
+                                            "display_text": "If",
+                                            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$sendFound = \\\"yes\\\"\"}]",
+                                            "comment": "send only when text typed"
+                                          },
+                                          {
+                                            "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                            "condition": "$sendFound = \"no\"",
+                                            "nodes": [
+                                              {
+                                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                                "type": 1,
+                                                "element_xpath": null,
+                                                "output_variable_name": "commented",
+                                                "delay": "",
+                                                "continue_on_error": false,
+                                                "id": "67b49722-1741-4348-aa39-e455d826b700",
+                                                "display_text": "Set variable",
+                                                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"no-send-btn\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                                "comment": null
+                                              }
+                                            ],
+                                            "expanded": true,
+                                            "continue_on_error": false,
+                                            "id": "01396e7b-b9e1-4e22-b6cf-414927ee09fa",
+                                            "display_text": "If",
+                                            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$sendFound = \\\"no\\\"\"}]",
+                                            "comment": "nothing typed"
+                                          }
+                                        ],
+                                        "expanded": true,
+                                        "continue_on_error": false,
+                                        "id": "86ffda97-721f-4ec3-b3f9-9a2360496781",
+                                        "display_text": "If",
+                                        "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$commented = \\\"skip\\\"\"}]",
+                                        "comment": "type + send"
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "1531280f-3716-4dd9-a0b2-158c98715ea3",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$boxFound = \\\"yes\\\"\"}]",
+                                    "comment": "reply box opened"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "$boxFound = \"no\"",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 1,
+                                        "element_xpath": null,
+                                        "output_variable_name": "commented",
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "ea9e9200-c4fb-44c7-ab6e-d082da7ba804",
+                                        "display_text": "Set variable",
+                                        "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"no-box\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                                        "comment": null
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "c4afbfca-a6f9-4a1d-a655-9e6a6a52796b",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$boxFound = \\\"no\\\"\"}]",
+                                    "comment": "reply box not found"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 42,
+                                    "element_xpath": null,
+                                    "output_variable_name": "curUrl",
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "63626aec-d64c-437c-8b02-e0ec3fc5c192",
+                                    "display_text": "Get URL",
+                                    "raw_input": "[]",
+                                    "comment": "get url"
+                                  },
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                    "condition": "$curUrl contains \"/post/\"",
+                                    "nodes": [
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 40,
+                                        "element_xpath": null,
+                                        "output_variable_name": null,
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "c6b0a8dc-70e3-4b18-831f-b3a26ef22841",
+                                        "display_text": "Back URL",
+                                        "raw_input": "[]",
+                                        "comment": "back to profile"
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 44,
+                                        "element_xpath": "//div[@data-pressable-container='true']",
+                                        "output_variable_name": null,
+                                        "delay": "",
+                                        "continue_on_error": true,
+                                        "id": "ef2df0c9-4dba-44c1-a245-21861b3a72a8",
+                                        "display_text": "Wait element",
+                                        "raw_input": "[{\"Key\": \"TIME_OUT\", \"Value\": \"20\"}]",
+                                        "comment": "wait profile..."
+                                      },
+                                      {
+                                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                        "type": 7,
+                                        "element_xpath": null,
+                                        "output_variable_name": null,
+                                        "delay": "",
+                                        "continue_on_error": false,
+                                        "id": "4e8563a5-9282-46fc-99c3-ac3b25ba35f3",
+                                        "display_text": "Delay",
+                                        "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2000\"}, {\"Key\": \"MAX\", \"Value\": \"3500\"}]",
+                                        "comment": "look around..."
+                                      }
+                                    ],
+                                    "expanded": true,
+                                    "continue_on_error": false,
+                                    "id": "35f721ce-94aa-4208-af7f-35bd38700e65",
+                                    "display_text": "If",
+                                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$curUrl contains \\\"/post/\\\"\"}]",
+                                    "comment": "reply opened post page -> go back"
+                                  }
+                                ],
+                                "expanded": true,
+                                "continue_on_error": false,
+                                "id": "1b996d3b-275d-4209-a4b7-50f645651207",
+                                "display_text": "If",
+                                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$doComment = \\\"True\\\" && $cmtCount < $maxComments && hasElement(//div[@data-cur='1']//div[@role='button'][.//*[local-name()='title' and text()='Trả lời']])\"}]",
+                                "comment": "comment post"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 68,
+                                "element_xpath": null,
+                                "output_variable_name": "logLine",
+                                "delay": "",
+                                "continue_on_error": true,
+                                "id": "45a3e47b-35f4-4d32-aa48-5e2a28ae630a",
+                                "display_text": "Execute JS code",
+                                "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){function q(v){var s=String(v);if(/^[=+\\\\-@]/.test(s))s=\\\"'\\\"+s;return '\\\"'+s.replace(/\\\"/g,'\\\"\\\"')+'\\\"';}\\nvar d=new Date();function p(n){return (n<10?\\\"0\\\":\\\"\\\")+n;}\\nvar ts=d.getFullYear()+\\\"-\\\"+p(d.getMonth()+1)+\\\"-\\\"+p(d.getDate())+\\\" \\\"+p(d.getHours())+\\\":\\\"+p(d.getMinutes())+\\\":\\\"+p(d.getSeconds());\\nreturn [ts,String.raw`$profileName`,String.raw`$target`,String.raw`$postUrl`,\\\"$liked\\\",\\\"$commented\\\",String.raw`$cmtLog`].map(q).join(\\\",\\\");}\\nreturn A();\"}]",
+                                "comment": "build log line"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 20,
+                                "element_xpath": null,
+                                "output_variable_name": null,
+                                "delay": "",
+                                "continue_on_error": true,
+                                "id": "3b313f5f-cb66-4321-a48a-dbd26707004a",
+                                "display_text": "File append line",
+                                "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$logLine\"}]",
+                                "comment": "log post"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                "type": 2,
+                                "element_xpath": null,
+                                "output_variable_name": "picked",
+                                "delay": "",
+                                "continue_on_error": false,
+                                "id": "94915047-3fd0-4538-96b9-6fdf63ee0981",
+                                "display_text": "Increase variable",
+                                "raw_input": "[{\"Key\": \"CURRENT_VAL\", \"Value\": \"$picked\"}, {\"Key\": \"INCREASE_BY\", \"Value\": \"1\"}]",
+                                "comment": "count picked post"
+                              },
+                              {
+                                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                                "condition": "$picked >= $postsPerAccount",
+                                "nodes": [
+                                  {
+                                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                                    "type": 5,
+                                    "element_xpath": null,
+                                    "output_variable_name": null,
+                                    "delay": "",
+                                    "continue_on_error": false,
+                                    "id": "0817fae5-1654-4860-b28a-6ece20cf1db6",
+                                    "display_text": "Exit loop",
+                                    "raw_input": "[]",
+                                    "comment": "enough posts for this account"
+                                  }
+                                ],
+                                "expanded": true,
+                                "continue_on_error": false,
+                                "id": "575ff501-1a0b-4b58-ac9a-7ef36e3a8895",
+                                "display_text": "If",
+                                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$picked >= $postsPerAccount\"}]",
+                                "comment": "stop while"
+                              }
+                            ],
+                            "expanded": true,
+                            "continue_on_error": false,
+                            "id": "fd2550d9-6061-4d67-b063-c4dc55f7f72b",
+                            "display_text": "If",
+                            "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$ok = \\\"OK\\\"\"}]",
+                            "comment": "process post"
+                          }
+                        ],
+                        "expanded": true,
+                        "continue_on_error": false,
+                        "id": "a17eabb6-00bc-4dad-8e80-f520f5f8b0e8",
+                        "display_text": "While",
+                        "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@data-pressable-container='true'][not(@data-seen)][not(ancestor::div[@data-pressable-container='true'])])\"}]",
+                        "comment": "visit unseen posts"
+                      },
+                      {
+                        "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                        "condition": "$scanDone = \"1\" || $picked >= $postsPerAccount",
+                        "nodes": [
+                          {
+                            "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                            "type": 5,
+                            "element_xpath": null,
+                            "output_variable_name": null,
+                            "delay": "",
+                            "continue_on_error": false,
+                            "id": "8f573af5-82fe-4287-8f08-47e156a67b83",
+                            "display_text": "Exit loop",
+                            "raw_input": "[]",
+                            "comment": "done with this profile"
+                          }
+                        ],
+                        "expanded": true,
+                        "continue_on_error": false,
+                        "id": "21118396-980f-4a4f-84d2-e0cd62cb1eec",
+                        "display_text": "If",
+                        "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$scanDone = \\\"1\\\" || $picked >= $postsPerAccount\"}]",
+                        "comment": "leave scroll loop"
+                      },
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 53,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "$actionDelay",
+                        "continue_on_error": false,
+                        "id": "487873af-fb40-4d46-bac2-50c9940e81aa",
+                        "display_text": "Mouse scroll",
+                        "raw_input": "[{\"Key\": \"SCROLL_NUM\", \"Value\": \"3\"}]",
+                        "comment": "scroll down, loading..."
+                      },
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 7,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "2d71278d-aa1e-4081-a9fd-3b24010c8ad3",
+                        "display_text": "Delay",
+                        "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"1500\"}, {\"Key\": \"MAX\", \"Value\": \"2500\"}]",
+                        "comment": "wait render..."
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "45b5ca62-a9de-405a-b833-58cae32ff8ed",
+                    "display_text": "For",
+                    "raw_input": "[{\"Key\": \"START\", \"Value\": \"0\"}, {\"Key\": \"END\", \"Value\": \"$scrollTimes\"}, {\"Key\": \"STEP\", \"Value\": \"1\"}]",
+                    "comment": "scroll + find posts"
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "60911b81-fb13-428a-bb96-e2fdb0a6cd26",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"hasElement(//div[@data-pressable-container='true'])\"}]",
+                "comment": "profile has posts"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$picked = 0",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 68,
+                    "element_xpath": null,
+                    "output_variable_name": "logLine",
+                    "delay": "",
+                    "continue_on_error": true,
+                    "id": "9625662d-9234-4a6c-bd9f-c1f9aada2eb9",
+                    "display_text": "Execute JS code",
+                    "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){function q(v){var s=String(v);if(/^[=+\\\\-@]/.test(s))s=\\\"'\\\"+s;return '\\\"'+s.replace(/\\\"/g,'\\\"\\\"')+'\\\"';}\\nvar d=new Date();function p(n){return (n<10?\\\"0\\\":\\\"\\\")+n;}\\nvar ts=d.getFullYear()+\\\"-\\\"+p(d.getMonth()+1)+\\\"-\\\"+p(d.getDate())+\\\" \\\"+p(d.getHours())+\\\":\\\"+p(d.getMinutes())+\\\":\\\"+p(d.getSeconds());\\nreturn [ts,String.raw`$profileName`,String.raw`$target`,\\\"\\\",\\\"-\\\",\\\"-\\\",\\\"no recent post (or not loaded)\\\"].map(q).join(\\\",\\\");}\\nreturn A();\"}]",
+                    "comment": "build log line"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 20,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": true,
+                    "id": "d5e15353-d63f-466c-9fb1-e6908c8a488e",
+                    "display_text": "File append line",
+                    "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$outputPath\"}, {\"Key\": \"TEXT\", \"Value\": \"$logLine\"}]",
+                    "comment": "log no post"
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "f4231872-553f-4aa8-9697-e21a3a8e54d3",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$picked = 0\"}]",
+                "comment": "nothing to engage"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 11,
+                "element_xpath": null,
+                "output_variable_name": "rd",
+                "delay": "$accountDelay",
+                "continue_on_error": false,
+                "id": "8e8e36f0-d4b1-465c-9466-65378fb078f2",
+                "display_text": "Random number",
+                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"1\"}, {\"Key\": \"MAX\", \"Value\": \"100\"}]",
+                "comment": "rest before next account..."
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "2594b1cd-1d11-406c-99df-9448b4d8cff3",
+            "display_text": "For",
+            "raw_input": "[{\"Key\": \"START\", \"Value\": \"0\"}, {\"Key\": \"END\", \"Value\": \"$targetCount\"}, {\"Key\": \"STEP\", \"Value\": \"1\"}]",
+            "comment": "like + comment each account"
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "ba70bfb3-7ffa-4d28-b160-0f544b673dc4",
+        "display_text": "Normal block",
+        "raw_input": null,
+        "comment": "threads cross like + comment"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "b68556a5-dd45-436f-b0e7-59fc7f482829",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Main logic"
+  },
+  "after_quit": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "f5f1711d-6579-4810-b7cf-4467dcc76f44",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "After browser closed"
+  },
+  "name": "Main"
+}

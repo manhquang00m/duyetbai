@@ -1,0 +1,2138 @@
+{
+ "url": "http://localhost:5173/insights",
+ "at": "2026-11-03T18:08:58.178Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 5,
+   "filled": [
+    0.83,
+    0.83,
+    0.79,
+    0.87,
+    0.85
+   ],
+   "motion": {
+    "elements": 4,
+    "css": 0,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 4357,
+     "screens": 4.8,
+     "words": 6349,
+     "img": 124,
+     "video": 0,
+     "canvas": 0,
+     "svg": 209,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 1,
+     "brokenImages": [
+      "http://localhost:5173/media/post_DdAxexbktTS/videos/video.mp4"
+     ],
+     "emoji": [
+      "🥹",
+      "💯",
+      "✨",
+      "😭",
+      "🫶",
+      "😵",
+      "💫",
+      "😍",
+      "🤤",
+      "🙏"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 1.5,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.45,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "lines": 1,
+     "size": 22,
+     "font": "Inter Variable"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      22,
+      24
+     ],
+     "sizeCount": 8,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.63,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6.4
+     },
+     "measureChars": 60,
+     "max": {
+      "size": 24,
+      "vw": 1.7,
+      "font": "Inter Variable",
+      "text": "220"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 154
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f9fbfc",
+       "top": 0,
+       "hsl": {
+        "h": 200,
+        "s": 0.33,
+        "l": 0.98
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 48,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#131416",
+       "share": 0.74
+      },
+      {
+       "color": "#5d5f60",
+       "share": 0.26
+      },
+      {
+       "color": "#c4242a",
+       "share": 0
+      },
+      {
+       "color": "#1e7b4f",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 2,
+     "radius": 6,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Phân tích & chiến lược",
+      "14 ngày"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 23,
+     "hairlineSamples": [
+      "div.flex.flex-wrap 668px",
+      "li.flex.gap-3 668px",
+      "li.flex.gap-3 668px",
+      "li.flex.gap-3 668px",
+      "li.flex.gap-3 668px"
+     ],
+     "outlinedBoxes": 17,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 17,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 250
+      },
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 251
+      },
+      {
+       "count": 6,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 2808
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": true,
+     "height": 900,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 4357,
+    "margins": {
+     "left": 46,
+     "right": 64
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 374,
+      "height": 672,
+      "words": 307,
+      "media": 0,
+      "middle": 50,
+      "heading": {
+       "text": "Nhận định & đề xuất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 278,
+      "right": 68,
+      "textLeft": 278,
+      "textRight": 68,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 1062,
+      "height": 572,
+      "words": 254,
+      "media": 0,
+      "middle": 92,
+      "heading": {
+       "text": "Bài nên đăng tiếp",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 278,
+      "right": 53,
+      "textLeft": 278,
+      "textRight": 53,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 1650,
+      "height": 523,
+      "words": 249,
+      "media": 0,
+      "middle": 66,
+      "heading": {
+       "text": "Bài nhiều click nhất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 274,
+      "right": 64,
+      "textLeft": 274,
+      "textRight": 64,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 2189,
+      "height": 555,
+      "words": 98,
+      "media": 0,
+      "middle": 108,
+      "heading": {
+       "text": "Nick nào mang về click",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 274,
+      "right": 64,
+      "textLeft": 274,
+      "textRight": 64,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 2808,
+      "height": 860,
+      "words": 267,
+      "media": 0,
+      "middle": 94,
+      "heading": {
+       "text": "Chủ đề",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 274,
+      "right": 64,
+      "textLeft": 274,
+      "textRight": 64,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 3684,
+      "height": 368,
+      "words": 47,
+      "media": 0,
+      "middle": 526,
+      "heading": {
+       "text": "Giờ đăng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 274,
+      "right": 64,
+      "textLeft": 274,
+      "textRight": 64,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 4067,
+      "height": 257,
+      "words": 122,
+      "media": 0,
+      "middle": 137,
+      "heading": {
+       "text": "Sản phẩm ra hoa hồng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 274,
+      "right": 64,
+      "textLeft": 274,
+      "textRight": 64,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Phân tích & chiến lược",
+      "size": 22,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 278,
+      "n": 10
+     },
+     {
+      "x": 850,
+      "n": 4
+     },
+     {
+      "x": 964,
+      "n": 2
+     },
+     {
+      "x": 261,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 17,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.06,
+    "voidBox": {
+     "x": 0,
+     "y": 600,
+     "w": 300,
+     "h": 240
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": {
+     "w": 228,
+     "tag": "aside",
+     "links": 13,
+     "share": 0.16
+    },
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 46,
+     "right": -26
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 1.5,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.45,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 23,
+     "radii": [
+      [
+       8,
+       16
+      ],
+      [
+       0,
+       6
+      ],
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 658,
+     "leftAligned": 48,
+     "figures": 387,
+     "tabularShare": 0.98,
+     "kpiMax": 24
+    },
+    "rows": {
+     "count": 226,
+     "median": 57
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.77,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      22,
+      24
+     ]
+    },
+    "title": {
+     "text": "Phân tích & chiến lược",
+     "size": 22,
+     "top": 73
+    },
+    "colourShare": 0.005
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    0.95,
+    0.97,
+    0.9,
+    0.96,
+    0.99,
+    0.97
+   ],
+   "motion": {
+    "elements": 4,
+    "css": 0,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 5694,
+     "screens": 5.6,
+     "words": 6305,
+     "img": 124,
+     "video": 0,
+     "canvas": 0,
+     "svg": 209,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 1,
+     "brokenImages": [
+      "http://localhost:5173/media/post_DdAxexbktTS/videos/video.mp4"
+     ],
+     "emoji": [
+      "🥹",
+      "💯",
+      "✨",
+      "😭",
+      "🫶",
+      "😵",
+      "💫",
+      "😍",
+      "🤤",
+      "🙏"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 2.9,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.45,
+     "top": 72,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "lines": 1,
+     "size": 22,
+     "font": "Inter Variable"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      16,
+      22,
+      24
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.63,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6.4
+     },
+     "measureChars": 68,
+     "max": {
+      "size": 24,
+      "vw": 3.1,
+      "font": "Inter Variable",
+      "text": "220"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 153
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f9fbfc",
+       "top": 0,
+       "hsl": {
+        "h": 200,
+        "s": 0.33,
+        "l": 0.98
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 48,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#131416",
+       "share": 0.74
+      },
+      {
+       "color": "#5d5f60",
+       "share": 0.25
+      },
+      {
+       "color": "#c4242a",
+       "share": 0
+      },
+      {
+       "color": "#1e7b4f",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 6,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "14 ngày"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 23,
+     "hairlineSamples": [
+      "div.flex.flex-wrap 708px",
+      "li.flex.gap-3 708px",
+      "li.flex.gap-3 708px",
+      "li.flex.gap-3 708px",
+      "li.flex.gap-3 708px"
+     ],
+     "outlinedBoxes": 16,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 16,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 270
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 0,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 5694,
+    "margins": {
+     "left": 37,
+     "right": 35
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 269,
+      "height": 215,
+      "words": 36,
+      "media": 0,
+      "middle": 142,
+      "heading": {
+       "text": "220",
+       "size": 24,
+       "tag": "div"
+      },
+      "left": 45,
+      "right": 141,
+      "textLeft": 45,
+      "textRight": 141,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 500,
+      "height": 1124,
+      "words": 307,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Nhận định & đề xuất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 41,
+      "right": 51,
+      "textLeft": 41,
+      "textRight": 51,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 1640,
+      "height": 679,
+      "words": 262,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Bài nên đăng tiếp",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 43,
+      "textLeft": 37,
+      "textRight": 43,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 2335,
+      "height": 523,
+      "words": 244,
+      "media": 0,
+      "middle": 26,
+      "heading": {
+       "text": "Bài nhiều click nhất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 47,
+      "textLeft": 37,
+      "textRight": 47,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 2874,
+      "height": 555,
+      "words": 98,
+      "media": 0,
+      "middle": 31,
+      "heading": {
+       "text": "Nick nào mang về click",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 35,
+      "textLeft": 37,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 3493,
+      "height": 1505,
+      "words": 267,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Chủ đề",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 47,
+      "textLeft": 37,
+      "textRight": 47,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 5014,
+      "height": 368,
+      "words": 47,
+      "media": 0,
+      "middle": 282,
+      "heading": {
+       "text": "Giờ đăng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 47,
+      "textLeft": 37,
+      "textRight": 47,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 5397,
+      "height": 273,
+      "words": 122,
+      "media": 0,
+      "middle": 8,
+      "heading": {
+       "text": "Sản phẩm ra hoa hồng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 37,
+      "right": 35,
+      "textLeft": 37,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Phân tích & chiến lược",
+      "size": 22,
+      "top": 72,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 41,
+      "n": 16
+     },
+     {
+      "x": 24,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 17,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 37,
+     "right": -13
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 2.9,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.45,
+     "top": 72,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 16,
+     "firstScreen": 2,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 22,
+     "radii": [
+      [
+       8,
+       16
+      ],
+      [
+       0,
+       6
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 658,
+     "leftAligned": 48,
+     "figures": 387,
+     "tabularShare": 0.98,
+     "kpiMax": 24
+    },
+    "rows": {
+     "count": 226,
+     "median": 57
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.77,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      22,
+      24
+     ]
+    },
+    "title": {
+     "text": "Phân tích & chiến lược",
+     "size": 22,
+     "top": 72
+    },
+    "colourShare": 0.002
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 9,
+   "filled": [
+    0.97,
+    0.97,
+    0.97,
+    0.89,
+    0.98,
+    1,
+    1,
+    1,
+    0.98
+   ],
+   "motion": {
+    "elements": 4,
+    "css": 0,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 6856,
+     "screens": 8.1,
+     "words": 6302,
+     "img": 124,
+     "video": 0,
+     "canvas": 0,
+     "svg": 209,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 4,
+     "brokenImages": [
+      "http://localhost:5173/media/post_DdAxexbktTS/videos/video.mp4"
+     ],
+     "emoji": [
+      "🥹",
+      "💯",
+      "✨",
+      "😭",
+      "🫶",
+      "😵",
+      "💫",
+      "😍",
+      "🤤",
+      "🙏"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.6,
+     "top": 64,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "lines": 1,
+     "size": 20,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "220",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 405,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "61",
+      "words": 1,
+      "chars": 2,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 405,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "0,28",
+      "words": 1,
+      "chars": 4,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 504,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "10%",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 504,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "5",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 603,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "36.522đ",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 603,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 6,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      16,
+      20,
+      24
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.63,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6.4
+     },
+     "measureChars": 60,
+     "max": {
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "text": "220"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.02,
+     "smallText": 153
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f9fbfc",
+       "top": 0,
+       "hsl": {
+        "h": 200,
+        "s": 0.33,
+        "l": 0.98
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 48,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      },
+      {
+       "color": "#e8eaec",
+       "top": 368,
+       "hsl": {
+        "h": 210,
+        "s": 0.1,
+        "l": 0.92
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#131416",
+       "share": 0.74
+      },
+      {
+       "color": "#5d5f60",
+       "share": 0.25
+      },
+      {
+       "color": "#c4242a",
+       "share": 0
+      },
+      {
+       "color": "#1e7b4f",
+       "share": 0
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 6,
+     "height": 36,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "14 ngày"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 23,
+     "hairlineSamples": [
+      "div.flex.flex-wrap 356px",
+      "li.flex.gap-3 356px",
+      "li.flex.gap-3 356px",
+      "li.flex.gap-3 356px",
+      "li.flex.gap-3 356px"
+     ],
+     "outlinedBoxes": 16,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 16,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 5,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 369
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 0,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 6856,
+    "margins": {
+     "left": 16,
+     "right": 17
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 368,
+      "height": 298,
+      "words": 36,
+      "media": 0,
+      "middle": 71,
+      "heading": {
+       "text": "220",
+       "size": 24,
+       "tag": "div"
+      },
+      "left": 33,
+      "right": 45,
+      "textLeft": 33,
+      "textRight": 45,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 682,
+      "height": 981,
+      "words": 257,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Nhận định & đề xuất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 31,
+      "textLeft": 29,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.space-y-4.lg:col-span-2",
+      "tag": "div",
+      "top": 1678,
+      "height": 468,
+      "words": 49,
+      "media": 0,
+      "middle": 13,
+      "heading": {
+       "text": "Click / lượt đăng theo ngày",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-1",
+      "tag": "div",
+      "top": 2162,
+      "height": 717,
+      "words": 245,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Bài nên đăng tiếp",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 17,
+      "textLeft": 29,
+      "textRight": 17,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 2895,
+      "height": 523,
+      "words": 223,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Bài nhiều click nhất",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 22,
+      "textLeft": 29,
+      "textRight": 22,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 3434,
+      "height": 573,
+      "words": 48,
+      "media": 0,
+      "middle": 28,
+      "heading": {
+       "text": "Nick nào mang về click",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 36,
+      "textLeft": 29,
+      "textRight": 36,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 4105,
+      "height": 501,
+      "words": 52,
+      "media": 0,
+      "middle": 78,
+      "heading": {
+       "text": "Chủ đề",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 4622,
+      "height": 324,
+      "words": 55,
+      "media": 0,
+      "middle": 64,
+      "heading": {
+       "text": "Lần đăng thứ mấy của bài",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 4961,
+      "height": 390,
+      "words": 48,
+      "media": 0,
+      "middle": 20,
+      "heading": {
+       "text": "Số tim của bài gốc",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 5367,
+      "height": 267,
+      "words": 32,
+      "media": 0,
+      "middle": 80,
+      "heading": {
+       "text": "Độ dài caption đã đăng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 5650,
+      "height": 228,
+      "words": 27,
+      "media": 0,
+      "middle": 81,
+      "heading": {
+       "text": "Loại media",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 5893,
+      "height": 275,
+      "words": 53,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Bản caption",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 6184,
+      "height": 368,
+      "words": 47,
+      "media": 0,
+      "middle": 77,
+      "heading": {
+       "text": "Giờ đăng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 29,
+      "textLeft": 29,
+      "textRight": 29,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-lg.border",
+      "tag": "div",
+      "top": 6567,
+      "height": 273,
+      "words": 102,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Sản phẩm ra hoa hồng",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 29,
+      "right": 17,
+      "textLeft": 29,
+      "textRight": 17,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Phân tích & chiến lược",
+      "size": 20,
+      "top": 64,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 29,
+      "n": 15
+     },
+     {
+      "x": 16,
+      "n": 1
+     },
+     {
+      "x": 40,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 17,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 29,
+     "right": -383
+    },
+    "hero": {
+     "text": "Phân tích & chiến lược",
+     "words": 5,
+     "chars": 22,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 1.6,
+     "top": 64,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 16,
+     "firstScreen": 2,
+     "ragged": [],
+     "voids": [
+      {
+       "gap": 48,
+       "at": 1720,
+       "panel": "Click / lượt đăng theo ngày"
+      }
+     ]
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 22,
+     "radii": [
+      [
+       8,
+       16
+      ],
+      [
+       0,
+       6
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 658,
+     "leftAligned": 48,
+     "figures": 386,
+     "tabularShare": 0.98,
+     "kpiMax": 24
+    },
+    "rows": {
+     "count": 226,
+     "median": 69
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.77,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      20,
+      24
+     ]
+    },
+    "title": {
+     "text": "Phân tích & chiến lược",
+     "size": 20,
+     "top": 64
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "emoji",
+   "width": 1440,
+   "message": "Emoji in the page: 🥹 💯 ✨ 😭 🫶 😵 💫 😍 🤤 🙏",
+   "fix": "Remove. Use words or real imagery.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "broken-image",
+   "width": 1440,
+   "message": "Broken image(s): http://localhost:5173/media/post_DdAxexbktTS/videos/video.mp4",
+   "fix": "Fix the URL or replace the asset.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "dev-server",
+   "width": 1440,
+   "message": "This page is served by a development server (Vite, webpack or Next in dev mode).",
+   "fix": "Run the last gate on the production build too (vite build && vite preview, next build && next start, or the built index.html): minifiers and bundlers change the CSS a visitor receives.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "tiny-text",
+   "width": 1440,
+   "message": "77% of the text is under 13px.",
+   "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\duyetbai\\.taste-skill\\after\\insights\\desktop-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\after\\insights\\desktop-page-01.jpg",
+    "D:\\duyetbai\\.taste-skill\\after\\insights\\desktop-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\duyetbai\\.taste-skill\\after\\insights\\tablet-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\after\\insights\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\duyetbai\\.taste-skill\\after\\insights\\mobile-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\after\\insights\\mobile-page-01.jpg",
+    "D:\\duyetbai\\.taste-skill\\after\\insights\\mobile-page-02.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

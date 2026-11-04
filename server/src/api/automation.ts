@@ -52,7 +52,16 @@ const dateTimeStr = z
 const ResultSchema = z.object({
   accountName: z.string().trim().min(1).max(120),
   postId: z.string().trim().regex(/^[A-Za-z0-9_-]{1,80}$/),
-  postDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
+  // Tuy chon: file xuat tu trang Bai viet khong co cot "Ngay dang" -> tool gui rong/khong gui.
+  // Nhan them DD/MM/YYYY (dinh dang ngay hay gap khi doc tu Excel).
+  postDate: z.preprocess(
+    (v) => {
+      if (typeof v !== 'string' || !v.trim()) return undefined;
+      const m = v.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : v.trim();
+    },
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  ),
   status: z.enum(['posted', 'commented']),
   postedUrl: z
     .string()
@@ -146,7 +155,11 @@ function parseBody<T extends z.ZodTypeAny>(req: Request, res: Response, schema: 
 router.post('/post-results', requireApiKey, (req, res) => {
   const data = parseBody(req, res, BodySchema);
   if (!data) return;
-  res.json({ results: recordPostRuns(data.results) });
+  const items = data.results.map((r) => ({
+    ...r,
+    postDate: r.postDate ?? (r.postedAt ? r.postedAt.slice(0, 10) : localNow().slice(0, 10)),
+  }));
+  res.json({ results: recordPostRuns(items) });
 });
 
 const pad = (n: number) => String(n).padStart(2, '0');

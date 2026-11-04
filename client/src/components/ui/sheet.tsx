@@ -16,14 +16,14 @@ export function Sheet({ open, onClose, children, className }: SheetProps) {
   return (
     <div className="fixed inset-0 z-50">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/40 animate-in fade-in duration-200"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         className={cn(
-          'absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto overscroll-contain border-l bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:p-6',
+          'absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto overscroll-contain border-l bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:p-6',
           'animate-in slide-in-from-right duration-300',
           className,
         )}

@@ -65,7 +65,7 @@ export function ProxyEditDialog({ proxy, onClose, onSaved }: Props) {
             className="font-mono text-xs"
           />
           {renaming && (proxy?.account_count ?? 0) > 0 && (
-            <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-[11px] text-warning">
               {proxy?.account_count} account đang dùng proxy này sẽ được chuyển sang chuỗi mới.
             </p>
           )}
@@ -74,7 +74,7 @@ export function ProxyEditDialog({ proxy, onClose, onSaved }: Props) {
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Loại proxy</label>
           <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
             value={type}
             onChange={(e) => setType(e.target.value as ProxyType | '')}
           >

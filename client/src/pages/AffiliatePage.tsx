@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -18,11 +18,11 @@ import {
   fetchAffAccounts,
   fetchAffPostDetail,
   fetchAffCoverage,
-  ACCOUNT_TOPICS,
   type AffFilterParams,
   type AffPostRow,
   type AffAccountRow,
 } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -103,25 +103,42 @@ function ImportHelp() {
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <Card className="min-w-0 p-3 sm:p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-xl font-semibold tabular-nums sm:mt-1.5 sm:text-2xl">{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>}
-    </Card>
+    <div className="min-w-0 bg-card px-4 py-3 sm:px-5 sm:py-4">
+      <div className="truncate text-sm text-muted-foreground">{label}</div>
+      {value === '—' ? (
+        // Thieu gia tri: gach xam co nhan, khong dat o co so (de doc nham la dang tai)
+        <div className="mt-1 text-sm leading-8 text-muted-foreground">—</div>
+      ) : (
+        <div className="mt-1 truncate text-2xl font-normal tabular-nums">{value}</div>
+      )}
+      {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+    </div>
   )
 }
 
+/** Con so tra loi cau hoi cua man hinh: lon nhat trang, chu muc, khong nen mau. */
 function HeroKpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <Card className="relative col-span-full overflow-hidden border-primary/30 bg-gradient-to-br from-primary to-primary/70 p-4 text-primary-foreground shadow-md sm:p-5">
-      <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
-      <div className="relative">
-        <div className="text-sm font-medium text-primary-foreground/80">{label}</div>
-        <div className="mt-1 truncate text-3xl font-bold tabular-nums tracking-tight sm:text-4xl">{value}</div>
-        {sub && <div className="mt-1 text-xs text-primary-foreground/75">{sub}</div>}
-      </div>
-    </Card>
+    <div className="min-w-0">
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate text-[32px] font-semibold leading-10 tabular-nums">{value}</div>
+      {sub && <div className="text-sm text-muted-foreground">{sub}</div>}
+    </div>
   )
+}
+
+/** Be rong that cua phan tu (de SVG ve theo px that, chu truc khong bi co nho tren man hep). */
+function useElementWidth<T extends HTMLElement>(fallback: number) {
+  const ref = useRef<T>(null)
+  const [width, setWidth] = useState(fallback)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(200, Math.round(entry.contentRect.width))))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return [ref, width] as const
 }
 
 /** So gon de in tren dau cot: 1.234 -> 1,2k; 1.234.567 -> 1,2tr. */
@@ -137,32 +154,36 @@ function DailyBars({
   title,
   data,
   unit,
+  total: totalProp,
 }: {
   title: string
   data: { date: string; value: number }[]
   unit: string
+  /** Tong lam tron 1 lan tu so goc (vd tien) - tranh lech voi KPI khi cong cac cot da lam tron. */
+  total?: number
 }) {
   const [hover, setHover] = useState<number | null>(null)
-  const W = 560
+  const [boxRef, W] = useElementWidth<HTMLDivElement>(560)
   const H = 160
   const top = 18
   const bottom = 20
   const max = Math.max(1, ...data.map((d) => d.value))
-  const total = data.reduce((s, d) => s + d.value, 0)
+  const total = totalProp ?? data.reduce((s, d) => s + d.value, 0)
   const slot = data.length > 0 ? W / data.length : W
   const barW = Math.max(2, Math.min(28, slot - 2))
-  const labelEvery = Math.ceil(data.length / 10)
-  const valueFont = data.length > 20 ? 9 : 11
+  const labelEvery = Math.ceil(data.length / Math.max(3, Math.floor(W / 64)))
+  const showValues = slot >= 22
   const plotH = H - top - bottom
   return (
-    <Card className="relative p-3 sm:p-4">
+    <Card className="relative p-4">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-medium">{title}</h3>
         <span className="text-xs text-muted-foreground">
           Tổng <b className="font-semibold text-foreground tabular-nums">{total.toLocaleString('vi-VN')}</b> {unit}
         </span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-40 w-full" role="img" aria-label={title}>
+      <div ref={boxRef} className="min-w-0 overflow-hidden">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={title}>
         <line
           x1={0}
           x2={W}
@@ -187,16 +208,16 @@ function DailyBars({
               {h > 0 && (
                 <path
                   d={`M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + barW - r} Q${x + barW},${y} ${x + barW},${y + r} V${y + h} Z`}
-                  className={cn('fill-primary', hover !== null && hover !== i && 'opacity-40')}
+                  className={cn('fill-chart-1', hover !== null && hover !== i && 'opacity-40')}
                 />
               )}
-              {d.value > 0 && (
+              {d.value > 0 && showValues && (
                 <text
                   x={i * slot + slot / 2}
                   y={y - 4}
                   textAnchor="middle"
-                  fontSize={valueFont}
-                  className="hidden fill-foreground font-medium tabular-nums sm:block"
+                  fontSize={11}
+                  className="fill-foreground tabular-nums"
                 >
                   {compact(d.value)}
                 </text>
@@ -206,7 +227,8 @@ function DailyBars({
                   x={i * slot + slot / 2}
                   y={H - 6}
                   textAnchor="middle"
-                  className="fill-muted-foreground text-[10px]"
+                  fontSize={11}
+                  className="fill-muted-foreground"
                 >
                   {shortDate(d.date)}
                 </text>
@@ -215,9 +237,10 @@ function DailyBars({
           )
         })}
       </svg>
+      </div>
       {hover !== null && data[hover] && (
         <div
-          className="pointer-events-none absolute top-10 rounded-md border bg-popover px-2 py-1 text-xs shadow-md"
+          className="pointer-events-none absolute top-10 rounded-md border bg-popover px-2 py-1 text-xs"
           style={{ left: `calc(${((hover + 0.5) / data.length) * 100}% )`, transform: 'translateX(-50%)' }}
         >
           <div className="text-muted-foreground">{shortDate(data[hover].date)}</div>
@@ -264,7 +287,7 @@ function PostDetailSheet({
                   href={post.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="mt-1 inline-flex items-center gap-1 text-xs text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground"
                 >
                   <ExternalLink className="h-3 w-3" /> Mở bài gốc
                 </a>
@@ -272,23 +295,11 @@ function PostDetailSheet({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-            <div className="rounded-lg border p-2">
-              <div className="text-muted-foreground">Click</div>
-              <div className="text-lg font-semibold tabular-nums">{post.clicks}</div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-muted-foreground">Đơn</div>
-              <div className="text-lg font-semibold tabular-nums">{post.orders}</div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-muted-foreground">Chờ duyệt</div>
-              <div className="text-sm font-semibold tabular-nums">{money(post.pending_milli)}</div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-muted-foreground">Hoàn thành</div>
-              <div className="text-sm font-semibold tabular-nums">{money(post.completed_milli)}</div>
-            </div>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
+            <Kpi label="Click" value={post.clicks.toLocaleString('vi-VN')} />
+            <Kpi label="Đơn" value={post.orders.toLocaleString('vi-VN')} />
+            <Kpi label="Chờ duyệt" value={money(post.pending_milli)} />
+            <Kpi label="Hoàn thành" value={money(post.completed_milli)} />
           </div>
 
           {post.accounts.length > 0 && (
@@ -308,20 +319,20 @@ function PostDetailSheet({
 
           {data && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+              <h3 className="mb-2 text-sm font-medium">
                 Sản phẩm đã bán ({data.orders.length} dòng)
               </h3>
               {data.orders.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Chưa có đơn nào trong khoảng ngày này.</p>
               ) : (
                 <div className="table-scroll max-h-[50dvh] overflow-y-auto rounded-lg border sm:max-h-96">
-                  <table className="w-full min-w-[30rem] text-xs">
-                    <thead className="sticky top-0 bg-muted text-muted-foreground">
+                  <table className="w-full min-w-[30rem] text-[13px]">
+                    <thead className="sticky top-0 bg-card text-muted-foreground">
                       <tr>
-                        <th className="p-2 text-left font-medium">Sản phẩm</th>
-                        <th className="p-2 text-left font-medium">Trạng thái</th>
-                        <th className="p-2 text-left font-medium">Click → Đặt</th>
-                        <th className="p-2 text-right font-medium">Hoa hồng</th>
+                        <th className="p-2 text-left">Sản phẩm</th>
+                        <th className="p-2 text-left">Trạng thái</th>
+                        <th className="p-2 text-left">Click → Đặt</th>
+                        <th className="p-2 text-right">Hoa hồng</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -329,14 +340,14 @@ function PostDetailSheet({
                         <tr key={`${o.order_id}-${i}`} className="border-b last:border-0">
                           <td className="max-w-[16rem] p-2">
                             <div className="line-clamp-2">{o.item_name}</div>
-                            <div className="text-[10px] text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {o.order_id} · SL {o.quantity}
                             </div>
                           </td>
                           <td className="whitespace-nowrap p-2">
                             <OrderStatus status={o.order_status} />
                           </td>
-                          <td className="whitespace-nowrap p-2 text-muted-foreground">
+                          <td className="whitespace-nowrap p-2 tabular-nums text-muted-foreground">
                             {o.clicked_at?.slice(5, 16)} → {o.ordered_at?.slice(5, 16)}
                           </td>
                           <td className="p-2 text-right tabular-nums">{money(o.net_commission_milli)}</td>
@@ -383,40 +394,40 @@ function PostCard({ r, onSelect }: { r: AffPostRow; onSelect: () => void }) {
         <PostThumb thumb={r.thumb} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
-          <div className="truncate font-mono text-[10px] text-muted-foreground">
+          <div className="truncate font-mono text-[11px] text-muted-foreground">
             {r.post_id} {r.username && `· @${r.username}`}
           </div>
         </div>
         {r.topic && (
-          <span className="max-w-[7rem] shrink-0 truncate rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+          <span className="max-w-[7rem] shrink-0 truncate whitespace-nowrap text-xs text-muted-foreground">
             {r.topic}
           </span>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-2 text-xs tabular-nums">
+      <div className="grid grid-cols-4 gap-2 text-sm tabular-nums">
         <div>
-          <div className="text-[10px] text-muted-foreground">Click</div>
+          <div className="text-xs text-muted-foreground">Click</div>
           <div className="font-semibold">{r.clicks}</div>
         </div>
         <div>
-          <div className="text-[10px] text-muted-foreground">Đơn</div>
+          <div className="text-xs text-muted-foreground">Đơn</div>
           <div className="font-semibold">
             {r.orders}
             {r.cancelled_orders > 0 && (
-              <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">(+{r.cancelled_orders})</span>
+              <span className="ml-0.5 text-[11px] font-normal text-muted-foreground">(+{r.cancelled_orders})</span>
             )}
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-muted-foreground">CR</div>
+          <div className="text-xs text-muted-foreground">CR</div>
           <div className="font-semibold">{pct(r.orders, r.clicks)}</div>
         </div>
         <div className="min-w-0">
-          <div className="text-[10px] text-muted-foreground">Hoàn thành</div>
+          <div className="text-xs text-muted-foreground">Hoàn thành</div>
           <div className="truncate font-semibold">{money(r.completed_milli)}</div>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="tabular-nums">Chờ duyệt {money(r.pending_milli)}</span>
         <span className="min-w-0 truncate">{referrersText(r)}</span>
       </div>
@@ -425,15 +436,13 @@ function PostCard({ r, onSelect }: { r: AffPostRow; onSelect: () => void }) {
 }
 
 function OrderStatus({ status }: { status: string | null }) {
-  const cls =
-    status === 'Hoàn thành'
-      ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400'
-      : status === 'Đã hủy'
-        ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'
-        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+  // Trang thai dang cho: chu xam; chi hoan thanh / huy moi la pill
+  if (status !== 'Hoàn thành' && status !== 'Đã hủy')
+    return <span className="whitespace-nowrap text-xs text-muted-foreground">{status ?? '—'}</span>
+  const cls = status === 'Hoàn thành' ? 'bg-pill-positive text-pill-positive-ink' : 'bg-pill-negative text-pill-negative-ink'
   return (
-    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium', cls)}>
-      {status ?? '—'}
+    <span className={cn('inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium', cls)}>
+      {status}
     </span>
   )
 }
@@ -449,7 +458,7 @@ function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; lo
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b px-3 py-2.5">
-        <h2 className="text-sm font-semibold">Click theo tài khoản</h2>
+        <h2 className="text-sm font-medium">Click theo tài khoản</h2>
         <span className="text-xs text-muted-foreground">
           Sub_id → bài, đối chiếu nhật ký đăng: click gán cho tài khoản đăng bài đó gần nhất trước lúc click
         </span>
@@ -465,19 +474,19 @@ function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; lo
       ) : (
         <div className="table-scroll max-h-[24rem] overflow-y-auto">
           <table className="w-full min-w-[36rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
               <tr>
-                <th className="p-2.5 text-left font-medium">Tài khoản</th>
-                <th className="p-2.5 text-right font-medium">Click</th>
+                <th className="p-2.5 text-left">Tài khoản</th>
+                <th className="p-2.5 text-right">Click</th>
                 <th
                   className="p-2.5 text-right font-medium"
                   title="Trong ngày click chỉ đúng tài khoản này đăng bài đó. Phần còn lại là click từ bài đăng hôm trước, hoặc ngày đó có nhiều tài khoản cùng đăng"
                 >
                   Khớp trong ngày
                 </th>
-                <th className="p-2.5 text-right font-medium">Bài có click</th>
-                <th className="p-2.5 text-right font-medium">Đơn</th>
-                <th className="p-2.5 text-right font-medium">Hoa hồng</th>
+                <th className="p-2.5 text-right">Bài có click</th>
+                <th className="p-2.5 text-right">Đơn</th>
+                <th className="p-2.5 text-right">Hoa hồng</th>
               </tr>
             </thead>
             <tbody>
@@ -490,7 +499,7 @@ function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; lo
                       </span>
                     )}
                   </td>
-                  <td className="p-2.5 text-right font-semibold tabular-nums">{r.clicks.toLocaleString('vi-VN')}</td>
+                  <td className="p-2.5 text-right font-medium tabular-nums">{r.clicks.toLocaleString('vi-VN')}</td>
                   <td className="p-2.5 text-right tabular-nums text-muted-foreground">
                     {r.account ? r.exact_clicks.toLocaleString('vi-VN') : '—'}
                   </td>
@@ -508,6 +517,7 @@ function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; lo
 }
 
 export function AffiliatePage() {
+  const topicOptions = useTopics()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
@@ -593,7 +603,7 @@ export function AffiliatePage() {
   const totals = summary && (basis === 'order' ? summary.byOrderDate : summary)
 
   const basisToggle = (
-    <div className="flex w-fit gap-0.5 rounded-lg border bg-muted/40 p-0.5 text-xs">
+    <div className="flex w-fit gap-0.5 rounded-lg border p-0.5 text-xs">
       {(
         [
           ['click', 'Theo ngày click'],
@@ -606,7 +616,7 @@ export function AffiliatePage() {
           onClick={() => setBasis(v)}
           className={cn(
             'rounded-md px-2.5 py-1.5 font-medium transition-colors sm:py-1',
-            basis === v ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            basis === v ? 'bg-active text-foreground' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {label}
@@ -616,7 +626,7 @@ export function AffiliatePage() {
   )
 
   return (
-    <div className="mx-auto max-w-8xl space-y-4 sm:space-y-5">
+    <div className="mx-auto max-w-8xl space-y-5">
       <PageHeader
         title="Hiệu quả Affiliate"
         description="Bài nào được click nhiều, click nào ra đơn — từ báo cáo Click + Hoa hồng của Shopee"
@@ -654,7 +664,7 @@ export function AffiliatePage() {
               : 'chưa có'}
           </span>
           {coverageGap && (
-            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            <span className="inline-flex items-center gap-1 text-warning">
               <AlertTriangle className="h-3.5 w-3.5" /> 2 báo cáo lệch khoảng ngày — tỉ lệ chuyển đổi
               có thể chưa chính xác, nên xuất cả 2 cùng khoảng
             </span>
@@ -675,8 +685,9 @@ export function AffiliatePage() {
               <Button
                 key={p.days}
                 size="sm"
-                variant={active ? 'default' : 'ghost'}
+                variant="ghost"
                 aria-pressed={active}
+                className={active ? 'bg-active text-foreground hover:bg-active' : 'text-muted-foreground'}
                 title={'hint' in p ? p.hint : undefined}
                 onClick={() => setPreset(p.days)}
               >
@@ -689,27 +700,26 @@ export function AffiliatePage() {
           label="Chủ đề"
           value={topic}
           onChange={setTopic}
-          options={[{ value: 'all', label: 'Tất cả' }, ...ACCOUNT_TOPICS.map((t) => ({ value: t, label: t }))]}
+          options={[{ value: 'all', label: 'Tất cả' }, ...topicOptions.map((t) => ({ value: t, label: t }))]}
         />
         {basisToggle}
         {!validRange && <span className="w-full text-xs text-destructive sm:w-auto">Ngày bắt đầu phải trước ngày kết thúc</span>}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <div className="space-y-4">
         {loadingSummary || !summary || !totals ? (
           <>
-            <Skeleton className="col-span-full h-28 rounded-xl" />
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
+            <Skeleton className="h-[66px] w-64" />
+            <Skeleton className="h-[86px] rounded-lg" />
           </>
         ) : (
           <>
             <HeroKpi
               label={`Tổng hoa hồng · theo ngày ${basisLabel}`}
               value={money(totals.pendingMilli + totals.completedMilli)}
-              sub={`Chờ duyệt ${money(totals.pendingMilli)} · Hoàn thành ${money(totals.completedMilli)} · không tính đơn đã hủy`}
+              sub="Chờ duyệt + hoàn thành, không tính đơn đã hủy"
             />
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border xl:grid-cols-5 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1">
             <Kpi label="Click" value={summary.clicks.toLocaleString('vi-VN')} />
             <Kpi
               label={`Đơn hàng · ngày ${basisLabel}`}
@@ -723,12 +733,13 @@ export function AffiliatePage() {
             />
             <Kpi label="Hoa hồng chờ duyệt" value={money(totals.pendingMilli)} />
             <Kpi label="Hoa hồng hoàn thành" value={money(totals.completedMilli)} />
+            </div>
           </>
         )}
       </div>
 
       {summary && (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <DailyBars
             title="Click theo ngày"
             unit="click"
@@ -749,6 +760,10 @@ export function AffiliatePage() {
               date: d.date,
               value: Math.round(d.commission_milli / 1000),
             }))}
+            total={Math.round(
+              (basis === 'click' ? summary.daily : summary.dailyByOrderDate).reduce((s, d) => s + d.commission_milli, 0) /
+                1000,
+            )}
           />
         </div>
       )}
@@ -774,7 +789,7 @@ export function AffiliatePage() {
                 onClick={() => setView(v.value)}
                 className={cn(
                   'shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors sm:py-1.5',
-                  view === v.value ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+                  view === v.value ? 'bg-active text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 )}
               >
                 {v.label}
@@ -821,18 +836,18 @@ export function AffiliatePage() {
           )}
         >
           <table className="w-full min-w-[56rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
               <tr>
-                <th className="p-2.5 text-left font-medium">Bài</th>
-                <th className="p-2.5 text-left font-medium">Chủ đề</th>
-                <th className="p-2.5 text-right font-medium">Click</th>
-                <th className="p-2.5 text-right font-medium">Đơn</th>
-                <th className="p-2.5 text-right font-medium" title="Số đơn / số click trong khoảng ngày">
+                <th className="p-2.5 text-left">Bài</th>
+                <th className="p-2.5 text-left">Chủ đề</th>
+                <th className="p-2.5 text-right">Click</th>
+                <th className="p-2.5 text-right">Đơn</th>
+                <th className="p-2.5 text-right" title="Số đơn / số click trong khoảng ngày">
                   CR
                 </th>
-                <th className="p-2.5 text-right font-medium">Chờ duyệt</th>
-                <th className="p-2.5 text-right font-medium">Hoàn thành</th>
-                <th className="p-2.5 text-left font-medium">Nguồn click</th>
+                <th className="p-2.5 text-right">Chờ duyệt</th>
+                <th className="p-2.5 text-right">Hoàn thành</th>
+                <th className="p-2.5 text-left">Nguồn click</th>
               </tr>
             </thead>
             <tbody>
@@ -840,14 +855,14 @@ export function AffiliatePage() {
                   <tr
                     key={r.post_id}
                     onClick={() => setSelected(r)}
-                    className="cursor-pointer border-b last:border-0 hover:bg-muted/30"
+                    className="cursor-pointer border-b border-rule last:border-0 hover:bg-accent"
                   >
                     <td className="max-w-[22rem] p-2.5">
                       <div className="flex items-center gap-2.5">
                         <PostThumb thumb={r.thumb} />
                         <div className="min-w-0">
-                          <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
-                          <div className="truncate font-mono text-[10px] text-muted-foreground">
+                          <div className="truncate text-[13px]">{r.caption || <em>(không có caption)</em>}</div>
+                          <div className="truncate font-mono text-xs text-muted-foreground">
                             {r.post_id} {r.username && `· @${r.username}`}
                           </div>
                         </div>
@@ -858,13 +873,13 @@ export function AffiliatePage() {
                     <td className="p-2.5 text-right tabular-nums">
                       {r.orders}
                       {r.cancelled_orders > 0 && (
-                        <span className="ml-1 text-[10px] text-muted-foreground">(+{r.cancelled_orders} hủy)</span>
+                        <span className="ml-1 text-xs text-muted-foreground">(+{r.cancelled_orders} hủy)</span>
                       )}
                     </td>
                     <td className="p-2.5 text-right tabular-nums">{pct(r.orders, r.clicks)}</td>
                     <td className="whitespace-nowrap p-2.5 text-right tabular-nums">{money(r.pending_milli)}</td>
                     <td className="whitespace-nowrap p-2.5 text-right tabular-nums">{money(r.completed_milli)}</td>
-                    <td className="whitespace-nowrap p-2.5 text-[11px] text-muted-foreground">
+                    <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
                       {referrersText(r)}
                     </td>
                   </tr>
@@ -891,13 +906,13 @@ export function AffiliatePage() {
           </p>
           {showUnmatched && (
             <div className="table-scroll mt-2">
-            <table className="w-full min-w-[22rem] text-xs">
+            <table className="w-full min-w-[22rem] text-[13px]">
               <thead className="text-muted-foreground">
                 <tr>
-                  <th className="p-1.5 text-left font-medium">Sub_id1</th>
-                  <th className="p-1.5 text-right font-medium">Click</th>
-                  <th className="p-1.5 text-right font-medium">Đơn</th>
-                  <th className="p-1.5 text-right font-medium">Hoa hồng</th>
+                  <th className="p-1.5 text-left">Sub_id1</th>
+                  <th className="p-1.5 text-right">Click</th>
+                  <th className="p-1.5 text-right">Đơn</th>
+                  <th className="p-1.5 text-right">Hoa hồng</th>
                 </tr>
               </thead>
               <tbody>

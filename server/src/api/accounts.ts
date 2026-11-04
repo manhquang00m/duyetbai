@@ -12,7 +12,7 @@ import {
 } from '../db/accounts';
 import { importAccountsExcel } from '../services/accountImporter';
 import { exportAccountsXlsx } from '../services/accountExporter';
-import { syncProxiesFromGpm } from '../services/proxySync';
+import { syncProxiesFromGpm, assignProxiesToAccounts } from '../services/proxySync';
 import { PROXY_TYPES, APPEAL_STATUSES } from '../db/accountEnums';
 import { fileStamp } from '../utils/fileStamp';
 import { EXPORT_DIR } from '../config';
@@ -96,6 +96,27 @@ router.get('/export', async (_req, res, next) => {
     const out = path.join(EXPORT_DIR, 'accounts_export.xlsx');
     await exportAccountsXlsx(out);
     res.download(out, `accounts_${fileStamp()}.xlsx`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const AssignProxiesSchema = z.object({
+  items: z
+    .array(z.object({ accountId: z.number().int().positive(), proxy: z.string().trim().min(1).max(500) }))
+    .min(1)
+    .max(200),
+});
+
+// POST /api/accounts/assign-proxies { items: [{ accountId, proxy }] } -> doi proxy tren GPM + DB
+router.post('/assign-proxies', async (req, res, next) => {
+  const parsed = AssignProxiesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Dữ liệu gán proxy không hợp lệ' });
+    return;
+  }
+  try {
+    res.json({ results: await assignProxiesToAccounts(parsed.data.items) });
   } catch (err) {
     next(err);
   }

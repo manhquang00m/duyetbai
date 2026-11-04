@@ -1,0 +1,1804 @@
+{
+ "url": "http://localhost:5173/affiliate",
+ "at": "2026-11-03T17:45:07.295Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    0.98,
+    1,
+    0.97
+   ],
+   "motion": {
+    "elements": 6,
+    "css": 1,
+    "transitions": 5,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 1904,
+     "screens": 2.1,
+     "words": 732,
+     "img": 16,
+     "video": 0,
+     "canvas": 0,
+     "svg": 23,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [
+      "😝",
+      "😭",
+      "🤣",
+      "🫠",
+      "🍎",
+      "🙏",
+      "🥲",
+      "🤡",
+      "✨",
+      "👀"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "103.191đ",
+      "words": 1,
+      "chars": 8,
+      "lines": 1,
+      "size": 36,
+      "vw": 2.5,
+      "font": "Inter Variable",
+      "weight": 700,
+      "tracking": -0.025,
+      "leading": 1.11,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.75,
+      "top": 319,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 0.93,
+       "mono": false
+      },
+      {
+       "family": "ui-monospace",
+       "share": 0.07,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      16,
+      24,
+      36
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.33,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 3.1
+     },
+     "measureChars": 62,
+     "max": {
+      "size": 36,
+      "vw": 2.5,
+      "font": "Inter Variable",
+      "text": "103.191đ"
+     },
+     "monoShare": 0.07,
+     "monoProseShare": 0.07,
+     "monoFamilies": [
+      "ui-monospace"
+     ],
+     "monoSamples": [
+      "Da-hrhPAUL1 · @lyly.24h",
+      "DdVB4tCgSfW · @babyxinh.6868",
+      "Dc8ZMvCEyIt · @phuongchi_babii",
+      "DdXnCOxkw_F · @miu7498",
+      "Ddby1A_k2u0 · @katie.pham.12",
+      "Ddq5oUPk1mZ · @phuong.rubic"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.04,
+     "centerShare": 0.05,
+     "smallText": 36
+    },
+    "eyebrows": [
+     {
+      "text": "Tổng hoa hồng · theo ngày đặt hàng",
+      "above": "103.191đ",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 295
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 1334,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0d0f18",
+       "share": 0.57
+      },
+      {
+       "color": "#60626f",
+       "share": 0.34
+      },
+      {
+       "color": "#fafafa",
+       "share": 0.04
+      },
+      {
+       "color": "#e17100",
+       "share": 0.03
+      },
+      {
+       "color": "#5f626f",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#5a54f7",
+      "hsl": {
+       "h": 242,
+       "s": 0.91,
+       "l": 0.65
+      },
+      "fg": "#fafafa"
+     },
+     "lowContrast": [
+      {
+       "text": "2 báo cáo lệch khoảng ngày — tỉ lệ chuyể",
+       "ratio": 3.1,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#e17100",
+       "bg": "#fdfdff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 2,
+     "radius": 9,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Import CSV",
+      "Chủ đề"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 18,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.rounded-xl.border → linear-gradient(to right bottom, oklch(0.555 0.235 277) 0%, oklab(0.555 0.0286394 -0.233248 / 0.7) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 4,
+     "hairlineSamples": [
+      "aside.sticky.top-0 240px",
+      "header.sticky.top-0 1190px",
+      "div.flex.flex-wrap 1124px",
+      "div.flex.items-center 1124px"
+     ],
+     "outlinedBoxes": 11,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 11,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 555
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": true,
+     "height": 900,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 1904,
+    "margins": {
+     "left": 24,
+     "right": 53
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 274,
+      "height": 261,
+      "words": 57,
+      "media": 0,
+      "middle": 113,
+      "heading": {
+       "text": "103.191đ",
+       "size": 36,
+       "tag": "div"
+      },
+      "left": 289,
+      "right": 119,
+      "textLeft": 289,
+      "textRight": 119,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.gap-3",
+      "tag": "div",
+      "top": 555,
+      "height": 456,
+      "words": 22,
+      "media": 3,
+      "middle": 46,
+      "heading": {
+       "text": "Click theo ngày",
+       "size": 14,
+       "tag": "h3"
+      },
+      "left": 289,
+      "right": 59,
+      "textLeft": 289,
+      "textRight": 59,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1031,
+      "height": 283,
+      "words": 45,
+      "media": 0,
+      "middle": 190,
+      "heading": {
+       "text": "Click theo tài khoản",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 283,
+      "right": 53,
+      "textLeft": 283,
+      "textRight": 53,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1334,
+      "height": 538,
+      "words": 335,
+      "media": 0,
+      "middle": 51,
+      "heading": null,
+      "left": 281,
+      "right": 55,
+      "textLeft": 283,
+      "textRight": 55,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Hiệu quả Affiliate",
+      "size": 24,
+      "top": 88,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 285,
+      "n": 3
+     },
+     {
+      "x": 272,
+      "n": 2
+     },
+     {
+      "x": 858,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 6,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.07,
+    "voidBox": {
+     "x": 660,
+     "y": 300,
+     "w": 780,
+     "h": 120
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": {
+     "w": 240,
+     "tag": "aside",
+     "links": 13,
+     "share": 0.17
+    },
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 32,
+     "right": -14
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 3,
+    "layout": {
+     "panels": 11,
+     "firstScreen": 9,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 11,
+     "radii": [
+      [
+       16,
+       11
+      ]
+     ],
+     "heavyBorders": 1,
+     "borderSamples": [
+      "#5953f8 on #fdfdff (5.15:1)"
+     ],
+     "heavyShadows": 0,
+     "softShadows": 22,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 35,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 1,
+     "kpiMax": 24
+    },
+    "rows": {
+     "count": 13,
+     "median": 57
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.89,
+     "tiny": 78,
+     "tinySamples": [
+      "28/10 10px",
+      "29/10 10px",
+      "30/10 10px",
+      "31/10 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      16,
+      24,
+      36
+     ]
+    },
+    "title": {
+     "text": "Hiệu quả Affiliate",
+     "size": 24,
+     "top": 88
+    },
+    "colourShare": 0.121
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    0.93,
+    1,
+    0.96
+   ],
+   "motion": {
+    "elements": 10,
+    "css": 5,
+    "transitions": 5,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 2436,
+     "screens": 2.4,
+     "words": 732,
+     "img": 16,
+     "video": 0,
+     "canvas": 0,
+     "svg": 23,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 2,
+     "brokenImages": [],
+     "emoji": [
+      "😝",
+      "😭",
+      "🤣",
+      "🫠",
+      "🍎",
+      "🙏",
+      "🥲",
+      "🤡",
+      "✨",
+      "👀"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 76,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "103.191đ",
+      "words": 1,
+      "chars": 8,
+      "lines": 1,
+      "size": 36,
+      "vw": 4.7,
+      "font": "Inter Variable",
+      "weight": 700,
+      "tracking": -0.025,
+      "leading": 1.11,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.57,
+      "top": 441,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 0.93,
+       "mono": false
+      },
+      {
+       "family": "ui-monospace",
+       "share": 0.07,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      16,
+      24,
+      36
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.33,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 3.1
+     },
+     "measureChars": 48,
+     "max": {
+      "size": 36,
+      "vw": 4.7,
+      "font": "Inter Variable",
+      "text": "103.191đ"
+     },
+     "monoShare": 0.07,
+     "monoProseShare": 0.07,
+     "monoFamilies": [
+      "ui-monospace"
+     ],
+     "monoSamples": [
+      "Da-hrhPAUL1 · @lyly.24h",
+      "DdVB4tCgSfW · @babyxinh.6868",
+      "Dc8ZMvCEyIt · @phuongchi_babii",
+      "DdXnCOxkw_F · @miu7498",
+      "Ddby1A_k2u0 · @katie.pham.12",
+      "Ddq5oUPk1mZ · @phuong.rubic"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.04,
+     "centerShare": 0.05,
+     "smallText": 36
+    },
+    "eyebrows": [
+     {
+      "text": "Tổng hoa hồng · theo ngày đặt hàng",
+      "above": "103.191đ",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 417
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0d0f18",
+       "share": 0.57
+      },
+      {
+       "color": "#60626f",
+       "share": 0.34
+      },
+      {
+       "color": "#fafafa",
+       "share": 0.04
+      },
+      {
+       "color": "#e17100",
+       "share": 0.03
+      },
+      {
+       "color": "#5f626f",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#5a54f7",
+      "hsl": {
+       "h": 242,
+       "s": 0.91,
+       "l": 0.65
+      },
+      "fg": "#fafafa"
+     },
+     "lowContrast": [
+      {
+       "text": "2 báo cáo lệch khoảng ngày — tỉ lệ chuyể",
+       "ratio": 3.1,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#e17100",
+       "bg": "#fdfdff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 2,
+     "radius": 9,
+     "height": 32,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Import CSV",
+      "Chủ đề"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 18,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.rounded-xl.border → linear-gradient(to right bottom, oklch(0.555 0.235 277) 0%, oklab(0.555 0.0286394 -0.233248 / 0.7) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 4,
+     "hairlineSamples": [
+      "aside.sticky.top-0 240px",
+      "header.sticky.top-0 518px",
+      "div.flex.flex-wrap 476px",
+      "div.flex.items-center 476px"
+     ],
+     "outlinedBoxes": 11,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 11,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 793
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "svg",
+      "ratio": 0.09
+     }
+    ],
+    "nav": {
+     "links": 2,
+     "fixed": true,
+     "height": 1024,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 2436,
+    "margins": {
+     "left": 24,
+     "right": 34
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 396,
+      "height": 377,
+      "words": 57,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "103.191đ",
+       "size": 36,
+       "tag": "div"
+      },
+      "left": 277,
+      "right": 62,
+      "textLeft": 277,
+      "textRight": 62,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.gap-3",
+      "tag": "div",
+      "top": 793,
+      "height": 690,
+      "words": 22,
+      "media": 3,
+      "middle": 0,
+      "heading": {
+       "text": "Click theo ngày",
+       "size": 14,
+       "tag": "h3"
+      },
+      "left": 277,
+      "right": 47,
+      "textLeft": 277,
+      "textRight": 47,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1503,
+      "height": 335,
+      "words": 38,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Click theo tài khoản",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 271,
+      "right": 31,
+      "textLeft": 271,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1858,
+      "height": 558,
+      "words": 309,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 269,
+      "right": 0,
+      "textLeft": 271,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Hiệu quả Affiliate",
+      "size": 24,
+      "top": 76,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 273,
+      "n": 4
+     },
+     {
+      "x": 260,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 6,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": {
+     "w": 240,
+     "tag": "aside",
+     "links": 13,
+     "share": 0.31
+    },
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 20,
+     "right": -674
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 76,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 3,
+    "layout": {
+     "panels": 11,
+     "firstScreen": 7,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 11,
+     "radii": [
+      [
+       16,
+       11
+      ]
+     ],
+     "heavyBorders": 1,
+     "borderSamples": [
+      "#5953f8 on #fdfdff (5.15:1)"
+     ],
+     "heavyShadows": 0,
+     "softShadows": 22,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 35,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 1,
+     "kpiMax": 24
+    },
+    "rows": {
+     "count": 13,
+     "median": 57
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.89,
+     "tiny": 78,
+     "tinySamples": [
+      "28/10 10px",
+      "29/10 10px",
+      "30/10 10px",
+      "31/10 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      16,
+      24,
+      36
+     ]
+    },
+    "title": {
+     "text": "Hiệu quả Affiliate",
+     "size": 24,
+     "top": 76
+    },
+    "colourShare": 0.083
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    0.9,
+    1,
+    1,
+    1
+   ],
+   "motion": {
+    "elements": 10,
+    "css": 5,
+    "transitions": 5,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 2993,
+     "screens": 3.5,
+     "words": 724,
+     "img": 16,
+     "video": 0,
+     "canvas": 0,
+     "svg": 23,
+     "sections": 1,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 1,
+     "brokenImages": [],
+     "emoji": [
+      "😝",
+      "😭",
+      "🤣",
+      "🫠",
+      "🍎",
+      "🙏",
+      "🥲",
+      "🤡",
+      "✨",
+      "👀"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.4,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "lines": 1,
+     "size": 20,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "103.191đ",
+      "words": 1,
+      "chars": 8,
+      "lines": 1,
+      "size": 30,
+      "vw": 7.7,
+      "font": "Inter Variable",
+      "weight": 700,
+      "tracking": -0.025,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.85,
+      "top": 475,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 0.93,
+       "mono": false
+      },
+      {
+       "family": "ui-monospace",
+       "share": 0.07,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      20,
+      30
+     ],
+     "sizeCount": 6,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 12,
+      "leading": 1.33,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 3.1
+     },
+     "measureChars": 40,
+     "max": {
+      "size": 30,
+      "vw": 7.7,
+      "font": "Inter Variable",
+      "text": "103.191đ"
+     },
+     "monoShare": 0.07,
+     "monoProseShare": 0.07,
+     "monoFamilies": [
+      "ui-monospace"
+     ],
+     "monoSamples": [
+      "Da-hrhPAUL1 · @lyly.24h",
+      "DdVB4tCgSfW · @babyxinh.6868",
+      "Dc8ZMvCEyIt · @phuongchi_babii",
+      "DdXnCOxkw_F · @miu7498",
+      "Ddby1A_k2u0 · @katie.pham.12",
+      "Ddq5oUPk1mZ · @phuong.rubic"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.02,
+     "centerShare": 0.05,
+     "smallText": 43
+    },
+    "eyebrows": [
+     {
+      "text": "Tổng hoa hồng · theo ngày đặt hàng",
+      "above": "103.191đ",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 451
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 1562,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#0d0f18",
+       "share": 0.55
+      },
+      {
+       "color": "#60626f",
+       "share": 0.37
+      },
+      {
+       "color": "#fafafa",
+       "share": 0.04
+      },
+      {
+       "color": "#e17100",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#5a54f7",
+      "hsl": {
+       "h": 242,
+       "s": 0.91,
+       "l": 0.65
+      },
+      "fg": "#fafafa"
+     },
+     "lowContrast": [
+      {
+       "text": "2 báo cáo lệch khoảng ngày — tỉ lệ chuyể",
+       "ratio": 3.1,
+       "need": 4.5,
+       "size": 12,
+       "fg": "#e17100",
+       "bg": "#fdfdff"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": 9,
+     "height": 36,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Import CSV",
+      "Chủ đề",
+      "Theo ngày đặt hàng"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 18,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "input.flex.h-10 → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.rounded-xl.border → linear-gradient(to right bottom, oklch(0.555 0.235 277) 0%, oklab(0.555 0.0286394 -0.233248 / 0.7) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 10,
+     "hairlineSamples": [
+      "header.sticky.top-0 390px",
+      "div.flex.flex-wrap 364px",
+      "div.flex.items-center 364px",
+      "button.block.w-full 364px",
+      "button.block.w-full 364px"
+     ],
+     "outlinedBoxes": 10,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 10,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 572
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 0,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 2993,
+    "margins": {
+     "left": 12,
+     "right": 13
+    },
+    "sections": [
+     {
+      "sel": "div.flex.flex-wrap",
+      "tag": "div",
+      "top": 290,
+      "height": 128,
+      "words": 17,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 12,
+      "right": 12,
+      "textLeft": 24,
+      "textRight": 41,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 434,
+      "height": 430,
+      "words": 57,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "103.191đ",
+       "size": 30,
+       "tag": "div"
+      },
+      "left": 25,
+      "right": 32,
+      "textLeft": 25,
+      "textRight": 32,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid.gap-3",
+      "tag": "div",
+      "top": 880,
+      "height": 666,
+      "words": 22,
+      "media": 3,
+      "middle": 0,
+      "heading": {
+       "text": "Click theo ngày",
+       "size": 14,
+       "tag": "h3"
+      },
+      "left": 25,
+      "right": 25,
+      "textLeft": 25,
+      "textRight": 25,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1562,
+      "height": 335,
+      "words": 34,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Click theo tài khoản",
+       "size": 14,
+       "tag": "h2"
+      },
+      "left": 23,
+      "right": 50,
+      "textLeft": 23,
+      "textRight": 50,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.rounded-xl.border",
+      "tag": "div",
+      "top": 1913,
+      "height": 1065,
+      "words": 374,
+      "media": 0,
+      "middle": 22,
+      "heading": null,
+      "left": 13,
+      "right": 0,
+      "textLeft": 25,
+      "textRight": 25,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Hiệu quả Affiliate",
+      "size": 20,
+      "top": 68,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [
+     {
+      "text": "Hiệu quả Affiliate",
+      "side": "left",
+      "px": 12
+     },
+     {
+      "text": "Bài nào được click nhiều, click nào ra đơn — từ bá",
+      "side": "left",
+      "px": 12
+     },
+     {
+      "text": "Dữ liệu click:",
+      "side": "left",
+      "px": 12
+     },
+     {
+      "text": "Dữ liệu hoa hồng (theo giờ click):",
+      "side": "left",
+      "px": 12
+     }
+    ],
+    "edges": [
+     {
+      "x": 25,
+      "n": 4
+     },
+     {
+      "x": 12,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 6,
+    "bodySize": 12,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": null,
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 12,
+     "right": -810
+    },
+    "hero": {
+     "text": "Hiệu quả Affiliate",
+     "words": 3,
+     "chars": 18,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.4,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 3,
+    "layout": {
+     "panels": 11,
+     "firstScreen": 6,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 11,
+     "radii": [
+      [
+       16,
+       11
+      ]
+     ],
+     "heavyBorders": 1,
+     "borderSamples": [
+      "#5953f8 on #fdfdff (5.15:1)"
+     ],
+     "heavyShadows": 0,
+     "softShadows": 22,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 35,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 1,
+     "kpiMax": 20
+    },
+    "rows": {
+     "count": 5,
+     "median": 41
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.88,
+     "tiny": 78,
+     "tinySamples": [
+      "28/10 10px",
+      "29/10 10px",
+      "30/10 10px",
+      "31/10 10px"
+     ],
+     "sizes": [
+      10,
+      11,
+      12,
+      14,
+      16,
+      20,
+      30
+     ]
+    },
+    "title": {
+     "text": "Hiệu quả Affiliate",
+     "size": 20,
+     "top": 68
+    },
+    "colourShare": 0.156
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "emoji",
+   "width": 1440,
+   "message": "Emoji in the page: 😝 😭 🤣 🫠 🍎 🙏 🥲 🤡 ✨ 👀",
+   "fix": "Remove. Use words or real imagery.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "1 gradient fill(s): div.rounded-xl.border → linear-gradient(to right bottom, oklch(0.555 0.235 277) 0%, oklab(0.555 0.0286394 -0.233248 / 0.7) 100%)",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "contrast",
+   "width": 1440,
+   "message": "Low-contrast text: \"2 báo cáo lệch khoảng ngày — tỉ lệ chuyể\" 3.1:1 needs 4.5:1",
+   "fix": "Darken or lighten the text colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "dev-server",
+   "width": 1440,
+   "message": "This page is served by a development server (Vite, webpack or Next in dev mode).",
+   "fix": "Run the last gate on the production build too (vite build && vite preview, next build && next start, or the built index.html): minifiers and bundlers change the CSS a visitor receives.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "colour-sprawl",
+   "width": 1440,
+   "message": "12% of the first screen is strongly coloured.",
+   "fix": "Keep the screen neutral and spend colour on data and status: the studied screens sit near 3%, and only tinted styles reach 10–15%, as pale tints rather than saturated fills.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "tiny-text",
+   "width": 1440,
+   "message": "78 text blocks under 11px: 28/10 10px, 29/10 10px, 30/10 10px, 31/10 10px.",
+   "fix": "Nothing below 11px; secondary text 12px, data 13–14px.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "edge-text",
+   "width": 390,
+   "message": "4 text block(s) sit 12–15px from the phone's edge: \"Hiệu quả Affiliate\" (12px); \"Bài nào được click nhiều, clic\" (12px); \"Dữ liệu click:\" (12px)",
+   "fix": "The page margin is 16–20px on a phone; the header and the corner labels sit on it too."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\affiliate\\desktop-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\affiliate\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\affiliate\\tablet-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\affiliate\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\affiliate\\mobile-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\affiliate\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

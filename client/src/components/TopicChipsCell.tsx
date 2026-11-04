@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Loader2, Plus } from 'lucide-react'
-import { ACCOUNT_TOPICS } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,7 @@ interface Props {
  * loai chu de (tai khoan dang vs tac gia bai cao) vi UI giong het nhau.
  */
 export function TopicChipsCell({ topics, onToggle, compact }: Props) {
+  const topicOptions = useTopics()
   const popover = usePopover()
   const [pending, setPending] = useState<string | null>(null)
 
@@ -51,26 +52,26 @@ export function TopicChipsCell({ topics, onToggle, compact }: Props) {
             {(compact ? topics.slice(0, compact) : topics).map((t) => (
               <span
                 key={t}
-                className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2 py-0.5 text-[11px] font-medium text-pill-neutral-ink"
               >
                 {t}
               </span>
             ))}
             {compact && topics.length > compact && (
-              <span className="inline-flex rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium">
+              <span className="inline-flex shrink-0 whitespace-nowrap px-1 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
                 +{topics.length - compact}
               </span>
             )}
           </>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
             <Plus className="h-3 w-3" /> Gán chủ đề
           </span>
         )}
       </button>
       <PopoverPanel popover={popover} className="w-56 p-1.5">
         <div className="flex flex-wrap gap-1">
-          {ACCOUNT_TOPICS.map((t) => {
+          {topicOptions.map((t) => {
             const active = topics.includes(t)
             return (
               <button

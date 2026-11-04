@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { ACCOUNT_TOPICS } from '../db/accountTopics';
+import { isTopic } from '../db/topics';
 import { affSummary, affPostStats, affAccountStats, affPostDetail, affCoverage, type AffFilter } from '../db/affiliate';
 import { importAffiliateCsv, AffImportError, type AffImportResult } from '../services/affiliateImport';
 import { EXPORT_DIR } from '../config';
@@ -26,7 +26,7 @@ const FilterSchema = z.object({
     .string()
     .optional()
     .transform((s) => (s ? s.split(',').filter(Boolean) : []))
-    .pipe(z.array(z.enum(ACCOUNT_TOPICS))),
+    .pipe(z.array(z.string().refine(isTopic, 'Chủ đề không hợp lệ'))),
 });
 
 function parseFilter(query: unknown): AffFilter | null {

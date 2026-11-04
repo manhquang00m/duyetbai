@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
-import { fetchAccountTopics, fetchPosts, setAuthorTopic, ACCOUNT_TOPICS } from '@/lib/api'
+import { fetchAccountTopics, fetchPosts, setAuthorTopic } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
@@ -19,13 +20,14 @@ interface Props {
  * de tham khao - chon 1 gia tri o select se GHI DE chu de len TOAN BO bai hien co cua tac gia do.
  */
 export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
+  const topicOptions = useTopics()
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['account-topics'],
     queryFn: fetchAccountTopics,
     enabled: open,
   })
   const [expanded, setExpanded] = useState<string | null>(null) // tac gia dang xem danh sach bai
-  const [topicFilter, setTopicFilter] = useState('all') // 'all' | 'unassigned' | 1 gia tri ACCOUNT_TOPICS
+  const [topicFilter, setTopicFilter] = useState('all') // 'all' | 'unassigned' | 1 ten chu de
 
   useEffect(() => {
     if (open) {
@@ -78,13 +80,13 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
           bài
         </p>
         <select
-          className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:w-auto sm:text-xs"
+          className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:w-auto sm:text-xs"
           value={topicFilter}
           onChange={(e) => setTopicFilter(e.target.value)}
         >
           <option value="all">Tất cả chủ đề</option>
           <option value="unassigned">— Chưa gán —</option>
-          {ACCOUNT_TOPICS.map((t) => (
+          {topicOptions.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -94,12 +96,12 @@ export function AssignTopicDialog({ open, onClose, onSaved }: Props) {
 
       <div className="table-scroll mt-2 max-h-[55dvh] overflow-y-auto rounded-lg border sm:max-h-[65dvh]">
         <table className="w-full min-w-[34rem] text-sm">
-          <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
             <tr>
-              <th className="p-2.5 text-left font-medium">Tác giả</th>
-              <th className="p-2.5 text-right font-medium">Số bài</th>
-              <th className="w-24 p-2.5 text-left font-medium">Xem bài</th>
-              <th className="p-2.5 text-left font-medium">Chủ đề</th>
+              <th className="p-2.5 text-left">Tác giả</th>
+              <th className="p-2.5 text-right">Số bài</th>
+              <th className="w-24 p-2.5 text-left">Xem bài</th>
+              <th className="p-2.5 text-left">Chủ đề</th>
             </tr>
           </thead>
           <tbody>
@@ -170,6 +172,7 @@ function AuthorTopicSelect({
   topics: string[]
   onChange: (topic: string | null) => Promise<void>
 }) {
+  const topicOptions = useTopics()
   const [saving, setSaving] = useState(false)
   const selected = topics.length === 1 ? topics[0] : ''
 
@@ -185,13 +188,13 @@ function AuthorTopicSelect({
   return (
     <div className="flex items-center gap-2">
       <select
-        className="flex h-10 w-40 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 sm:h-9 sm:text-xs"
+        className="flex h-10 w-40 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 sm:h-9 sm:text-xs"
         value={selected}
         disabled={saving}
         onChange={(e) => handleChange(e.target.value)}
       >
         <option value="">— Chưa gán —</option>
-        {ACCOUNT_TOPICS.map((t) => (
+        {topicOptions.map((t) => (
           <option key={t} value={t}>
             {t}
           </option>
@@ -222,7 +225,7 @@ function AuthorRow({
   return (
     <>
       <tr className="border-b last:border-0">
-        <td className="max-w-[12rem] truncate p-2.5 font-mono text-xs">@{username}</td>
+        <td className="max-w-[12rem] truncate p-2.5 font-medium">@{username}</td>
         <td className="p-2.5 text-right tabular-nums text-muted-foreground">{postCount}</td>
         <td className="p-2.5">
           <Button variant="ghost" size="sm" onClick={onToggle}>
@@ -290,7 +293,7 @@ function AuthorPosts({ username }: { username: string }) {
               <img
                 src={`/media/${p.thumb}`}
                 alt=""
-                className="h-12 w-12 shrink-0 rounded object-cover ring-1 ring-border"
+                className="h-12 w-12 shrink-0 rounded-md object-cover"
               />
             ) : (
               <div className="h-12 w-12 shrink-0 rounded bg-muted" />

@@ -296,7 +296,9 @@ export function buildInsights(from: string, to: string): InsightsReport {
       title: 'Độ dài caption đã đăng',
       ordered: true,
       rows: group(R, (r) => {
+        // Uu tien chu da xuat cho tool; ban hien tai co the da bi viet lai sau khi dang.
         const len =
+          r.caption_len ??
           (r.variant ? variantLen.get(`${r.post_id}#${r.variant}`) : undefined) ??
           postInfo.get(r.post_id)?.caption?.length;
         return len == null ? { key: '99', label: 'Không rõ' } : bucketOf(len, LEN_BUCKETS);

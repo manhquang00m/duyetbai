@@ -87,7 +87,7 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full bg-primary transition-all duration-300"
+            className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -114,7 +114,7 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
                 </div>
               </div>
               {logs.length > 0 && (
-                <div className="mt-1.5 space-y-0.5 rounded bg-muted/50 p-1.5 pl-8 font-mono text-[11px] text-muted-foreground">
+                <div className="mt-1.5 space-y-0.5 rounded bg-muted/50 p-1.5 pl-8 font-mono text-xs text-muted-foreground">
                   {logs.map((l, j) => (
                     <div key={j} className="truncate">
                       {l.message}
@@ -140,7 +140,7 @@ function ShopeeCheckProgress({ job, checking }: { job: JobState; checking: boole
                 </div>
               </div>
               {logs.length > 1 && (
-                <div className="mt-1.5 space-y-0.5 rounded bg-muted/50 p-1.5 pl-7 font-mono text-[11px] text-muted-foreground">
+                <div className="mt-1.5 space-y-0.5 rounded bg-muted/50 p-1.5 pl-7 font-mono text-xs text-muted-foreground">
                   {logs.map((l, j) => (
                     <div key={j} className="truncate">
                       {l.message}
@@ -286,13 +286,13 @@ export function ShopeePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
+    <div className="mx-auto max-w-8xl space-y-6">
       <PageHeader
         title="Shopee & Export"
         description="Xuất link gốc cho Shopee → gen link mới → import lại → xuất file đăng bài"
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">1. Xuất link gốc</CardTitle>
@@ -361,7 +361,7 @@ export function ShopeePage() {
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold">Link Shopee</h2>
+            <h2 className="text-base font-medium">Link Shopee</h2>
             <span className="text-sm tabular-nums text-muted-foreground">
               {updated}/{allRows.length} đã có link mới
               {uncheckedCount > 0 && ` · ${uncheckedCount} chưa kiểm tra`}
@@ -439,7 +439,7 @@ export function ShopeePage() {
 
         {checkJob && <ShopeeCheckProgress job={checkJob} checking={checking} />}
 
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl border bg-card">
           {linksLoading ? (
             <div className="space-y-2 p-3">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -454,7 +454,7 @@ export function ShopeePage() {
           ) : (
             <>
               <div className="max-h-[70dvh] overflow-auto md:hidden">
-                <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+                <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-card px-3 py-2 text-xs text-muted-foreground">
                   <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAllRows} />
                   Chọn tất cả
                 </div>
@@ -476,7 +476,7 @@ export function ShopeePage() {
                         </div>
                         <div className="truncate text-xs">
                           <span className="text-muted-foreground">Mới: </span>
-                          <LinkCell href={r.new_link} className="text-green-600 dark:text-green-400" />
+                          <LinkCell href={r.new_link} className="text-foreground" />
                         </div>
                       </div>
                     </li>
@@ -486,21 +486,21 @@ export function ShopeePage() {
 
               <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
                 <table className="w-full min-w-[48rem] text-sm">
-                  <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+                  <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
                     <tr>
-                      <th className="p-3 text-left font-medium">
+                      <th className="p-3 text-left">
                         <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAllRows} />
                       </th>
-                      <th className="p-3 text-left font-medium">Post</th>
-                      <th className="p-3 text-left font-medium">Sản phẩm</th>
-                      <th className="p-3 text-left font-medium">Link gốc</th>
-                      <th className="p-3 text-left font-medium">Link mới</th>
-                      <th className="p-3 text-left font-medium">Tình trạng</th>
+                      <th className="p-3 text-left">Post</th>
+                      <th className="p-3 text-left">Sản phẩm</th>
+                      <th className="p-3 text-left">Link gốc</th>
+                      <th className="p-3 text-left">Link mới</th>
+                      <th className="p-3 text-left">Tình trạng</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((r: ShopeeLinkRow) => (
-                      <tr key={r.id} className={cn('border-b last:border-0', sel.has(r.id) && 'bg-primary/5')}>
+                      <tr key={r.id} className={cn('border-b border-rule last:border-0', sel.has(r.id) && 'bg-active/60')}>
                         <td className="p-3">
                           <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
                         </td>
@@ -512,7 +512,7 @@ export function ShopeePage() {
                           <LinkCell href={r.link} className="text-muted-foreground hover:text-foreground" />
                         </td>
                         <td className="max-w-xs truncate p-3">
-                          <LinkCell href={r.new_link} className="text-green-600 dark:text-green-400" />
+                          <LinkCell href={r.new_link} className="text-foreground" />
                         </td>
                         <td className="p-3">
                           <LinkStatusBadge status={r.link_status} message={r.link_message} />

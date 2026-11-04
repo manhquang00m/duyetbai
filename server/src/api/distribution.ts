@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
 import { z } from 'zod';
-import { ACCOUNT_TOPICS } from '../db/accountTopics';
+import { isTopic, listTopicNames } from '../db/topics';
 import {
   listPostingAccounts,
   bulkSetPostingTopics,
@@ -25,20 +25,21 @@ import { EXPORT_DIR } from '../config';
 const router = Router();
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const TopicSchema = z.string().refine(isTopic, 'Chủ đề không hợp lệ');
 
 const PlanOptionsSchema = z.object({
   days: z.number().int().min(1).max(60),
   perDay: z.number().int().min(1).max(20),
   startDate: dateStr,
   accountIds: z.array(z.number().int()).optional(),
-  topics: z.array(z.enum(ACCOUNT_TOPICS)).optional(),
+  topics: z.array(TopicSchema).optional(),
   scrapedFrom: dateStr.optional(),
   scrapedTo: dateStr.optional(),
   seed: z.string().trim().min(1).optional(),
   name: z.string().trim().max(120).optional(),
 });
 
-const TopicsSchema = z.array(z.enum(ACCOUNT_TOPICS));
+const TopicsSchema = z.array(TopicSchema);
 
 /** Loi nghiep vu -> 400 kem thong diep tieng Viet; loi khac de middleware xu ly. */
 function handle(res: import('express').Response, fn: () => unknown): void {
@@ -88,7 +89,7 @@ router.post('/accounts/topics/bulk', (req, res) => {
 // GET /api/distribution/pool -> kho bai sach + ly do bai bi loai
 router.get('/pool', (_req, res) => {
   const byTopic: Record<string, number> = Object.fromEntries(
-    ACCOUNT_TOPICS.map((t) => [t, 0]),
+    listTopicNames().map((t) => [t, 0]),
   );
   Object.assign(byTopic, cleanPoolByTopic());
   res.json({

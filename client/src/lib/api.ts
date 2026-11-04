@@ -118,6 +118,8 @@ export interface Account {
   created_at: string
   proxy_status?: string | null // 'live' | 'die' | null (chua kiem tra)
   proxy_checked_at?: string | null
+  shadowban_verdict?: ShadowbanVerdict | null // lan check shadowban moi nhat
+  shadowban_checked_at?: string | null
 }
 
 export interface AccountInput {
@@ -161,6 +163,14 @@ export interface BatchItemResult {
   shopeeStatus?: ShopeeLinkStatus
   shopeeTitle?: string
   shopeeImage?: string
+  shadowban?: {
+    verdict: ShadowbanVerdict
+    recentMedian: number | null
+    baselineMedian: number | null
+    hiddenPosts: number | null
+    searchVisible: boolean | null
+    reasons: string[]
+  }
 }
 
 export interface JobLog {
@@ -387,6 +397,19 @@ export interface ProxySyncResult {
 }
 
 /** Doc proxy hien tai tu GPM Login (Global/Stable, khop theo ten profile) va cap nhat vao accounts. */
+export interface ProxyAssignResult {
+  accountId: number
+  account: string | null
+  ok: boolean
+  error?: string
+}
+
+/** Doi proxy tren GPM Login (profile trung ten) roi luu vao account. */
+export async function assignAccountProxies(items: { accountId: number; proxy: string }[]) {
+  const { data } = await api.post<{ results: ProxyAssignResult[] }>('/api/accounts/assign-proxies', { items })
+  return data.results
+}
+
 export async function syncGpmProxies() {
   const { data } = await api.post<ProxySyncResult>('/api/accounts/sync-gpm-proxies')
   return data
@@ -572,6 +595,24 @@ export async function fetchExportPostsWarnings(filters: PostFilterParams) {
   return data
 }
 
+export async function fetchSelectedExportWarnings(postIds: string[]) {
+  const { data } = await api.post<ExportPostsWarnings>('/api/export/posts/selected/check', { postIds })
+  return data
+}
+
+/** Tai file posts.xlsx chi gom cac bai da chon (POST -> blob -> link tai tam). */
+export async function downloadSelectedPosts(postIds: string[]) {
+  const res = await api.post<Blob>('/api/export/posts/selected', { postIds }, { responseType: 'blob' })
+  const disposition = String(res.headers['content-disposition'] ?? '')
+  const name = disposition.match(/filename="?([^";]+)"?/)?.[1] ?? 'posts.xlsx'
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export interface Stats {
   posts: number
   media: number
@@ -616,6 +657,55 @@ export async function startProxyCheckJob(proxies: string[]) {
   const { data } = await api.post<{ jobId: string; total: number }>('/api/proxies/check-job', {
     proxies,
   })
+  return data
+}
+
+// ===== Check shadowban (khop db/shadowban.ts ben server) =====
+export type ShadowbanVerdict = 'ok' | 'suspect' | 'shadowban' | 'unknown'
+
+export const SHADOWBAN_VERDICT_LABEL: Record<ShadowbanVerdict, string> = {
+  ok: 'Bình thường',
+  suspect: 'Nghi ngờ',
+  shadowban: 'Nghi shadowban',
+  unknown: 'Chưa rõ',
+}
+
+export interface ShadowbanCheck {
+  id: number
+  account_name: string
+  checked_at: string
+  verdict: ShadowbanVerdict
+  recent_median: number | null
+  baseline_median: number | null
+  ratio: number | null
+  profile_visible: number | null
+  search_visible: number | null
+  expected_posts: number | null
+  found_posts: number | null
+  hidden_posts: number | null
+  details: string | null // JSON { reasons, recentViews, errors }
+}
+
+export interface ViewSnapshot {
+  post_code: string
+  post_url: string
+  posted_at: string | null
+  views: number | null
+  likes: number | null
+  replies: number | null
+  checked_at: string
+}
+
+/** Check shadowban nhieu nick dang job nen - theo doi qua batchStreamUrl(jobId). */
+export async function startShadowbanCheckJob(accounts: string[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>('/api/shadowban/check', { accounts })
+  return data
+}
+
+export async function fetchShadowbanHistory(account: string) {
+  const { data } = await api.get<{ checks: ShadowbanCheck[]; views: ViewSnapshot[] }>(
+    `/api/shadowban/history/${encodeURIComponent(account)}`,
+  )
   return data
 }
 
@@ -671,20 +761,42 @@ export async function setMediaSourceDefault(value: MediaSourceName) {
   return data.default
 }
 
-// ===== Chu de gan theo tac gia (username trich xuat tu URL bai) =====
-export const ACCOUNT_TOPICS = [
-  'Công nghệ',
-  'Sản phẩm',
-  'Makeup',
-  'Chó mèo',
-  'Hút view',
-  'Khác',
-  'Gây war',
-  'Nhiều click',
-  'Nhiều tim',
-] as const
+// ===== Danh muc chu de (bang topics, sua tren trang "Chu de") =====
+// Dung chung cho chu de TUNG BAI (posts.topic) va chu de ACCOUNT DANG - trong component dung
+// hook useTopics() (lib/useTopics.ts) thay vi goi thang.
+export interface Topic {
+  name: string
+  sort_order: number
+  post_count: number
+  account_count: number
+}
 
-export type AccountTopic = (typeof ACCOUNT_TOPICS)[number]
+export async function fetchTopics() {
+  const { data } = await api.get<Topic[]>('/api/topics')
+  return data
+}
+
+export async function createTopic(name: string) {
+  const { data } = await api.post<Topic[]>('/api/topics', { name })
+  return data
+}
+
+export async function renameTopic(oldName: string, name: string) {
+  const { data } = await api.put<Topic[]>(`/api/topics/${encodeURIComponent(oldName)}`, { name })
+  return data
+}
+
+export async function deleteTopic(name: string) {
+  const { data } = await api.delete<Topic[]>(`/api/topics/${encodeURIComponent(name)}`)
+  return data
+}
+
+export async function reorderTopics(names: string[]) {
+  const { data } = await api.put<Topic[]>('/api/topics/order', { names })
+  return data
+}
+
+// ===== Chu de gan theo tac gia (username trich xuat tu URL bai) =====
 
 /**
  * Gia tri dac biet dung trong PostFilterParams.topics de loc bai CHUA duoc gan chu de.
@@ -727,7 +839,7 @@ export async function setPostsTopic(postIds: string[], topic: string | null) {
 
 // ===== Phan phoi bai =====
 // LUU Y: chu de o day la chu de cua TAI KHOAN DANG (posting_account_topics), khac han
-// ACCOUNT_TOPICS gan cho TUNG BAI (posts.topic) - chi dung chung bo 7 gia tri.
+// chu de gan cho TUNG BAI (posts.topic) - chi dung chung danh muc chu de (bang topics).
 
 export interface PostingAccount {
   id: number
@@ -738,7 +850,7 @@ export interface PostingAccount {
   appeal_status: string | null
   proxy: string | null
   proxy_status: string | null
-  topics: AccountTopic[]
+  topics: string[]
 }
 
 export interface AccountCapacity {
@@ -909,6 +1021,24 @@ export async function runCaptionVariantJob(postIds?: string[]) {
     '/api/post-caption-variants/run',
     { postIds },
   )
+  return data
+}
+
+/** File caption goc (link da thay bang [[LINKn]]) de viet lai ngoai app, vd bang Claude. */
+export function captionVariantExportUrl(scope: 'missing' | 'all') {
+  return `/api/post-caption-variants/export?scope=${scope}`
+}
+
+export interface CaptionVariantImportResult {
+  saved: number
+  skipped: number
+  errors: { row: number; postId: string; error: string }[]
+}
+
+export async function importCaptionVariants(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post<CaptionVariantImportResult>('/api/post-caption-variants/import', form)
   return data
 }
 

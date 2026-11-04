@@ -94,6 +94,7 @@ export interface PostFilterOpts {
   rewritten?: 'yes' | 'no'; // da/chua du 3 ban caption AI, xem post_caption_variants
   scrapedFrom?: string; // 'YYYY-MM-DD' - loc theo scraped_at (thoi diem THU THAP), khong phai post_date
   scrapedTo?: string; // 'YYYY-MM-DD', bao gom ca ngay nay
+  postIds?: string[]; // chi cac bai nay (bai dang tick chon tren trang Bai viet)
 }
 
 /**
@@ -193,6 +194,11 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
   if (opts.scrapedTo) {
     conds.push("date(p.scraped_at, '+7 hours') <= ?");
     args.push(opts.scrapedTo);
+  }
+  if (opts.postIds) {
+    // Mang rong -> khong khop bai nao (khong duoc roi ve "xuat tat ca").
+    conds.push(opts.postIds.length ? `p.post_id IN (${opts.postIds.map(() => '?').join(', ')})` : '0');
+    args.push(...opts.postIds);
   }
   return { conds, args };
 }

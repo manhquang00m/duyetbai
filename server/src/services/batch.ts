@@ -27,6 +27,15 @@ export interface BatchItemResult {
   shopeeStatus?: ShopeeLinkStatus; // dung cho job "kiem tra link Shopee"
   shopeeTitle?: string; // ten san pham (dung cho job "kiem tra link Shopee")
   shopeeImage?: string; // anh preview san pham (dung cho job "kiem tra link Shopee")
+  shadowban?: {
+    // dung cho job "check shadowban" (url = ten nick)
+    verdict: string;
+    recentMedian: number | null;
+    baselineMedian: number | null;
+    hiddenPosts: number | null;
+    searchVisible: boolean | null;
+    reasons: string[];
+  };
 }
 
 export type BatchProgress = (item: BatchItemResult, done: number, total: number) => void;

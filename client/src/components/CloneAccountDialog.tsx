@@ -162,7 +162,7 @@ export function CloneAccountDialog({ open, sourceAccount, onClose, onSaved }: Pr
           {proxyMode === 'select' ? (
             <>
               <select
-                className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+                className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
                 value={proxySelect}
                 onChange={(e) => setProxySelect(e.target.value)}
               >

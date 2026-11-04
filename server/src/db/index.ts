@@ -273,6 +273,52 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_violations_date ON account_violations(post_date);
 
+  -- Danh muc chu de (dung chung cho posts.topic va posting_account_topics) - sua tren trang
+  -- "Chu de" (db/topics.ts). Truoc day fix cung trong code (ACCOUNT_TOPICS).
+  CREATE TABLE IF NOT EXISTS topics (
+    name        TEXT PRIMARY KEY,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT NOT NULL
+  );
+
+  -- ===== Check shadowban (services/shadowbanCheck.ts) =====
+  -- Luot xem cua bai DA DANG tren nick minh, moi lan check ghi them 1 dong (lich su theo thoi gian).
+  -- Lay tu trang bai Threads luc KHONG dang nhap ("N luot xem"). KHONG noi theo post_runs vi tool
+  -- auto khong gui posted_url -> chi biet bai qua shortcode tren trang profile.
+  -- posted_at: ISO UTC doc tu <time datetime> tren trang profile.
+  CREATE TABLE IF NOT EXISTS post_view_snapshots (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_name  TEXT NOT NULL,
+    post_code     TEXT NOT NULL,
+    post_url      TEXT NOT NULL,
+    posted_at     TEXT,
+    views         INTEGER,
+    likes         INTEGER,
+    replies       INTEGER,
+    checked_at    TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_view_snap_account ON post_view_snapshots(account_name, checked_at);
+  CREATE INDEX IF NOT EXISTS idx_view_snap_post ON post_view_snapshots(post_code, checked_at);
+
+  -- 1 dong = 1 lan check 1 nick. verdict: 'ok' | 'suspect' | 'shadowban' | 'unknown'.
+  -- Cac cot co the NULL = buoc do khong chay duoc (vd khong cau hinh nick viewer -> search_visible NULL).
+  CREATE TABLE IF NOT EXISTS account_shadowban_checks (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_name     TEXT NOT NULL,
+    checked_at       TEXT NOT NULL,
+    verdict          TEXT NOT NULL,
+    recent_median    INTEGER,
+    baseline_median  INTEGER,
+    ratio            REAL,
+    profile_visible  INTEGER,
+    search_visible   INTEGER,
+    expected_posts   INTEGER,
+    found_posts      INTEGER,
+    hidden_posts     INTEGER,
+    details          TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_shadowban_account ON account_shadowban_checks(account_name, checked_at);
+
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_sub_time ON aff_clicks(sub_id1, clicked_at);
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_post ON aff_clicks(post_id);
   CREATE INDEX IF NOT EXISTS idx_aff_clicks_time ON aff_clicks(clicked_at);
@@ -283,6 +329,14 @@ db.exec(`
 // Migration: ngay dang cua bai bi go ('YYYY-MM-DD'), tool doc tu giao dien Threads.
 try {
   db.exec('ALTER TABLE account_violations ADD COLUMN posted_at TEXT');
+} catch {
+  // cot da ton tai -> bo qua
+}
+
+// Migration: chu caption THAT da ghi ra file cho tool (luc xuat ke hoach). post_caption_variants bi
+// ghi de khi viet lai -> khong co cot nay thi thong ke/nhat ky doc nham chu moi cho bai da dang.
+try {
+  db.exec('ALTER TABLE distribution_items ADD COLUMN caption_text TEXT');
 } catch {
   // cot da ton tai -> bo qua
 }
@@ -479,6 +533,29 @@ try {
       db.exec('ROLLBACK');
       throw err;
     }
+  }
+}
+
+// Seed danh muc chu de DUNG 1 LAN = bo 9 gia tri tung fix cung trong code (ACCOUNT_TOPICS cu), de
+// du lieu da gan san van khop. Danh dau bang app_settings -> nguoi dung xoa het chu de roi restart
+// cung khong tu sinh lai.
+{
+  const seeded = db.prepare("SELECT 1 FROM app_settings WHERE key = 'topics_seeded'").get();
+  if (!seeded) {
+    db.prepare("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('topics_seeded', '1')").run();
+    const now = new Date().toISOString();
+    const ins = db.prepare('INSERT OR IGNORE INTO topics (name, sort_order, created_at) VALUES (?, ?, ?)');
+    [
+      'Công nghệ',
+      'Sản phẩm',
+      'Makeup',
+      'Chó mèo',
+      'Hút view',
+      'Khác',
+      'Gây war',
+      'Nhiều click',
+      'Nhiều tim',
+    ].forEach((name, i) => ins.run(name, i, now));
   }
 }
 

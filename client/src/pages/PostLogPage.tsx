@@ -46,9 +46,9 @@ const STATE_LABEL: Record<PostRunState, string> = {
   missing: 'Chưa báo cáo',
 }
 const STATE_CLASS: Record<PostRunState, string> = {
-  commented: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  posted: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  missing: 'bg-muted text-muted-foreground',
+  commented: 'text-xs text-muted-foreground',
+  posted: 'rounded-full bg-pill-warning px-2 py-0.5 text-[11px] font-medium text-pill-warning-ink',
+  missing: 'text-xs text-muted-foreground',
 }
 
 type Tab = 'all' | 'posted' | 'missing' | 'commented' | 'extra'
@@ -62,7 +62,7 @@ const TABS: { value: Tab; label: string }[] = [
 
 function StateBadge({ state }: { state: PostRunState }) {
   return (
-    <span className={cn('inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium', STATE_CLASS[state])}>
+    <span className={cn('inline-flex shrink-0 whitespace-nowrap', STATE_CLASS[state])}>
       {STATE_LABEL[state]}
     </span>
   )
@@ -87,7 +87,7 @@ function RunCard({ r }: { r: PostRunDayRow }) {
         <RunThumb thumb={r.thumb} />
         <div className="min-w-0">
           <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
-          <div className="truncate font-mono text-[10px] text-muted-foreground">
+          <div className="truncate font-mono text-xs text-muted-foreground">
             {r.post_id}
             {r.caption_variant ? ` · bản ${r.caption_variant}` : ''}
           </div>
@@ -95,7 +95,7 @@ function RunCard({ r }: { r: PostRunDayRow }) {
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <StateBadge state={r.state} />
-        {r.reports > 1 && <span className="text-[10px] text-muted-foreground">báo {r.reports} lần</span>}
+        {r.reports > 1 && <span className="text-xs text-muted-foreground">báo {r.reports} lần</span>}
         <span className="min-w-0 max-w-full truncate text-xs text-muted-foreground">
           {r.in_plan ? r.plan_name : 'Ngoài kế hoạch'}
         </span>
@@ -104,7 +104,7 @@ function RunCard({ r }: { r: PostRunDayRow }) {
             href={r.posted_url}
             target="_blank"
             rel="noreferrer"
-            className="ml-auto inline-flex items-center gap-1 py-1 text-xs text-primary hover:underline"
+            className="ml-auto inline-flex items-center gap-1 py-1 text-xs text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground"
           >
             <ExternalLink className="h-3 w-3" /> Mở
           </a>
@@ -121,7 +121,7 @@ function ViolationPost({ v }: { v: PostRunViolation }) {
   return (
     <div className="min-w-0">
       {v.caption && <div className="truncate text-xs">{v.caption}</div>}
-      <div className="font-mono text-[10px] text-muted-foreground">{v.post_id}</div>
+      <div className="font-mono text-xs text-muted-foreground">{v.post_id}</div>
     </div>
   )
 }
@@ -129,7 +129,7 @@ function ViolationPost({ v }: { v: PostRunViolation }) {
 function ViolationLink({ url }: { url: string | null }) {
   if (!url) return <span className="text-muted-foreground">—</span>
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+    <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground">
       <ExternalLink className="h-3 w-3" /> Mở
     </a>
   )
@@ -152,7 +152,7 @@ function ResolveButton({ v, onResolve, pending }: { v: PostRunViolation; onResol
     <Button
       variant="outline"
       size="sm"
-      className="h-7 px-2 text-xs text-green-700 hover:text-green-700 dark:text-green-400"
+      className="h-7 px-2 text-xs"
       disabled={pending}
       onClick={() => onResolve(v)}
     >
@@ -170,19 +170,33 @@ function AccountDayDialog({ v, onClose }: { v: PostRunViolation | null; onClose:
     queryFn: () => fetchPostRunsDay(day),
     enabled: !!v,
   })
-  const runs = (data ?? []).filter((r) => r.account_name === v?.account_name)
+  const [nameQ, setNameQ] = useState(v?.account_name ?? '')
+  const q = nameQ.trim().toLowerCase()
+  // Moi nhat len dau; dong chua co gio dang xuong cuoi.
+  const runs = (data ?? [])
+    .filter((r) => !q || r.account_name.toLowerCase().includes(q))
+    .sort((a, b) => (b.posted_at ?? '').localeCompare(a.posted_at ?? ''))
   return (
     <Dialog open={!!v} onClose={onClose} className="max-w-2xl">
       {v && (
         <>
           <h2 className="pr-8 text-lg font-semibold">{v.account_name}</h2>
+          <div className="relative mt-2">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm tên tài khoản..."
+              value={nameQ}
+              onChange={(e) => setNameQ(e.target.value)}
+              className="pl-8 sm:text-xs"
+            />
+          </div>
           <div className="mt-2 flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => setOffset((o) => o - 1)} aria-label="Ngày trước">
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-[7.5rem] text-center text-sm font-medium tabular-nums">
               {dmy(day)}
-              {offset === 0 && <div className="text-[10px] font-normal text-muted-foreground">ngày gốc</div>}
+              {offset === 0 && <div className="text-[11px] font-normal text-muted-foreground">ngày gốc</div>}
             </div>
             <Button variant="outline" size="icon" onClick={() => setOffset((o) => o + 1)} aria-label="Ngày sau">
               <ChevronRight className="h-4 w-4" />
@@ -206,13 +220,15 @@ function AccountDayDialog({ v, onClose }: { v: PostRunViolation | null; onClose:
                 ))}
               </div>
             ) : runs.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Ngày này nick không có bài nào trong nhật ký.</p>
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {q ? 'Ngày này không có bài nào của nick khớp từ khoá.' : 'Ngày này không có bài nào trong nhật ký.'}
+              </p>
             ) : (
               <div className="divide-y">
                 {runs.map((r) => (
                   <div
-                    key={r.post_id}
-                    className={cn(v.post_id && r.post_id === v.post_id && 'bg-red-50 ring-1 ring-inset ring-red-300 dark:bg-red-500/10 dark:ring-red-500/40')}
+                    key={`${r.account_name}|${r.post_id}`}
+                    className={cn(v.post_id && r.post_id === v.post_id && 'bg-pill-negative/60 ring-1 ring-inset ring-negative/40')}
                   >
                     <RunCard r={r} />
                   </div>
@@ -243,28 +259,19 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
   const nicks = new Set(rows.map((v) => v.account_name)).size
   const clean = !isLoading && total === 0
   return (
-    <Card
-      className={cn(
-        'overflow-hidden p-0',
-        clean ? 'border-green-200 dark:border-green-500/30' : 'border-red-200 dark:border-red-500/30',
-      )}
-    >
-      <div
-        className={cn(
-          'flex items-center gap-2 p-3 sm:px-4',
-          clean
-            ? 'bg-green-50 dark:bg-green-500/10'
-            : 'border-b border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10',
-        )}
-      >
+    <Card className="overflow-hidden p-0">
+      <div className={cn('flex flex-wrap items-center gap-x-2 gap-y-0.5 p-3 sm:px-4', !clean && 'border-b')}>
         {clean ? (
-          <ShieldCheck className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+          <ShieldCheck className="h-4 w-4 shrink-0 text-positive" />
         ) : (
-          <ShieldAlert className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+          <ShieldAlert className="h-4 w-4 shrink-0 text-negative" />
         )}
-        <h2 className={cn('text-sm font-semibold', clean ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400')}>
-          {clean ? 'Không có nick vi phạm' : `Nick vi phạm · ${nicks} nick`}
-        </h2>
+        <h2 className="text-sm font-medium">{clean ? 'Không có nick vi phạm' : 'Nick vi phạm'}</h2>
+        {!clean && (
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-negative px-2 py-0.5 text-[11px] font-medium tabular-nums text-pill-negative-ink">
+            {nicks} nick
+          </span>
+        )}
         <span className="ml-auto text-xs text-muted-foreground">Threads gỡ bài, tool báo về · mọi ngày</span>
       </div>
 
@@ -288,7 +295,7 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
             {v.posted_at && <div className="text-xs text-muted-foreground">Đăng ngày {dmy(v.posted_at)}</div>}
             {v.message && <div className="text-xs text-muted-foreground">{v.message}</div>}
             <div className="flex items-center gap-2">
-              {v.reports > 1 && <span className="text-[10px] text-muted-foreground">báo {v.reports} lần</span>}
+              {v.reports > 1 && <span className="text-xs text-muted-foreground">báo {v.reports} lần</span>}
               <span className="ml-auto flex items-center gap-3">
                 <ViolationLink url={v.posted_url} />
                 <ViewPostsButton onClick={() => setViewing(v)} />
@@ -301,21 +308,21 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
 
       <div className={cn('table-scroll hidden max-h-80 overflow-y-auto', rows.length > 0 && 'md:block')}>
         <table className="w-full min-w-[44rem] text-sm">
-          <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
             <tr>
-              <th className="p-2.5 text-left font-medium">Nick</th>
-              <th className="p-2.5 text-left font-medium">Phát hiện</th>
-              <th className="p-2.5 text-left font-medium">Ngày đăng</th>
-              <th className="p-2.5 text-left font-medium">Bài</th>
-              <th className="p-2.5 text-left font-medium">Link</th>
-              <th className="p-2.5 text-left font-medium">Ghi chú</th>
-              <th className="p-2.5 text-right font-medium">Số lần báo</th>
+              <th className="p-2.5 text-left">Nick</th>
+              <th className="p-2.5 text-left">Phát hiện</th>
+              <th className="p-2.5 text-left">Ngày đăng</th>
+              <th className="p-2.5 text-left">Bài</th>
+              <th className="p-2.5 text-left">Link</th>
+              <th className="p-2.5 text-left">Ghi chú</th>
+              <th className="p-2.5 text-right">Số lần báo</th>
               <th className="p-2.5" />
             </tr>
           </thead>
           <tbody>
             {rows.map((v) => (
-              <tr key={v.id} className="border-b last:border-0 hover:bg-muted/30">
+              <tr key={v.id} className="border-b border-rule last:border-0 hover:bg-accent">
                 <td className="whitespace-nowrap p-2.5 font-medium">{v.account_name}</td>
                 <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
                   {ddmmHHmm(v.detected_at)}
@@ -350,20 +357,14 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
   )
 }
 
-function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'warn' | 'good' }) {
+function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'warn' }) {
   return (
-    <Card className="min-w-0 p-3 sm:p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div
-        className={cn(
-          'mt-1 text-2xl font-semibold tabular-nums sm:mt-1.5',
-          tone === 'warn' && value > 0 && 'text-amber-600 dark:text-amber-400',
-          tone === 'good' && 'text-green-700 dark:text-green-400',
-        )}
-      >
+    <div className="min-w-0 bg-card px-4 py-3 sm:px-5 sm:py-4">
+      <div className="truncate text-sm text-muted-foreground">{label}</div>
+      <div className={cn('mt-1 text-2xl font-normal tabular-nums', tone === 'warn' && value > 0 && 'text-warning')}>
         {value.toLocaleString('vi-VN')}
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -387,9 +388,9 @@ const FIELD_MAP: { field: string; source: string; required: boolean; example: st
   {
     field: 'postDate',
     source: 'Cột J — Ngày đăng',
-    required: true,
+    required: false,
     example: '2026-09-25',
-    note: 'Dạng YYYY-MM-DD, đúng như trong file (không phải ngày tool chạy).',
+    note: 'YYYY-MM-DD hoặc DD/MM/YYYY, đúng như trong file. File xuất từ trang Bài viết không có cột này → bỏ trường, server lấy ngày của postedAt, không có thì lấy hôm nay.',
   },
   {
     field: 'status',
@@ -470,12 +471,12 @@ function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void })
           </div>
           <div className="table-scroll hidden rounded-md border sm:block">
             <table className="w-full min-w-[32rem] text-xs">
-              <thead className="bg-muted text-muted-foreground">
+              <thead className="text-muted-foreground">
                 <tr>
-                  <th className="p-2 text-left font-medium">Trường</th>
-                  <th className="p-2 text-left font-medium">Lấy từ</th>
-                  <th className="p-2 text-left font-medium">Bắt buộc</th>
-                  <th className="p-2 text-left font-medium">Ví dụ / ghi chú</th>
+                  <th className="p-2 text-left">Trường</th>
+                  <th className="p-2 text-left">Lấy từ</th>
+                  <th className="p-2 text-left">Bắt buộc</th>
+                  <th className="p-2 text-left">Ví dụ / ghi chú</th>
                 </tr>
               </thead>
               <tbody>
@@ -625,12 +626,12 @@ export function PostLogPage() {
       if (!ta && !tb) return 0
       if (!ta) return 1
       if (!tb) return -1
-      return ta < tb ? dir : ta > tb ? -dir : 0
+      return ta < tb ? -dir : ta > tb ? dir : 0
     })
   }, [filtered, sort])
 
   return (
-    <div className="mx-auto max-w-8xl space-y-4 sm:space-y-5">
+    <div className="mx-auto max-w-8xl space-y-5">
       <PageHeader
         title="Nhật ký đăng"
         description="Nick nào đăng bài gì trong ngày, đã comment chưa — do tool auto báo về qua API"
@@ -654,15 +655,6 @@ export function PostLogPage() {
             Hôm nay
           </Button>
         </div>
-        <div className="relative w-full sm:ml-2 sm:w-56">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Tìm tên tài khoản..."
-            value={accountSearch}
-            onChange={(e) => setAccountSearch(e.target.value)}
-            className="pl-8 sm:text-xs"
-          />
-        </div>
         <StatusCheckboxFilter selected={statusFilter} onChange={setStatusFilter} includeNone />
         {(accountSearch || statusFilter.size > 0) && totalNicks > 0 && (
           <span className="text-xs tabular-nums text-muted-foreground">
@@ -671,21 +663,19 @@ export function PostLogPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5 [&>*:last-child]:col-span-2 md:[&>*:last-child]:col-span-1">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
-        ) : (
-          <>
+      {isLoading ? (
+        <Skeleton className="h-[86px] rounded-lg" />
+      ) : (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-5 [&>*:last-child]:col-span-2 md:[&>*:last-child]:col-span-1">
             <Kpi label="Theo lịch" value={kpi.planned} />
-            <Kpi label="Đăng + CMT thành công" value={kpi.commented} tone="good" />
+            <Kpi label="Đăng + CMT thành công" value={kpi.commented} />
             <Kpi label="Đăng OK, thiếu CMT" value={kpi.posted} tone="warn" />
             <Kpi label="Chưa báo cáo" value={kpi.missing} tone="warn" />
             <Kpi label="Ngoài kế hoạch" value={kpi.extra} />
-          </>
-        )}
-      </div>
+        </div>
+      )}
       {kpi.posted > 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-warning">
           Bài thiếu comment là bài KHÔNG có link affiliate — nên comment bù để không mất đơn.
         </p>
       )}
@@ -693,7 +683,16 @@ export function PostLogPage() {
       <ViolationsCard rows={visibleViolations} total={violations?.length ?? 0} isLoading={violationsLoading} />
 
       <Card className="overflow-hidden p-0">
-        <div className="flex items-center gap-2 border-b p-2">
+        <div className="flex flex-wrap items-center gap-2 border-b p-2">
+          <div className="relative w-full sm:w-52">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm tài khoản..."
+              value={accountSearch}
+              onChange={(e) => setAccountSearch(e.target.value)}
+              className="h-8 pl-8 sm:text-xs"
+            />
+          </div>
           <div className="table-scroll flex min-w-0 flex-1 items-center gap-1">
             {TABS.map((t) => (
               <button
@@ -702,7 +701,7 @@ export function PostLogPage() {
                 onClick={() => setTab(t.value)}
                 className={cn(
                   'shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors sm:py-1.5',
-                  tab === t.value ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+                  tab === t.value ? 'bg-active text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 )}
               >
                 {t.label}
@@ -760,14 +759,14 @@ export function PostLogPage() {
           )}
         >
           <table className="w-full min-w-[48rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
               <tr>
-                <th className="p-2.5 text-left font-medium">Nick</th>
-                <th className="p-2.5 text-left font-medium">Bài</th>
-                <th className="p-2.5 text-left font-medium">Trạng thái</th>
-                <th className="p-2.5 text-left font-medium">Giờ đăng</th>
-                <th className="p-2.5 text-left font-medium">Link</th>
-                <th className="p-2.5 text-left font-medium">Kế hoạch</th>
+                <th className="p-2.5 text-left">Nick</th>
+                <th className="p-2.5 text-left">Bài</th>
+                <th className="p-2.5 text-left">Trạng thái</th>
+                <th className="p-2.5 text-left">Giờ đăng</th>
+                <th className="p-2.5 text-left">Link</th>
+                <th className="p-2.5 text-left">Kế hoạch</th>
               </tr>
             </thead>
             <tbody>
@@ -779,7 +778,7 @@ export function PostLogPage() {
                         <RunThumb thumb={r.thumb} />
                         <div className="min-w-0">
                           <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
-                          <div className="font-mono text-[10px] text-muted-foreground">
+                          <div className="font-mono text-xs text-muted-foreground">
                             {r.post_id}
                             {r.caption_variant ? ` · bản ${r.caption_variant}` : ''}
                           </div>
@@ -789,7 +788,7 @@ export function PostLogPage() {
                     <td className="p-2.5">
                       <StateBadge state={r.state} />
                       {r.reports > 1 && (
-                        <div className="mt-0.5 text-[10px] text-muted-foreground">báo {r.reports} lần</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">báo {r.reports} lần</div>
                       )}
                     </td>
                     <td className="whitespace-nowrap p-2.5 text-xs text-muted-foreground">
@@ -801,7 +800,7 @@ export function PostLogPage() {
                           href={r.posted_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="inline-flex items-center gap-1 text-xs text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground"
                         >
                           <ExternalLink className="h-3 w-3" /> Mở
                         </a>
@@ -822,7 +821,7 @@ export function PostLogPage() {
       {visibleAccounts.length > 0 && (
         <Card className="overflow-hidden p-0">
           <div className="border-b p-3 sm:p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground">
+            <h2 className="text-sm font-medium">
               Tổng hợp theo nick · {rangeFrom.slice(8, 10)}/{rangeFrom.slice(5, 7)} → {date.slice(8, 10)}/
               {date.slice(5, 7)} (7 ngày)
             </h2>
@@ -833,15 +832,15 @@ export function PostLogPage() {
             </p>
           </div>
           <div className="table-scroll max-h-[60dvh] overflow-y-auto sm:max-h-80">
-            <table className="w-full min-w-[28rem] text-xs">
-              <thead className="sticky top-0 z-20 bg-muted text-muted-foreground">
+            <table className="w-full min-w-[28rem] text-[13px]">
+              <thead className="sticky top-0 z-20 bg-card text-muted-foreground">
                 <tr>
-                  <th className="sticky left-0 bg-muted p-2 text-left font-medium">Nick</th>
-                  <th className="p-2 text-right font-medium" title="Tổng số bài kế hoạch giao cho nick trong 7 ngày">Theo lịch</th>
-                  <th className="p-2 text-right font-medium" title="Đăng bài + comment thành công">Hoàn tất</th>
-                  <th className="p-2 text-right font-medium" title="Đăng bài xong nhưng chưa comment = bài không có link affiliate">Thiếu CMT</th>
-                  <th className="p-2 text-right font-medium" title="Có trong lịch nhưng tool chưa gửi kết quả (chưa chạy / crash / nick lỗi)">Chưa báo cáo</th>
-                  <th className="p-2 text-right font-medium" title="Tool báo đã đăng nhưng bài không nằm trong lịch">Ngoài KH</th>
+                  <th className="sticky left-0 bg-card p-2 text-left">Nick</th>
+                  <th className="p-2 text-right" title="Tổng số bài kế hoạch giao cho nick trong 7 ngày">Theo lịch</th>
+                  <th className="p-2 text-right" title="Đăng bài + comment thành công">Hoàn tất</th>
+                  <th className="p-2 text-right" title="Đăng bài xong nhưng chưa comment = bài không có link affiliate">Thiếu CMT</th>
+                  <th className="p-2 text-right" title="Có trong lịch nhưng tool chưa gửi kết quả (chưa chạy / crash / nick lỗi)">Chưa báo cáo</th>
+                  <th className="p-2 text-right" title="Tool báo đã đăng nhưng bài không nằm trong lịch">Ngoài KH</th>
                 </tr>
               </thead>
               <tbody>
@@ -853,7 +852,7 @@ export function PostLogPage() {
                     <td
                       className={cn(
                         'p-2 text-right tabular-nums',
-                        a.posted_only > 0 && 'font-medium text-amber-600 dark:text-amber-400',
+                        a.posted_only > 0 && 'font-medium text-warning',
                       )}
                     >
                       {a.posted_only}

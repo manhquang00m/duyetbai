@@ -22,10 +22,10 @@ import {
   fetchDistributionPlan,
   deleteDistributionPlan,
   distributionExportUrl,
-  ACCOUNT_TOPICS,
   type PlanPreview,
   type PostingAccount,
 } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -47,6 +47,7 @@ function todayLocal(): string {
 }
 
 export function DistributionPage() {
+  const topicOptions = useTopics()
   const qc = useQueryClient()
   const { data: accounts } = useQuery({
     queryKey: ['posting-accounts'],
@@ -65,8 +66,8 @@ export function DistributionPage() {
     () => new Set(['Kháng thành công', 'Live', 'Chưa kháng', 'Đang ngâm']),
   )
 
-  const [days, setDays] = useState(7)
-  const [perDay, setPerDay] = useState(1)
+  const [days, setDays] = useState(1)
+  const [perDay, setPerDay] = useState(6)
   const [startDate, setStartDate] = useState(todayLocal())
   const [scrapedFrom, setScrapedFrom] = useState('')
   const [scrapedTo, setScrapedTo] = useState('')
@@ -206,7 +207,7 @@ export function DistributionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-8xl space-y-5 sm:space-y-6">
+    <div className="mx-auto max-w-8xl space-y-6">
       <PageHeader
         title="Phân phối bài"
         description="Chọn tài khoản theo chủ đề → bốc bài ngẫu nhiên không trùng → xuất file cho tool auto đăng"
@@ -220,24 +221,17 @@ export function DistributionPage() {
       {/* 1. Kho bài sạch */}
       <Card className="space-y-3 p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">Kho bài sạch</h2>
-          <span className="text-2xl font-semibold tabular-nums">{pool?.total ?? '—'}</span>
+          <h2 className="text-base font-medium">Kho bài sạch</h2>
+          <span className="text-2xl font-normal tabular-nums">{pool?.total ?? '—'}</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {ACCOUNT_TOPICS.map((t) => {
+        <div className="grid grid-cols-2 gap-x-6 rounded-lg bg-muted px-3 py-1 sm:grid-cols-3 lg:grid-cols-5">
+          {topicOptions.map((t) => {
             const n = pool?.byTopic[t] ?? 0
             return (
-              <span
-                key={t}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                  n === 0
-                    ? 'bg-muted text-muted-foreground/60'
-                    : 'bg-primary/10 text-foreground',
-                )}
-              >
-                {t} <span className="tabular-nums">{n}</span>
-              </span>
+              <div key={t} className="flex h-8 min-w-0 items-center justify-between gap-2 text-sm">
+                <span className={cn('truncate', n === 0 && 'text-muted-foreground')}>{t}</span>
+                <span className={cn('shrink-0 tabular-nums', n === 0 && 'text-muted-foreground')}>{n}</span>
+              </div>
             )
           })}
         </div>
@@ -252,7 +246,7 @@ export function DistributionPage() {
       <Card className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-muted-foreground">Chủ đề tài khoản đăng</h2>
+            <h2 className="text-base font-medium">Chủ đề tài khoản đăng</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {withTopic.length}/{all.length} tài khoản đã gán chủ đề — bấm trực tiếp vào ô chủ đề của từng dòng để sửa, lưu ngay không cần chọn trước
             </p>
@@ -286,7 +280,7 @@ export function DistributionPage() {
         </div>
 
         <div className="md:hidden">
-          <label className="flex items-center gap-3 border-b bg-muted/40 px-4 py-2.5 text-xs font-medium text-muted-foreground">
+          <label className="flex items-center gap-3 border-b bg-card px-4 py-2.5 text-xs text-muted-foreground">
             <Checkbox
               checked={filteredAccounts.length > 0 && filteredAccounts.every((a) => sel.has(a.id))}
               onCheckedChange={() =>
@@ -324,9 +318,9 @@ export function DistributionPage() {
 
         <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+            <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
               <tr>
-                <th className="p-2.5 text-left font-medium">
+                <th className="w-10 p-2.5 text-left">
                   <Checkbox
                     checked={filteredAccounts.length > 0 && filteredAccounts.every((a) => sel.has(a.id))}
                     onCheckedChange={() =>
@@ -338,9 +332,9 @@ export function DistributionPage() {
                     }
                   />
                 </th>
-                <th className="p-2.5 text-left font-medium">Tài khoản</th>
-                <th className="p-2.5 text-center font-medium">Platform</th>
-                <th className="p-2.5 text-left font-medium">Chủ đề (bấm để sửa)</th>
+                <th className="w-[32%] p-2.5 text-left">Tài khoản</th>
+                <th className="w-28 p-2.5 text-left">Platform</th>
+                <th className="p-2.5 text-left">Chủ đề (bấm để sửa)</th>
               </tr>
             </thead>
             <tbody>
@@ -350,7 +344,7 @@ export function DistributionPage() {
                     <Checkbox checked={sel.has(a.id)} onCheckedChange={() => toggle(a.id)} />
                   </td>
                   <td className="p-2.5 font-medium">{a.name}</td>
-                  <td className="p-2.5 text-center text-xs text-muted-foreground">
+                  <td className="p-2.5 text-xs text-muted-foreground">
                     {a.platform ?? '—'}
                   </td>
                   <td className="p-2.5">
@@ -376,7 +370,7 @@ export function DistributionPage() {
 
       {/* 3. Lập kế hoạch */}
       <Card className="space-y-4 p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-muted-foreground">Lập kế hoạch</h2>
+        <h2 className="text-base font-medium">Lập kế hoạch</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Ngày bắt đầu</label>
@@ -445,14 +439,14 @@ export function DistributionPage() {
             Tạo kế hoạch
           </Button>
           {preview && previewStale && (
-            <span className="w-full text-xs text-amber-600 dark:text-amber-400 sm:w-auto">
+            <span className="w-full text-xs text-warning sm:w-auto">
               Cấu hình đã đổi — xem trước lại trước khi tạo
             </span>
           )}
         </div>
 
         {preview && (
-          <div className="space-y-3 rounded-xl border bg-muted/20 p-3">            {!previewStale ? (
+          <div className="space-y-3 rounded-lg bg-muted p-3">            {!previewStale ? (
               <>
                 <div className="text-sm">
                   Sẽ gán được{' '}
@@ -467,7 +461,7 @@ export function DistributionPage() {
                 </div>
 
                 {preview.warnings.length > 0 && (
-                  <ul className="space-y-1 text-xs text-amber-700 dark:text-amber-400">
+                  <ul className="space-y-1 text-xs text-warning">
                     {preview.warnings.slice(0, 8).map((w, i) => (
                       <li key={i} className="flex gap-1.5">
                         <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
@@ -481,7 +475,7 @@ export function DistributionPage() {
                 )}
               </>
             ) : (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
+              <p className="text-xs text-warning">
                 Danh sách tài khoản đã đổi — bấm "Xem trước" lại để cập nhật số slot/cảnh báo bên
                 dưới cho đúng.
               </p>
@@ -497,7 +491,7 @@ export function DistributionPage() {
               </span>
               <button
                 type="button"
-                className="shrink-0 self-start py-1 text-primary hover:underline sm:self-auto"
+                className="shrink-0 self-start py-1 text-foreground underline decoration-input underline-offset-4 hover:decoration-foreground sm:self-auto"
                 onClick={() =>
                   setExcluded((prev) =>
                     prev.size > 0 ? new Set() : new Set(preview.accounts.map((c) => c.id)),
@@ -510,14 +504,14 @@ export function DistributionPage() {
 
             <div className="table-scroll max-h-[50dvh] overflow-y-auto rounded-lg border bg-background sm:max-h-64">
               <table className="w-full min-w-[30rem] text-xs">
-                <thead className="sticky top-0 bg-muted/40 uppercase text-muted-foreground">
+                <thead className="sticky top-0 bg-card text-muted-foreground">
                   <tr>
                     <th className="w-8 p-2"></th>
-                    <th className="p-2 text-left font-medium">Tài khoản</th>
-                    <th className="p-2 text-left font-medium">Chủ đề</th>
-                    <th className="p-2 text-right font-medium">Kho</th>
-                    <th className="p-2 text-right font-medium">Cần</th>
-                    <th className="p-2 text-right font-medium">Có thể thiếu</th>
+                    <th className="p-2 text-left">Tài khoản</th>
+                    <th className="p-2 text-left">Chủ đề</th>
+                    <th className="p-2 text-right">Kho</th>
+                    <th className="p-2 text-right">Cần</th>
+                    <th className="p-2 text-right">Có thể thiếu</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,7 +563,7 @@ export function DistributionPage() {
       {/* 4. Kế hoạch đã tạo */}
       <Card className="overflow-hidden p-0">
         <div className="border-b p-4">
-          <h2 className="text-sm font-semibold text-muted-foreground">Kế hoạch đã tạo</h2>
+          <h2 className="text-base font-medium">Kế hoạch đã tạo</h2>
         </div>
         {(plans ?? []).length === 0 ? (
           <EmptyState
@@ -600,7 +594,7 @@ export function DistributionPage() {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                         <span className="min-w-0 truncate">{p.name || `Kế hoạch ${p.start_date}`}</span>
                         {p.status === 'exported' && (
-                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
+                          <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-positive px-2 py-0.5 text-[11px] font-medium text-pill-positive-ink">
                             Đã xuất
                           </span>
                         )}
@@ -821,12 +815,12 @@ function PlanDetail({ id }: { id: string }) {
                       : `${i.account} — thiếu bài`
                   }
                   className={cn(
-                    'max-w-full truncate rounded px-1.5 py-0.5 font-mono text-[10px]',
-                    i.post ? 'bg-background text-muted-foreground' : 'bg-destructive/10 text-destructive',
+                    'max-w-full truncate rounded px-1.5 py-0.5 text-xs',
+                    i.post ? 'bg-background text-muted-foreground' : 'bg-pill-negative text-pill-negative-ink',
                   )}
                 >
                   {i.account}
-                  {i.variant && <span className="ml-0.5 text-primary">v{i.variant}</span>}
+                  {i.variant && <span className="ml-0.5 text-foreground">v{i.variant}</span>}
                 </span>
               ))}
             </div>

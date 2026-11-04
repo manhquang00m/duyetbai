@@ -21,12 +21,12 @@ import {
   deleteCollectHistory,
   fetchMediaSourceDefault,
   setMediaSourceDefault,
-  ACCOUNT_TOPICS,
   type JobState,
   type BatchItemResult,
   type CollectHistoryRow,
   type MediaSourceName,
 } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
@@ -45,7 +45,7 @@ function isFailed(it: BatchItemResult): boolean {
 const tabClass = (active: boolean) =>
   cn(
     'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:py-1.5',
-    active ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+    active ? 'bg-active text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
   )
 
 function HistoryStatus({ r }: { r: CollectHistoryRow }) {
@@ -57,7 +57,7 @@ function HistoryStatus({ r }: { r: CollectHistoryRow }) {
     )
   if (r.ok)
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+      <span className="inline-flex items-center gap-1 text-xs text-positive">
         <CheckCircle2 className="h-3.5 w-3.5" /> Thành công
       </span>
     )
@@ -201,15 +201,15 @@ function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
 
             <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
               <table className="w-full min-w-[40rem] text-sm">
-                <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+                <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-2.5 text-left font-medium">
+                    <th className="p-2.5 text-left">
                       <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
                     </th>
-                    <th className="p-2.5 text-left font-medium">URL</th>
-                    <th className="p-2.5 text-left font-medium">Trạng thái</th>
-                    <th className="p-2.5 text-left font-medium">Thời gian</th>
-                    <th className="p-2.5 text-right font-medium"></th>
+                    <th className="p-2.5 text-left">URL</th>
+                    <th className="p-2.5 text-left">Trạng thái</th>
+                    <th className="p-2.5 text-left">Thời gian</th>
+                    <th className="p-2.5 text-right"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -273,7 +273,7 @@ function JobProgressCard({
           <span className="tabular-nums text-muted-foreground">{pct}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
@@ -287,9 +287,9 @@ function JobProgressCard({
                   <SkipForward className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 ) : it.ok ? (
                   it.scrapeError || (it.mediaFail ?? 0) > 0 ? (
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                   ) : (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-positive" />
                   )
                 ) : (
                   <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -301,23 +301,21 @@ function JobProgressCard({
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">@{it.username || '—'}</span>
                         {urlTopics?.[it.url] && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                          <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2 py-0.5 text-xs font-medium text-pill-neutral-ink">
                             {urlTopics[it.url]}
                           </span>
                         )}
                         {it.skipped && (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                            đã tải rồi
-                          </span>
+                          <span className="whitespace-nowrap text-xs text-muted-foreground">đã tải rồi</span>
                         )}
-                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                           <ShoppingBag className="h-3 w-3" />
                           {it.entries ?? 0} link
                         </span>
                         {(it.mediaFail ?? 0) > 0 && (
-                          <span className="text-xs text-amber-600">{it.mediaFail} media lỗi</span>
+                          <span className="text-xs text-warning">{it.mediaFail} media lỗi</span>
                         )}
-                        {it.scrapeError && <span className="text-xs text-amber-600">scrape lỗi</span>}
+                        {it.scrapeError && <span className="text-xs text-warning">scrape lỗi</span>}
                       </div>
                       <div className="truncate text-sm text-muted-foreground">
                         {it.caption || '(không có caption)'}
@@ -369,6 +367,7 @@ interface UrlGroup {
 }
 
 export function BatchPage() {
+  const topicOptions = useTopics()
   const qc = useQueryClient()
   const [tab, setTab] = useState<'collect' | 'history'>('collect')
   const groupIdRef = useRef(0)
@@ -484,7 +483,7 @@ export function BatchPage() {
   const failedCount = (job?.items ?? []).filter(isFailed).length
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
+    <div className="max-w-5xl space-y-5 sm:space-y-6">
       <PageHeader
         title="Thu thập"
         description="Dán URL bài Threads theo từng nhóm (mỗi dòng 1 URL) — mỗi nhóm chọn sẵn 1 chủ đề, cào xong tự gán chủ đề đó cho tác giả của các bài trong nhóm. Bài đã tải sẽ tự bỏ qua."
@@ -510,18 +509,18 @@ export function BatchPage() {
         <>
           <div className="space-y-3">
             {groups.map((g, i) => (
-              <div key={g.id} className="space-y-2 rounded-xl border bg-card p-3 shadow-sm">
+              <div key={g.id} className="space-y-2 rounded-lg border bg-card p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <span className="shrink-0 text-xs font-medium text-muted-foreground">Nhóm {i + 1}</span>
                     <select
-                      className="flex h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:max-w-xs sm:flex-none sm:text-xs"
+                      className="flex h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9 sm:max-w-xs sm:flex-none sm:text-xs"
                       value={g.topic ?? ''}
                       onChange={(e) => updateGroup(g.id, { topic: e.target.value || null })}
                       disabled={running}
                     >
                       <option value="">— Không gán chủ đề —</option>
-                      {ACCOUNT_TOPICS.map((t) => (
+                      {topicOptions.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
@@ -536,7 +535,7 @@ export function BatchPage() {
                       disabled={running}
                       aria-label="Xoá nhóm"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

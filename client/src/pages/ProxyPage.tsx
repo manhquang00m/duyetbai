@@ -27,24 +27,19 @@ import { EmptyState } from '@/components/EmptyState'
 import { cn } from '@/lib/utils'
 
 const SELECT_CLS =
-  'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9'
+  'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9'
 
 const tabClass = (active: boolean) =>
   cn(
     'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:py-1.5',
-    active ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:bg-accent',
+    active ? 'bg-active text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
   )
 
 function StatusBadge({ status }: { status: string | null }) {
-  if (status === 'live')
-    return (
-      <span className="inline-flex shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        Live
-      </span>
-    )
+  if (status === 'live') return <span className="whitespace-nowrap text-xs text-muted-foreground">Live</span>
   if (status === 'die')
     return (
-      <span className="inline-flex shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
+      <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-negative px-2 py-0.5 text-[11px] font-medium text-pill-negative-ink">
         Die
       </span>
     )
@@ -52,22 +47,17 @@ function StatusBadge({ status }: { status: string | null }) {
 }
 
 function AccountAssign({ p }: { p: SavedProxy }) {
-  if (p.account_count === 0) return <span className="text-muted-foreground">Chưa gán</span>
+  if (p.account_count === 0) return <span className="text-xs text-muted-foreground">Chưa gán</span>
   return (
     <div className="min-w-0 space-y-0.5">
-      <span
-        className={cn(
-          'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
-          p.account_count > 1
-            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
-            : 'bg-muted text-muted-foreground',
-        )}
-      >
-        {p.account_count} account
-      </span>
-      <div className="truncate text-xs text-muted-foreground" title={p.account_names ?? undefined}>
+      <div className="truncate text-sm" title={p.account_names ?? undefined}>
         {p.account_names}
       </div>
+      {p.account_count > 1 && (
+        <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-warning px-2 py-0.5 text-[11px] font-medium tabular-nums text-pill-warning-ink">
+          {p.account_count} account dùng chung
+        </span>
+      )}
     </div>
   )
 }
@@ -369,28 +359,28 @@ export function ProxyPage() {
       </div>
 
       {results.length > 0 && (
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl border bg-card">
           <div className="table-scroll max-h-[50dvh] overflow-y-auto">
             <table className="w-full min-w-[34rem] text-sm">
-              <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+              <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-3 text-left font-medium">Proxy</th>
-                  <th className="p-3 text-left font-medium">Trạng thái</th>
-                  <th className="p-3 text-left font-medium">Exit IP</th>
-                  <th className="p-3 text-right font-medium">ms</th>
-                  <th className="p-3 text-center font-medium"></th>
+                  <th className="p-3 text-left">Proxy</th>
+                  <th className="whitespace-nowrap p-3 text-left">Trạng thái</th>
+                  <th className="p-3 text-left">Exit IP</th>
+                  <th className="p-3 text-right">ms</th>
+                  <th className="p-3 text-center"></th>
                 </tr>
               </thead>
               <tbody>
                 {results.map((r, i) => (
-                  <tr key={i} className="border-b last:border-0">
+                  <tr key={i} className="border-b border-rule last:border-0">
                     <td className="max-w-xs truncate p-3 font-mono text-xs" title={r.proxy}>
                       {r.proxy}
                     </td>
                     <td className="p-3">
                       <StatusBadge status={r.status} />
                     </td>
-                    <td className="max-w-[14rem] truncate p-3 text-muted-foreground">
+                    <td className="max-w-[14rem] truncate p-3 tabular-nums text-muted-foreground">
                       {r.ip ?? r.error ?? '—'}
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
@@ -425,10 +415,10 @@ export function ProxyPage() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-lg border bg-card">
         <div className="space-y-2 border-b px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="mr-auto text-sm font-semibold">
+            <h2 className="mr-auto text-base font-medium">
               {savedTab === 'die' ? 'Proxy Die' : 'Proxy đã lưu'}{' '}
               <span className="font-normal tabular-nums text-muted-foreground">
                 ({filteredSaved.length}/{savedTab === 'die' ? dieProxies.length : (saved?.length ?? 0)})
@@ -496,7 +486,7 @@ export function ProxyPage() {
         ) : (
           <>
             <div className="md:hidden">
-              <div className="flex items-center gap-3 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+              <div className="flex items-center gap-3 border-b px-3 py-2 text-xs text-muted-foreground">
                 <Checkbox checked={allSelected} indeterminate={someSelected} onCheckedChange={toggleSelAll} />
                 Chọn tất cả
               </div>
@@ -504,7 +494,7 @@ export function ProxyPage() {
                 {filteredSaved.map((p) => {
                   const isChecking = recheckMut.isPending && recheckMut.variables === p.id
                   return (
-                    <li key={p.id} className={cn('flex gap-3 p-3', sel.has(p.id) && 'bg-primary/5')}>
+                    <li key={p.id} className={cn('flex gap-3 p-3', sel.has(p.id) && 'bg-active/60')}>
                       <Checkbox
                         className="mt-1"
                         checked={sel.has(p.id)}
@@ -543,25 +533,28 @@ export function ProxyPage() {
 
             <div className="table-scroll hidden max-h-[calc(100dvh-20rem)] min-h-[16rem] overflow-y-auto md:block">
               <table className="w-full min-w-[60rem] text-sm">
-                <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+                <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-3 text-left font-medium">
+                    <th className="p-3 text-left">
                       <Checkbox checked={allSelected} indeterminate={someSelected} onCheckedChange={toggleSelAll} />
                     </th>
-                    <th className="p-3 text-left font-medium">Proxy</th>
-                    <th className="p-3 text-left font-medium">Trạng thái</th>
-                    <th className="p-3 text-left font-medium">Exit IP</th>
-                    <th className="p-3 text-left font-medium">Loại proxy</th>
-                    <th className="p-3 text-left font-medium">Ghi chú</th>
-                    <th className="p-3 text-left font-medium">Account đang dùng</th>
-                    <th className="p-3 text-center font-medium"></th>
+                    <th className="p-3 text-left">Proxy</th>
+                    <th className="whitespace-nowrap p-3 text-left">Trạng thái</th>
+                    <th className="p-3 text-left">Exit IP</th>
+                    <th className="whitespace-nowrap p-3 text-left">Loại proxy</th>
+                    <th className="p-3 text-left">Ghi chú</th>
+                    <th className="whitespace-nowrap p-3 text-left">Account đang dùng</th>
+                    <th className="p-3 text-center"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSaved.map((p: SavedProxy) => {
                     const isChecking = recheckMut.isPending && recheckMut.variables === p.id
                     return (
-                      <tr key={p.id} className={cn('border-b last:border-0', sel.has(p.id) && 'bg-primary/5')}>
+                      <tr
+                        key={p.id}
+                        className={cn('border-b border-rule last:border-0 hover:bg-accent/60', sel.has(p.id) && 'bg-active/60')}
+                      >
                         <td className="p-3">
                           <Checkbox checked={sel.has(p.id)} onCheckedChange={() => toggleSel(p.id)} />
                         </td>
@@ -571,7 +564,7 @@ export function ProxyPage() {
                         <td className="p-3">
                           <StatusBadge status={p.status} />
                         </td>
-                        <td className="p-3 text-muted-foreground">{p.ip ?? '—'}</td>
+                        <td className="whitespace-nowrap p-3 tabular-nums text-muted-foreground">{p.ip ?? '—'}</td>
                         <td className="max-w-[11rem] p-3 text-xs text-muted-foreground">
                           <span className="block truncate" title={p.proxy_type ?? undefined}>
                             {p.proxy_type || '—'}

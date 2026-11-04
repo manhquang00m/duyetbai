@@ -23,13 +23,9 @@ interface ProxyResult {
 
 function StatusBadge({ status }: { status: string }) {
   if (status === 'live')
-    return (
-      <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        Live
-      </span>
-    )
+    return <span className="whitespace-nowrap text-xs text-muted-foreground">Live</span>
   return (
-    <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
+    <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-negative px-2 py-0.5 text-[11px] font-medium text-pill-negative-ink">
       Die
     </span>
   )
@@ -142,7 +138,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full bg-primary transition-all duration-300"
+                  className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -161,12 +157,12 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
 
           <div className="table-scroll mt-2 max-h-[50dvh] overflow-y-auto rounded-lg border sm:max-h-96">
             <table className="w-full min-w-[30rem] text-sm">
-              <thead className="sticky top-0 z-10 bg-muted text-xs uppercase text-muted-foreground">
+              <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-2.5 text-left font-medium">Proxy</th>
-                  <th className="p-2.5 text-left font-medium">Trạng thái</th>
-                  <th className="p-2.5 text-left font-medium">Exit IP</th>
-                  <th className="p-2.5 text-right font-medium">ms</th>
+                  <th className="p-2.5 text-left">Proxy</th>
+                  <th className="p-2.5 text-left">Trạng thái</th>
+                  <th className="p-2.5 text-left">Exit IP</th>
+                  <th className="p-2.5 text-right">ms</th>
                 </tr>
               </thead>
               <tbody>

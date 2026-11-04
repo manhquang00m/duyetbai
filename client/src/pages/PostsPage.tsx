@@ -26,9 +26,10 @@ import {
   deletePosts,
   setPostTopic,
   fetchExportPostsWarnings,
+  fetchSelectedExportWarnings,
+  downloadSelectedPosts,
   buildExportPostsUrl,
   fetchCaptionVariants,
-  ACCOUNT_TOPICS,
   UNASSIGNED_TOPIC,
   type ExportPostsWarnings,
   exportShopeeUrl,
@@ -37,6 +38,7 @@ import {
   type PostSort,
   type MediaFilter,
 } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { Input } from '@/components/ui/input'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
@@ -54,48 +56,39 @@ import { MultiFilterDropdown, SingleFilterDropdown, TopicFilterDropdown } from '
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const
-const COLSPAN = 9
+/** Trang thai on/chua lam: chu xam, khong pill. Pill mau chi danh cho cai can xu ly. */
+const QUIET = 'whitespace-nowrap text-xs text-muted-foreground'
+const PILL = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium'
+const COLSPAN = 8
 
 function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) {
   if (shopee === 0) return <span className="text-muted-foreground">—</span>
   if (updated >= shopee)
     return (
-      <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        Đã update
-      </span>
+      <span className={QUIET}>Xong</span>
     )
   if (updated > 0)
     return (
-      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+      <span className={cn(PILL, 'bg-pill-warning tabular-nums text-pill-warning-ink')}>
         {updated}/{shopee}
       </span>
     )
-  return (
-    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      Chưa
-    </span>
-  )
+  return <span className={QUIET}>Chưa</span>
 }
 
 /** So ban caption AI da viet lai cho bai (xem trang "Phân phối bài" > "Viết lại caption kho bài"). */
 function RewriteStatus({ count }: { count: number }) {
   if (count >= 3)
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-        <Wand2 className="h-3 w-3" /> Đã viết lại
+      <span className={cn(QUIET, 'inline-flex items-center gap-1')}>
+        <Wand2 className="h-3 w-3" /> Đủ 3 bản
       </span>
     )
   if (count > 0)
     return (
-      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-        {count}/3
-      </span>
+      <span className={cn(PILL, 'bg-pill-warning tabular-nums text-pill-warning-ink')}>{count}/3</span>
     )
-  return (
-    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      Chưa
-    </span>
-  )
+  return <span className={QUIET}>Chưa</span>
 }
 
 /**
@@ -108,9 +101,7 @@ function LinkHealthBadge({ post }: { post: PostListItem }) {
   if (shopee_count === 0) return <span className="text-muted-foreground">—</span>
   if (checked_link_count === 0)
     return (
-      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-        Chưa KT
-      </span>
+      <span className={QUIET}>Chưa KT</span>
     )
 
   const title = [
@@ -124,7 +115,7 @@ function LinkHealthBadge({ post }: { post: PostListItem }) {
 
   const pill = (cls: string, text: string) => (
     <span
-      className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium', cls)}
+      className={cn(PILL, cls)}
       title={title}
     >
       {text}
@@ -133,40 +124,38 @@ function LinkHealthBadge({ post }: { post: PostListItem }) {
 
   if (dead_link_count > 0)
     return pill(
-      'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+      'bg-pill-negative text-pill-negative-ink',
       dead_link_count > 1 ? `Link chết (${dead_link_count})` : 'Link chết',
     )
   if (oos_link_count > 0)
     return pill(
-      'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
+      'bg-pill-warning text-pill-warning-ink',
       oos_link_count > 1 ? `Hết hàng (${oos_link_count})` : 'Hết hàng',
     )
   if (unknown_link_count > 0)
     return pill(
-      'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+      'bg-pill-warning text-pill-warning-ink',
       'Cần xem lại',
     )
-  return pill('bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', 'Link OK')
+  return (
+    <span className={QUIET} title={title}>
+      OK
+    </span>
+  )
 }
 
 function PostStatusBadge({ status }: { status: PostListItem['post_status'] }) {
   if (status === 'posted')
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
+      <span className={cn(PILL, 'bg-pill-positive text-pill-positive-ink')}>
         <Send className="h-3 w-3" /> Đã đăng
       </span>
     )
   if (status === 'exported')
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-        Đã xuất
-      </span>
+      <span className={cn(PILL, 'bg-pill-warning text-pill-warning-ink')}>Đã xuất</span>
     )
-  return (
-    <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-      Mới
-    </span>
-  )
+  return <span className={QUIET}>Mới</span>
 }
 
 function PostThumb({ thumb, className }: { thumb: string | null; className: string }) {
@@ -175,7 +164,7 @@ function PostThumb({ thumb, className }: { thumb: string | null; className: stri
       src={`/media/${thumb}`}
       alt=""
       loading="lazy"
-      className={cn('shrink-0 rounded-md object-cover ring-1 ring-border', className)}
+      className={cn('shrink-0 rounded-md object-cover', className)}
     />
   ) : (
     <div className={cn('shrink-0 rounded-md bg-muted', className)} />
@@ -186,10 +175,10 @@ function CommentChip({ count }: { count: number }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
+        'inline-flex items-center gap-1 whitespace-nowrap tabular-nums',
         count > 1
-          ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
-          : 'bg-muted text-muted-foreground',
+          ? 'rounded-full bg-pill-warning px-1.5 py-0.5 text-[11px] font-medium text-pill-warning-ink'
+          : 'text-xs text-muted-foreground',
       )}
       title="Số comment khác nhau có link shopee (1 comment nhiều link vẫn tính là 1)"
     >
@@ -201,8 +190,8 @@ function CommentChip({ count }: { count: number }) {
 
 function LabeledBadge({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-      {label}
+    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground">
+      {label}:
       {children}
     </span>
   )
@@ -224,23 +213,23 @@ function LikesChip({ likes }: { likes: string | null }) {
   if (!v) return null
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium tabular-nums text-rose-500"
+      className="inline-flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground"
       title={`${v} tim`}
     >
-      <Heart className="h-3 w-3 fill-current" />
+      <Heart className="h-3 w-3" />
       {v}
     </span>
   )
 }
 
 function PostStats({ post: p }: { post: PostListItem }) {
-  const muted = 'text-muted-foreground/60'
+  const muted = 'text-muted-foreground font-normal'
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
       <LikesChip likes={p.likes} />
       <span
         className={cn(
-          'inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium tabular-nums text-sky-600 dark:text-sky-400',
+          'inline-flex shrink-0 items-center gap-0.5 text-xs font-medium tabular-nums text-chart-1-ink',
           p.click_count === 0 && muted,
         )}
         title={`${p.click_count} click`}
@@ -250,7 +239,7 @@ function PostStats({ post: p }: { post: PostListItem }) {
       </span>
       <span
         className={cn(
-          'inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium tabular-nums text-emerald-600 dark:text-emerald-400',
+          'inline-flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground',
           p.posted_count === 0 && muted,
         )}
         title={`Đã đăng thành công ${p.posted_count} lần`}
@@ -276,42 +265,41 @@ function PostRow({ post: p, selected, onToggle, onOpen, onTopicChange }: PostIte
         <div className="flex items-center gap-2.5">
           <Checkbox checked={selected} onCheckedChange={onToggle} />
           <PostThumb thumb={p.thumb} className="h-9 w-9" />
-          <div className="min-w-0 max-w-[16rem]">
+          <div className="min-w-0 max-w-[13rem]">
             <div className="truncate font-medium">@{p.username || '—'}</div>
             <div className="truncate text-xs text-muted-foreground">{p.caption}</div>
             <PostStats post={p} />
           </div>
         </div>
       </td>
-      <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
-        {p.post_date || '—'}
+      {/* 2 moc thoi gian xep chong 1 o: ngay dang (muc) / ngay thu thap (xam) */}
+      <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">
+        <div className="text-xs">{p.post_date || '—'}</div>
+        <div className="text-[11px] text-muted-foreground">thu {formatScraped(p.scraped_at)}</div>
       </td>
-      <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
-        {formatScraped(p.scraped_at)}
-      </td>
-      <td className="max-w-[16rem] p-2.5">
+      <td className="max-w-[12rem] px-2 py-2.5">
         <div className="mb-1">
           <CommentChip count={p.distinct_comment_count} />
         </div>
         <div className="truncate text-xs text-muted-foreground">{p.comment || '—'}</div>
       </td>
-      <td className="p-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2.5 text-center">
         <RewriteStatus count={p.variant_count} />
       </td>
-      <td className="p-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2.5 text-center">
         <UpdateStatus shopee={p.shopee_count} updated={p.new_count} />
       </td>
-      <td className="p-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2.5 text-center">
         <LinkHealthBadge post={p} />
       </td>
-      <td className="max-w-[10rem] p-2.5 text-xs">
+      <td className="max-w-[9rem] px-2 py-2.5 text-xs">
         <PostTopicCell topic={p.topic} onChange={onTopicChange} />
       </td>
-      <td className="p-2.5 text-center">
+      <td className="px-2 py-2.5 text-center">
         <div className="flex flex-col items-center gap-1">
           <PostStatusBadge status={p.post_status} />
           {p.assigned_account && (
-            <span className="text-[11px] text-muted-foreground">@{p.assigned_account}</span>
+            <span className="max-w-[7rem] truncate text-[11px] text-muted-foreground">@{p.assigned_account}</span>
           )}
         </div>
       </td>
@@ -374,6 +362,7 @@ function PostCard({ post: p, selected, onToggle, onOpen, onTopicChange }: PostIt
 }
 
 export function PostsPage() {
+  const topicOptions = useTopics()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -394,6 +383,7 @@ export function PostsPage() {
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
+  const [exportScope, setExportScope] = useState<'filter' | 'selected'>('filter')
   const [topicDialogOpen, setTopicDialogOpen] = useState(false)
 
   const activeFilters = {
@@ -535,11 +525,46 @@ export function PostsPage() {
     window.location.href = buildExportPostsUrl(activeFilters)
   }
 
+  const hasExportWarn = (w: ExportPostsWarnings) =>
+    w.notUpdated > 0 || w.multiComment > 0 || w.badLink > 0 || w.unknownLink > 0
+
+  const doExportSelected = async () => {
+    const ids = [...sel]
+    setCheckingExport(true)
+    try {
+      await downloadSelectedPosts(ids)
+      toast.success(`Đã xuất ${ids.length} bài ra Excel`)
+      invalidateAll() // xuat file gan account + doi trang thai bai -> lam moi danh sach
+    } catch {
+      toast.error('Xuất file thất bại')
+    } finally {
+      setCheckingExport(false)
+    }
+  }
+
+  const onExportSelectedClick = async () => {
+    setCheckingExport(true)
+    try {
+      const w = await fetchSelectedExportWarnings([...sel])
+      if (hasExportWarn(w)) {
+        setExportScope('selected')
+        setExportWarn(w)
+        setCheckingExport(false)
+      } else {
+        await doExportSelected()
+      }
+    } catch {
+      toast.error('Không kiểm tra được dữ liệu trước khi xuất')
+      setCheckingExport(false)
+    }
+  }
+
   const onExportPostsClick = async () => {
     setCheckingExport(true)
     try {
       const w = await fetchExportPostsWarnings(activeFilters)
-      if (w.notUpdated > 0 || w.multiComment > 0 || w.badLink > 0 || w.unknownLink > 0) {
+      if (hasExportWarn(w)) {
+        setExportScope('filter')
         setExportWarn(w)
       } else {
         doExportPosts()
@@ -769,7 +794,7 @@ export function PostsPage() {
         />
         <TopicFilterDropdown
           label="Chủ đề"
-          options={ACCOUNT_TOPICS}
+          options={topicOptions}
           selected={topics}
           onToggle={toggleTopic}
           onClear={() => {
@@ -782,10 +807,10 @@ export function PostsPage() {
       </div>
 
       {/* Table (lg+) / card list (< lg) */}
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <div className="lg:hidden">
           {(items.length > 0 || isLoading) && (
-            <div className="flex items-center gap-2.5 border-b bg-muted/40 px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="flex items-center gap-2.5 border-b bg-card px-3 py-2.5 text-xs font-medium text-muted-foreground">
               <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
               <span className="ml-1">Chọn tất cả trang này</span>
             </div>
@@ -821,10 +846,10 @@ export function PostsPage() {
         </div>
 
         <div className="table-scroll hidden max-h-[calc(100dvh-22rem)] min-h-[20rem] overflow-y-auto lg:block">
-          <table className="w-full min-w-[64rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-muted">
-              <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="p-2.5 text-left font-medium">
+          <table className="w-full min-w-[60rem] text-sm">
+            <thead className="sticky top-0 z-10 bg-card">
+              <tr className="border-b text-xs text-muted-foreground">
+                <th className="p-2.5 text-left">
                   <div className="flex items-center gap-2.5">
                     <Checkbox
                       checked={allChecked}
@@ -834,14 +859,13 @@ export function PostsPage() {
                     Bài viết
                   </div>
                 </th>
-                <th className="p-2.5 text-left font-medium">Ngày</th>
-                <th className="p-2.5 text-left font-medium">Thu thập</th>
-                <th className="p-2.5 text-left font-medium">Comment</th>
-                <th className="p-2.5 text-center font-medium">Viết lại</th>
-                <th className="p-2.5 text-center font-medium">Cập nhật</th>
-                <th className="p-2.5 text-center font-medium">Link</th>
-                <th className="p-2.5 text-left font-medium">Chủ đề</th>
-                <th className="p-2.5 text-center font-medium">Trạng thái</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Ngày</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Comment</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center">Viết lại</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center">Cập nhật</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center">Link</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Chủ đề</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -869,7 +893,6 @@ export function PostsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="p-2.5"><Skeleton className="h-3 w-14" /></td>
                     <td className="p-2.5"><Skeleton className="h-3 w-14" /></td>
                     <td className="p-2.5"><Skeleton className="h-3 w-32" /></td>
                     <td className="p-2.5"><Skeleton className="mx-auto h-3 w-6" /></td>
@@ -939,6 +962,9 @@ export function PostsPage() {
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
           </Button>
           <BulkTopicButton postIds={[...sel]} onDone={invalidateAll} />
+          <Button size="sm" variant="outline" onClick={onExportSelectedClick} disabled={checkingExport}>
+            <Download className="h-4 w-4" /> Xuất Excel
+          </Button>
           <Button size="sm" variant="outline" onClick={doDelete}>
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa
           </Button>
@@ -1009,7 +1035,8 @@ export function PostsPage() {
           <Button
             onClick={() => {
               setExportWarn(null)
-              doExportPosts()
+              if (exportScope === 'selected') void doExportSelected()
+              else doExportPosts()
             }}
           >
             Vẫn xuất file
@@ -1090,7 +1117,7 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
                   <video
                     src={m.processedUrl}
                     controls
-                    className="max-h-[70dvh] w-full rounded-lg bg-black ring-1 ring-primary/40"
+                    className="max-h-[70dvh] w-full rounded-lg bg-black"
                   />
                   <a
                     href={m.processedUrl}
@@ -1109,12 +1136,12 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
       </div>
 
       <div>
-        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Caption gốc</div>
+        <div className="mb-1.5 text-xs font-medium text-muted-foreground">Caption gốc</div>
         <p className="whitespace-pre-wrap text-sm">{caption}</p>
       </div>
 
       <div>
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="mb-2 text-xs font-medium text-muted-foreground">
           Caption viết lại bằng AI
           {(variants.data?.length ?? 0) > 0 && ` (${variants.data!.length}/3)`}
         </div>
@@ -1139,7 +1166,7 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
       </div>
 
       <div>
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="mb-2 text-xs font-medium text-muted-foreground">
           Link Shopee ({data.shopee.length}
           {shopeeGroups.length !== data.shopee.length ? ` · ${shopeeGroups.length} comment` : ''})
         </div>

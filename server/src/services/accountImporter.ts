@@ -3,7 +3,7 @@ import { db } from '../db';
 import { upsertAccount, type AccountInput } from '../db/accounts';
 import { parseProxyType, parseAppealStatus } from '../db/accountEnums';
 import { saveProxyMeta, type ProxyMetaInput } from '../db/proxies';
-import { ACCOUNT_TOPICS } from '../db/accountTopics';
+import { isTopic } from '../db/topics';
 import { setPostingTopicsUnsafe } from '../db/postingTopics';
 import { getAccountByName } from '../db/accounts';
 
@@ -137,7 +137,7 @@ export async function importAccountsExcel(filePath: string): Promise<AccountImpo
       const rawTopics = cellText(row.getCell(11).value);
       if (rawTopics) {
         const parts = rawTopics.split(/[,;]/).map((t) => t.trim()).filter(Boolean);
-        const valid = parts.filter((t) => (ACCOUNT_TOPICS as readonly string[]).includes(t));
+        const valid = parts.filter((t) => isTopic(t));
         for (const bad of parts.filter((t) => !valid.includes(t))) {
           invalidValueDetails.push({ name, column: 'K (Chủ đề)', value: bad });
         }

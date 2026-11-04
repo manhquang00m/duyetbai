@@ -24,7 +24,7 @@ interface Props {
 }
 
 const selectClass =
-  'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9'
+  'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9'
 
 const FILTERS: { value: BeautifyConfig['filter']; label: string }[] = [
   { value: 'none', label: 'Không áp dụng' },
@@ -570,7 +570,7 @@ export function BeautifyDialog({ open, postIds, onClose, onDone }: Props) {
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-primary transition-all duration-300"
+                className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
                 style={{ width: `${pct}%` }}
               />
             </div>

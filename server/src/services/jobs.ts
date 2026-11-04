@@ -11,6 +11,7 @@ import { saveProxies } from '../db/proxies';
 import { getPostBrief, getVideoMedia, getShopeeCheckTargets } from '../db/queries';
 import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/repository';
 import { checkShopeeLink } from './shopeeLinkCheck';
+import { checkAccount, openViewer, type Viewer } from './shadowbanCheck';
 import { listRows, rewriteRow } from './rewrite';
 import { listMissingPostIds, generateVariantsForPost } from './postCaptionVariants';
 import { setPostTopic } from '../db/accountTopics';
@@ -176,6 +177,64 @@ export function startBeautifyJob(
       job.error = err instanceof Error ? err.message : String(err);
     } finally {
       if (watermarkImagePath) fs.rm(watermarkImagePath, { force: true }, () => {});
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/**
+ * Check shadowban nhieu nick, TUAN TU (1 nick viewer dung chung, va mo qua nhieu trang Threads
+ * cung luc tu 1 proxy de bi chan). Ket qua tung nick tu luu DB trong checkAccount.
+ */
+export function startShadowbanCheckJob(accountNames: string[]): JobState {
+  const uniq = [...new Set(accountNames.map((n) => n.trim()).filter(Boolean))];
+  const job = newJob(uniq.length);
+  void (async () => {
+    const jobLog = (url: string, message: string) => {
+      const l = { url, message };
+      job.logs.push(l);
+      emit(job.id, { type: 'log', job, log: l });
+    };
+    let viewer: Viewer | null = null;
+    try {
+      try {
+        viewer = await openViewer((m) => jobLog('viewer', m));
+      } catch (err) {
+        // GPM tat / sai profile id -> van check duoc bang cach khong dang nhap, chi thieu buoc search.
+        jobLog('viewer', `Không mở được nick viewer (${err instanceof Error ? err.message : String(err)}) -> bỏ qua bước search`);
+        viewer = { page: null, close: async () => {} };
+      }
+      for (const name of uniq) {
+        let item: BatchItemResult;
+        try {
+          const r = await checkAccount(name, viewer, (m) => jobLog(name, m));
+          item = {
+            url: name,
+            ok: r.verdict === 'ok',
+            shadowban: {
+              verdict: r.verdict,
+              recentMedian: r.recentMedian,
+              baselineMedian: r.baselineMedian,
+              hiddenPosts: r.hiddenPosts,
+              searchVisible: r.searchVisible,
+              reasons: r.reasons,
+            },
+          };
+        } catch (err) {
+          item = { url: name, ok: false, error: err instanceof Error ? err.message : String(err) };
+        }
+        job.done++;
+        job.items.push(item);
+        emit(job.id, { type: 'progress', job, item });
+      }
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      await viewer?.close().catch(() => {});
+      await closeBrowser().catch(() => {});
       emit(job.id, { type: 'end', job });
     }
   })();

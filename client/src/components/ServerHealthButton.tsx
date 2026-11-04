@@ -77,7 +77,7 @@ export function ServerHealthButton() {
   }, [])
 
   const dot =
-    state.kind === 'ok' ? 'bg-green-500' : state.kind === 'down' ? 'bg-red-500' : 'bg-muted-foreground/50'
+    state.kind === 'ok' ? 'bg-positive' : state.kind === 'down' ? 'bg-negative' : 'bg-muted-foreground/50'
   const label = state.kind === 'ok' ? 'Server OK' : state.kind === 'down' ? 'Server lỗi' : 'Đang kiểm tra'
 
   return (
@@ -90,14 +90,12 @@ export function ServerHealthButton() {
           void check(true)
         }}
         aria-label="Kiểm tra server"
-        className="inline-flex h-10 items-center gap-2 rounded-md px-2.5 sm:h-9 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        className={cn(
+          'inline-flex h-10 items-center gap-2 rounded-md px-2.5 text-xs hover:bg-accent hover:text-foreground sm:h-8',
+          state.kind === 'down' ? 'font-medium text-negative' : 'text-muted-foreground',
+        )}
       >
-        <span className="relative flex h-2.5 w-2.5">
-          {state.kind === 'down' && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" />
-          )}
-          <span className={cn('relative inline-flex h-2.5 w-2.5 rounded-full', dot)} />
-        </span>
+        <span className={cn('inline-flex h-2 w-2 rounded-full', dot)} />
         <span className="hidden sm:inline">{label}</span>
       </button>
       <PopoverPanel popover={popover} className="w-72 max-w-[calc(100vw-1rem)] p-3 text-xs">
@@ -137,7 +135,7 @@ export function ServerHealthButton() {
           </div>
         )}
         {state.kind !== 'checking' && (
-          <div className="mt-2 text-[10px] text-muted-foreground">
+          <div className="mt-2 text-[11px] text-muted-foreground">
             Kiểm tra lúc {state.at.toLocaleTimeString('vi-VN')} · tự kiểm tra mỗi 20 giây
           </div>
         )}

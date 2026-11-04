@@ -3,7 +3,7 @@ import { getBrowser } from './browser';
 import { extractAuthor } from '../utils/postId';
 import { withRetry } from '../utils/retry';
 
-const USER_AGENT =
+export const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36';
 
@@ -139,7 +139,7 @@ function cleanComment(parts: string[], author: string): string {
   return [...new Set(cleaned)].join(' ').replace(/\s+/g, ' ').replace(/\|/g, '/').trim();
 }
 
-async function dismissDialogs(page: Page): Promise<void> {
+export async function dismissDialogs(page: Page): Promise<void> {
   const labels = ['Close', 'Đóng', 'Not now', 'Lúc khác', 'Allow all cookies', 'Cho phép'];
   for (const name of labels) {
     const btn = page.getByRole('button', { name });

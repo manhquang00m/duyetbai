@@ -3,7 +3,7 @@
  * Giu nguyen dau tieng Viet vi day la gia tri hien thi thang len UI.
  *
  * LUU Y: danh sach nay duoc lap lai o client/src/lib/api.ts (PROXY_TYPES / APPEAL_STATUSES) -
- * sua ben nay phai sua ca ben kia, giong cach ACCOUNT_TOPICS dang lam.
+ * sua ben nay phai sua ca ben kia.
  */
 export const PROXY_TYPES = [
   'Tạp hóa mmo',

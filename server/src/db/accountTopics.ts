@@ -1,19 +1,7 @@
 import { db } from './index';
+import { isTopic } from './topics';
 
-// Danh sach chu de co dinh - phai khop voi ACCOUNT_TOPICS o client/src/lib/api.ts.
-export const ACCOUNT_TOPICS = [
-  'Công nghệ',
-  'Sản phẩm',
-  'Makeup',
-  'Chó mèo',
-  'Hút view',
-  'Khác',
-  'Gây war',
-  'Nhiều click',
-  'Nhiều tim',
-] as const;
-
-const ACCOUNT_TOPICS_SET = new Set<string>(ACCOUNT_TOPICS);
+// Danh muc chu de hop le nam trong bang topics (db/topics.ts), sua tren trang "Chu de".
 
 export interface AccountTopicRow {
   username: string;
@@ -67,7 +55,7 @@ const updateByUsername = db.prepare('UPDATE posts SET topic = ? WHERE username =
 export function setAuthorTopic(username: string, topic: string | null): { updated: number } {
   const trimmed = username?.trim();
   if (!trimmed) return { updated: 0 };
-  if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
+  if (topic !== null && !isTopic(topic)) return { updated: 0 };
   const result = updateByUsername.run(topic, trimmed);
   return { updated: Number(result.changes) };
 }
@@ -81,14 +69,14 @@ const updateOne = db.prepare('UPDATE posts SET topic = ? WHERE post_id = ?');
 export function setPostTopic(postId: string, topic: string | null): { updated: number } {
   const trimmed = postId?.trim();
   if (!trimmed) return { updated: 0 };
-  if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
+  if (topic !== null && !isTopic(topic)) return { updated: 0 };
   const result = updateOne.run(topic, trimmed);
   return { updated: Number(result.changes) };
 }
 
 /** Gan/bo chu de cho NHIEU bai cung luc trong 1 transaction (topic=null de bo gan). */
 export function setPostsTopic(postIds: string[], topic: string | null): { updated: number } {
-  if (topic !== null && !ACCOUNT_TOPICS_SET.has(topic)) return { updated: 0 };
+  if (topic !== null && !isTopic(topic)) return { updated: 0 };
   let updated = 0;
   db.exec('BEGIN');
   try {

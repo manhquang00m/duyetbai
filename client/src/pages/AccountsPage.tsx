@@ -19,6 +19,7 @@ import {
   Info,
   CircleDot,
   Loader2,
+  EyeOff,
 } from 'lucide-react'
 import {
   fetchAccounts,
@@ -49,9 +50,13 @@ import { FloatingBar } from '@/components/FloatingBar'
 import { AccountFormDialog } from '@/components/AccountFormDialog'
 import { AccountProxyCheckDialog } from '@/components/AccountProxyCheckDialog'
 import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
+import { AssignProxyDialog } from '@/components/AssignProxyDialog'
 import { PostingTopicsCell } from '@/components/PostingTopicsCell'
 import { CloneAccountDialog } from '@/components/CloneAccountDialog'
 import { GpmProxySyncDialog } from '@/components/GpmProxySyncDialog'
+import { ShadowbanBadge } from '@/components/ShadowbanBadge'
+import { ShadowbanCheckDialog } from '@/components/ShadowbanCheckDialog'
+import { ShadowbanHistorySheet } from '@/components/ShadowbanHistorySheet'
 import { StatusCheckboxFilter, STATUS_NONE } from '@/components/StatusCheckboxFilter'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
@@ -74,21 +79,17 @@ function ProxyCell({
   return (
     <div className="flex min-w-0 items-center gap-1">
       <div className="min-w-0 space-y-0.5">
-        <div className="max-w-[12rem] truncate text-xs text-muted-foreground md:max-w-[9rem]">
+        <div className="max-w-[12rem] truncate text-xs tabular-nums md:max-w-[9rem]">
           {proxy}
         </div>
         {status === 'live' ? (
-          <span className="inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-            Live
-          </span>
+          <span className="whitespace-nowrap text-xs text-muted-foreground">Live</span>
         ) : status === 'die' ? (
-          <span className="inline-flex rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
-            Die
+          <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-negative px-2 py-0.5 text-[11px] font-medium text-pill-negative-ink">
+            Proxy die
           </span>
         ) : (
-          <span className="inline-flex rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            Chưa kiểm tra
-          </span>
+          <span className="whitespace-nowrap text-xs text-muted-foreground">Chưa kiểm tra</span>
         )}
       </div>
       <button
@@ -192,24 +193,25 @@ function BulkStatusButton({
   )
 }
 
-/** Mau theo muc do nghiem trong: Die (do) > Dang khang/ngam (vang) > Chua khang/tao (xam) > Thanh cong/Live (xanh). */
-const APPEAL_CLASS: Record<string, string> = {
-  'Kháng thành công': 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  Live: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  'Chưa kháng': 'bg-muted text-muted-foreground',
-  'Chưa tạo nick': 'bg-muted text-muted-foreground',
-  'Đang kháng': 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  'Đang ngâm': 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  Die: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+/**
+ * Chi to mau trang thai can xu ly: Die (do) > Dang khang/ngam (vang). Trang thai on hoac chua bat
+ * dau (Live, Khang thanh cong, Chua khang, Chua tao nick) la chu xam - tranh ca cot pill xanh.
+ */
+const APPEAL_PILL: Record<string, string> = {
+  'Đang kháng': 'bg-pill-warning text-pill-warning-ink',
+  'Đang ngâm': 'bg-pill-warning text-pill-warning-ink',
+  Die: 'bg-pill-negative text-pill-negative-ink',
 }
 
 function AppealBadge({ status }: { status: string | null }) {
-  if (!status) return <span className="text-muted-foreground">—</span>
+  if (!status) return <span className="text-xs text-muted-foreground">—</span>
+  const pill = APPEAL_PILL[status]
+  if (!pill) return <span className="whitespace-nowrap text-xs text-muted-foreground">{status}</span>
   return (
     <span
       className={cn(
-        'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
-        APPEAL_CLASS[status] ?? 'bg-muted text-muted-foreground',
+        'inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium',
+        pill,
       )}
     >
       {status}
@@ -218,14 +220,12 @@ function AppealBadge({ status }: { status: string | null }) {
 }
 
 function PlatformBadge({ platform }: { platform: string | null }) {
-  if (!platform) return <span className="text-muted-foreground">—</span>
+  if (!platform) return <span className="text-xs text-muted-foreground">—</span>
   return (
     <span
       className={cn(
-        'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
-        platform === 'Global'
-          ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
-          : 'bg-muted text-muted-foreground',
+        'whitespace-nowrap text-xs',
+        platform === 'Global' ? 'font-medium text-foreground' : 'text-muted-foreground',
       )}
     >
       {platform}
@@ -243,15 +243,22 @@ function RowActions({
   onDelete: () => void
 }) {
   return (
-    <div className="flex items-center justify-end gap-1">
-      <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Sửa account" title="Sửa account">
+    <div className="flex items-center justify-end">
+      <Button variant="ghost" size="icon" className="sm:h-8 sm:w-8" onClick={onEdit} aria-label="Sửa account" title="Sửa account">
         <Pencil className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon" onClick={onClone} aria-label="Clone account" title="Clone account">
+      <Button variant="ghost" size="icon" className="sm:h-8 sm:w-8" onClick={onClone} aria-label="Clone account" title="Clone account">
         <CopyPlus className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Xoá account" title="Xoá account">
-        <Trash2 className="h-4 w-4 text-destructive" />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
+        onClick={onDelete}
+        aria-label="Xoá account"
+        title="Xoá account"
+      >
+        <Trash2 className="h-4 w-4" />
       </Button>
     </div>
   )
@@ -274,6 +281,9 @@ export function AccountsPage() {
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
   const [postingTopicOpen, setPostingTopicOpen] = useState(false)
+  const [assignProxyOpen, setAssignProxyOpen] = useState(false)
+  const [shadowbanOpen, setShadowbanOpen] = useState(false)
+  const [shadowbanAccount, setShadowbanAccount] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<number>>(new Set())
 
   const [search, setSearch] = useState('')
@@ -543,6 +553,19 @@ export function AccountsPage() {
       onRecheck={(proxy) => recheckMut.mutate(proxy)}
     />
   )
+  const shadowbanCell = (a: Account) => (
+    <button
+      type="button"
+      onClick={() => setShadowbanAccount(a.name)}
+      title={
+        a.shadowban_checked_at
+          ? `Check lúc ${new Date(a.shadowban_checked_at).toLocaleString('vi-VN')} - bấm xem chi tiết`
+          : 'Bấm xem chi tiết'
+      }
+    >
+      <ShadowbanBadge verdict={a.shadowban_verdict} />
+    </button>
+  )
   const topicsCell = (a: Account) => (
     <PostingTopicsCell
       accountId={a.id}
@@ -577,31 +600,51 @@ export function AccountsPage() {
               className="hidden"
               onChange={onImportFile}
             />
-            <Button variant="outline" size="sm" onClick={() => setGpmSyncOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGpmSyncOpen(true)}
+              title="Đồng bộ proxy GPM"
+              aria-label="Đồng bộ proxy GPM"
+            >
               <Plug className="h-4 w-4" />
-              <span className="sm:hidden">Sync GPM</span>
-              <span className="hidden sm:inline">Đồng bộ proxy GPM</span>
+              <span className="hidden sm:inline">Đồng bộ GPM</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setRecheckAllOpen(true)}
               disabled={allProxies.length === 0}
+              title="Kiểm tra lại tất cả proxy"
+              aria-label="Kiểm tra lại tất cả proxy"
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="sm:hidden">Kiểm tra proxy</span>
-              <span className="hidden sm:inline">Kiểm tra lại tất cả proxy</span>
+              <span className="hidden sm:inline">Kiểm tra proxy</span>
             </Button>
             <div className="flex items-center">
-              <Button variant="outline" size="sm" onClick={pickImportFile} disabled={importing}>
-                <Upload className="h-4 w-4" /> {importing ? 'Đang import...' : 'Import Excel'}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={pickImportFile}
+                disabled={importing}
+                title="Import Excel"
+                aria-label="Import Excel"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">{importing ? 'Đang import...' : 'Import'}</span>
               </Button>
               <ImportHelp />
             </div>
-            <a href={exportAccountsUrl} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-              <Download className="h-4 w-4" /> Xuất Excel
+            <a
+              href={exportAccountsUrl}
+              title="Xuất Excel"
+              aria-label="Xuất Excel"
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Xuất Excel</span>
             </a>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={openCreate} className="order-first sm:order-none">
               <Plus className="h-4 w-4" /> Thêm account
             </Button>
           </>
@@ -688,7 +731,7 @@ export function AccountsPage() {
         )}
         {isLoading &&
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="space-y-2 rounded-xl p-3 shadow-xs">
+            <Card key={i} className="space-y-2 p-3">
               <Skeleton className="h-4 w-1/2" />
               <Skeleton className="h-3 w-3/4" />
               <Skeleton className="h-3 w-1/3" />
@@ -699,8 +742,8 @@ export function AccountsPage() {
             <Card
               key={a.id}
               className={cn(
-                'rounded-xl p-3 shadow-xs transition-colors',
-                sel.has(a.id) && 'border-primary/40 bg-primary/5',
+                'p-3 transition-colors',
+                sel.has(a.id) && 'border-input bg-active/60',
               )}
             >
               <div className="flex items-start gap-3">
@@ -723,8 +766,9 @@ export function AccountsPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     <PlatformBadge platform={a.platform} />
+                    {shadowbanCell(a)}
                     {proxyCell(a)}
                   </div>
                   {topicsCell(a)}
@@ -739,37 +783,37 @@ export function AccountsPage() {
               </div>
             </Card>
           ))}
-        {!isLoading && items.length === 0 && <Card className="rounded-xl shadow-xs">{emptyState}</Card>}
+        {!isLoading && items.length === 0 && <Card>{emptyState}</Card>}
       </div>
 
       {/* Desktop: bang voi header dinh tren cung */}
-      <Card className="hidden overflow-hidden rounded-xl p-0 shadow-sm md:block">
+      <Card className="hidden overflow-hidden p-0 md:block">
         {/* Chieu cao co dinh theo man hinh: bang tu cuon ben trong, header dinh tren cung. */}
         <div className="table-scroll max-h-[calc(100dvh-16rem)] min-h-[20rem] overflow-y-auto">
           <table className="w-full min-w-[60rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-muted">
-              <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="p-2.5 text-left font-medium">
+            <thead className="sticky top-0 z-10 bg-card">
+              <tr className="border-b text-xs text-muted-foreground">
+                <th className="px-2 py-2.5 text-left">
                   <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
                 </th>
-                <th className="p-2.5 text-left font-medium">Profile</th>
-                <th className="p-2.5 text-left font-medium">Thiết bị</th>
-                <th className="p-2.5 text-left font-medium">Ngày tạo</th>
-                <th className="p-2.5 text-left font-medium">Proxy</th>
-                <th className="p-2.5 text-center font-medium">Platform</th>
-                <th className="p-2.5 text-center font-medium">Trạng thái</th>
-                <th className="p-2.5 text-left font-medium" title="Bấm vào ô để sửa chủ đề">
+                <th className="px-2 py-2.5 text-left">Profile · thiết bị</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Ngày tạo</th>
+                <th className="px-2 py-2.5 text-left">Proxy</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Platform</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Trạng thái</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left">Shadowban</th>
+                <th className="px-2 py-2.5 text-left" title="Bấm vào ô để sửa chủ đề">
                   Chủ đề
                 </th>
-                <th className="p-2.5 text-center font-medium">Active</th>
-                <th className="p-2.5 text-right font-medium"></th>
+                <th className="px-2 py-2.5 text-center">Active</th>
+                <th className="px-2 py-2.5 text-right"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading &&
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b last:border-0">
-                    <td className="p-2.5" colSpan={COLSPAN}>
+                    <td className="px-2 py-2.5" colSpan={COLSPAN}>
                       <Skeleton className="h-4 w-full" />
                     </td>
                   </tr>
@@ -780,33 +824,36 @@ export function AccountsPage() {
                   <tr
                     key={a.id}
                     className={cn(
-                      'border-b last:border-0 hover:bg-muted/30',
-                      sel.has(a.id) && 'bg-primary/5',
+                      'border-b border-rule last:border-0 hover:bg-accent/60',
+                      sel.has(a.id) && 'bg-active/60',
                     )}
                   >
-                    <td className="p-2.5">
+                    <td className="px-2 py-2.5">
                       <Checkbox checked={sel.has(a.id)} onCheckedChange={() => toggle(a.id)} />
                     </td>
-                    <td className="p-2.5 font-medium">{a.name}</td>
-                    <td className="p-2.5 text-xs text-muted-foreground">{a.device || '—'}</td>
-                    <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
+                    <td className="px-2 py-2.5">
+                      <div className="font-medium">{a.name}</div>
+                      <div className="text-xs text-muted-foreground">{a.device || '—'}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2.5 text-xs tabular-nums text-muted-foreground">
                       {fmtDate(a)}
                     </td>
-                    <td className="p-2.5">{proxyCell(a)}</td>
-                    <td className="p-2.5 text-center">
+                    <td className="px-2 py-2.5">{proxyCell(a)}</td>
+                    <td className="px-2 py-2.5">
                       <PlatformBadge platform={a.platform} />
                     </td>
-                    <td className="whitespace-nowrap p-2.5 text-center">
+                    <td className="whitespace-nowrap px-2 py-2.5">
                       <AppealBadge status={a.appeal_status} />
                     </td>
-                    <td className="p-2.5">{topicsCell(a)}</td>
-                    <td className="p-2.5 text-center">
+                    <td className="whitespace-nowrap px-2 py-2.5">{shadowbanCell(a)}</td>
+                    <td className="px-2 py-2.5">{topicsCell(a)}</td>
+                    <td className="px-2 py-2.5 text-center">
                       <Switch
                         checked={a.active === 1}
                         onCheckedChange={(v) => activeMut.mutate({ id: a.id, active: v })}
                       />
                     </td>
-                    <td className="p-2.5">
+                    <td className="px-2 py-2.5">
                       <RowActions
                         onEdit={() => openEdit(a)}
                         onClone={() => setCloningFrom(a)}
@@ -836,12 +883,18 @@ export function AccountsPage() {
               <Wand2 className="h-4 w-4" /> Tự động gán proxy ({selectedWithoutProxy.length})
             </Button>
           )}
+          <Button size="sm" variant="outline" onClick={() => setAssignProxyOpen(true)}>
+            <Plug className="h-4 w-4" /> Gán proxy
+          </Button>
           <BulkStatusButton busy={bulkStatusBusy} onPick={bulkSetStatus} />
           <Button size="sm" variant="outline" onClick={() => setPostingTopicOpen(true)}>
             <Tag className="h-4 w-4" /> Gán chủ đề đăng
           </Button>
           <Button size="sm" variant="outline" onClick={() => setProxyDialogOpen(true)}>
             <ShieldCheck className="h-4 w-4" /> Kiểm tra proxy
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShadowbanOpen(true)}>
+            <EyeOff className="h-4 w-4" /> Check shadowban
           </Button>
           <Button size="sm" variant="outline" onClick={bulkDelete}>
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa
@@ -858,6 +911,18 @@ export function AccountsPage() {
         onClose={() => setPostingTopicOpen(false)}
         onSaved={() => qc.invalidateQueries({ queryKey: ['posting-accounts'] })}
       />
+
+      {assignProxyOpen && (
+        <AssignProxyDialog
+          accounts={allAccounts.filter((a) => sel.has(a.id))}
+          proxies={proxiesData ?? []}
+          onClose={() => setAssignProxyOpen(false)}
+          onDone={() => {
+            invalidate()
+            qc.invalidateQueries({ queryKey: ['proxies'] })
+          }}
+        />
+      )}
 
       <AccountFormDialog
         open={formOpen}
@@ -890,6 +955,14 @@ export function AccountsPage() {
       />
 
       <GpmProxySyncDialog open={gpmSyncOpen} onClose={() => setGpmSyncOpen(false)} />
+
+      <ShadowbanCheckDialog
+        open={shadowbanOpen}
+        accounts={allAccounts.filter((a) => sel.has(a.id)).map((a) => a.name)}
+        onClose={() => setShadowbanOpen(false)}
+      />
+
+      <ShadowbanHistorySheet account={shadowbanAccount} onClose={() => setShadowbanAccount(null)} />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Loader2, Plus } from 'lucide-react'
-import { ACCOUNT_TOPICS } from '@/lib/api'
+import { useTopics } from '@/lib/useTopics'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +15,7 @@ interface Props {
  * multi-select cho tai khoan) - bam la luu ngay, khong qua dialog rieng.
  */
 export function PostTopicCell({ topic, onChange }: Props) {
+  const topicOptions = useTopics()
   const popover = usePopover()
   const [saving, setSaving] = useState(false)
 
@@ -47,11 +48,11 @@ export function PostTopicCell({ topic, onChange }: Props) {
         {saving ? (
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
         ) : topic ? (
-          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2 py-0.5 text-[11px] font-medium text-pill-neutral-ink">
             {topic}
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
             <Plus className="h-3 w-3" /> Gán
           </span>
         )}
@@ -70,7 +71,7 @@ export function PostTopicCell({ topic, onChange }: Props) {
           >
             {!topic && <Check className="h-3 w-3" />}— Bỏ gán —
           </button>
-          {ACCOUNT_TOPICS.map((t) => {
+          {topicOptions.map((t) => {
             const active = t === topic
             return (
               <button

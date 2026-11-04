@@ -77,7 +77,7 @@ export function RescrapeDialog({ open, postIds, onClose, onDone }: Props) {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full bg-primary transition-all duration-300"
+            className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -106,7 +106,7 @@ export function RescrapeDialog({ open, postIds, onClose, onDone }: Props) {
               <div className="mt-1 pl-6 text-xs text-destructive">{it.scrapeError || it.error}</div>
             )}
             {it.ok && (it.entries ?? 0) === 0 && (
-              <div className="mt-1 pl-6 text-xs text-amber-600">
+              <div className="mt-1 pl-6 text-xs text-warning">
                 {it.scrapeError
                   ? `Lỗi scrape: ${it.scrapeError}`
                   : 'Không tìm thấy link shopee trong comment'}

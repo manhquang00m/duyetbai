@@ -1,8 +1,10 @@
 import { db } from '../db';
 import { getSetting, setSetting } from '../db/settings';
 import { listCleanPostsWithTopic } from '../db/distribution';
+import ExcelJS from 'exceljs';
 import { maskLinks, unmaskLinks } from './rewrite';
 import { chatComplete } from './llm';
+import { cellText } from './importer';
 
 export const VARIANT_COUNT = 3;
 
@@ -102,6 +104,20 @@ const countVariants = db.prepare(
 );
 const captionFor = db.prepare('SELECT caption FROM posts WHERE post_id = ?');
 
+/** Ghi de du VARIANT_COUNT ban cua 1 bai trong 1 transaction. */
+function saveVariants(postId: string, variants: string[]): void {
+  const now = new Date().toISOString();
+  db.exec('BEGIN');
+  try {
+    clearVariants.run(postId);
+    variants.forEach((caption, i) => insertVariant.run(postId, i + 1, caption, now));
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
 const LINE_RE = /^\s*(\d+)\.\s*(.+)$/gm;
 
 /** Parse dung DUNG VARIANT_COUNT dong danh so 1..N - thieu/lech thi coi ca lan goi la loi. */
@@ -143,19 +159,103 @@ export async function generateVariantsForPost(
     const out = await chatComplete(getVariantRewritePrompt(), masked);
     const variants = parseVariants(out).map((v) => unmaskLinks(v, links));
 
-    const now = new Date().toISOString();
-    db.exec('BEGIN');
-    try {
-      clearVariants.run(postId);
-      variants.forEach((caption, i) => insertVariant.run(postId, i + 1, caption, now));
-      db.exec('COMMIT');
-    } catch (err) {
-      db.exec('ROLLBACK');
-      throw err;
-    }
+    saveVariants(postId, variants);
     return { ok: true };
   } catch (err) {
     const msg = (err instanceof Error ? err.message : String(err)).split('\n')[0];
     return { ok: false, error: msg };
   }
+}
+
+// ===== Viet lai ngoai app (vd Claude): xuat caption goc -> dien 3 ban -> nhap lai =====
+// Link duoc thay bang [[LINKn]] nhu khi gui Gemini; luc nhap tinh lai tu caption goc trong DB.
+const HEADER = ['POST_ID', 'Caption gốc', 'Bản 1', 'Bản 2', 'Bản 3'];
+const COL_POST = 1;
+const COL_FIRST_VARIANT = 3;
+const MAX_VARIANT_LEN = 5000;
+
+export async function exportVariantsXlsx(filePath: string, scope: 'missing' | 'all'): Promise<number> {
+  const rows = listVariantStatus().filter((r) => scope === 'all' || r.variant_count < VARIANT_COUNT);
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('captions');
+  ws.addRow(HEADER);
+  ws.getRow(1).font = { bold: true };
+  for (const r of rows) ws.addRow([r.post_id, maskLinks(r.caption).masked, '', '', '']);
+  ws.getColumn(1).width = 18;
+  for (let c = 2; c <= 5; c++) {
+    ws.getColumn(c).width = 60;
+    ws.getColumn(c).alignment = { wrapText: true, vertical: 'top' };
+  }
+
+  const guide = wb.addWorksheet('Hướng dẫn');
+  guide.getColumn(1).width = 120;
+  guide.getColumn(1).alignment = { wrapText: true, vertical: 'top' };
+  [
+    'CÁCH DÙNG: đưa file này cho AI (vd Claude) kèm prompt bên dưới, yêu cầu trả lại file .xlsx GIỮ NGUYÊN cấu trúc sheet "captions".',
+    '- Chỉ điền cột C, D, E (Bản 1/2/3). Không sửa cột A (POST_ID) và không đổi thứ tự cột.',
+    '- Giữ nguyên các placeholder [[LINK1]], [[LINK2]]... — app tự thay lại link thật khi nhập.',
+    '- Mỗi dòng phải đủ 3 bản mới được lưu; dòng để trống sẽ bị bỏ qua.',
+    '',
+    'PROMPT (giọng văn đang cấu hình trong app):',
+    getVariantRewritePrompt(),
+  ].forEach((line) => guide.addRow([line]));
+
+  await wb.xlsx.writeFile(filePath);
+  return rows.length;
+}
+
+export interface VariantImportResult {
+  saved: number;
+  skipped: number; // dong chua dien ban nao
+  errors: { row: number; postId: string; error: string }[];
+}
+
+export async function importVariantsXlsx(filePath: string): Promise<VariantImportResult> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(filePath);
+  const ws = wb.getWorksheet('captions') ?? wb.worksheets[0];
+  if (!ws) throw new Error('File không có sheet nào');
+
+  const result: VariantImportResult = { saved: 0, skipped: 0, errors: [] };
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const postId = cellText(row.getCell(COL_POST).value).trim();
+    const variants = Array.from({ length: VARIANT_COUNT }, (_, i) =>
+      cellText(row.getCell(COL_FIRST_VARIANT + i).value).trim(),
+    );
+    const filled = variants.filter(Boolean).length;
+    if (!postId && filled === 0) continue;
+    if (filled === 0) {
+      result.skipped++;
+      continue;
+    }
+    const fail = (error: string) => result.errors.push({ row: r, postId, error });
+    if (filled < VARIANT_COUNT) {
+      fail(`Mới có ${filled}/${VARIANT_COUNT} bản — cần đủ cả 3`);
+      continue;
+    }
+    const post = captionFor.get(postId) as { caption: string } | undefined;
+    if (!post) {
+      fail('POST_ID không có trong kho bài');
+      continue;
+    }
+    if (variants.some((v) => v.length > MAX_VARIANT_LEN)) {
+      fail(`Có bản dài quá ${MAX_VARIANT_LEN} ký tự`);
+      continue;
+    }
+    const { links } = maskLinks(post.caption);
+    const badPlaceholder = variants
+      .flatMap((v) => [...v.matchAll(/\[\[\s*LINK\s*(\d+)\s*\]\]/gi)].map((m) => Number(m[1])))
+      .find((n) => n < 1 || n > links.length);
+    if (badPlaceholder !== undefined) {
+      fail(`Có [[LINK${badPlaceholder}]] nhưng caption gốc chỉ có ${links.length} link`);
+      continue;
+    }
+    saveVariants(
+      postId,
+      variants.map((v) => unmaskLinks(v, links)),
+    );
+    result.saved++;
+  }
+  return result;
 }

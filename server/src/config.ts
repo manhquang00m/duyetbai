@@ -56,12 +56,14 @@ export const LLM_BASE_URL =
 
 /**
  * Danh sach model xep theo thu tu uu tien, ngan cach bang dau phay.
- * Het quota ngay o model dau -> tu chuyen sang model ke tiep (xem services/llm.ts).
- * Ca hai mac dinh deu la ban Lite: 500 request/ngay, trong khi cac ban Flash chi 20/ngay.
- * Google khai tu model kha nhanh (2.0-flash va 2.5-flash-lite da ngung) - neu bao 404 kem cau
- * "no longer available" thi trong chinh thong bao loi co ten model thay the.
+ * Model het quota (ngay/phut) hoac khong con ton tai (404) -> tu chuyen model ke tiep (services/llm.ts).
+ * Free tier (AI Studio, 10/2026): 3.5-flash-lite 15 RPM/500 RPD; 2.5-flash-lite 10/20;
+ * 3-flash-preview 5/20; 2.5-flash 5/20 -> Lite dat truoc, cac ban 20/ngay chi la du phong.
  */
-export const LLM_MODELS = (process.env.LLM_MODEL || 'gemini-3.5-flash-lite,gemini-3.1-flash-lite')
+export const LLM_MODELS = (
+  process.env.LLM_MODEL ||
+  'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-2.5-flash-lite,gemini-3-flash-preview,gemini-2.5-flash'
+)
   .split(',')
   .map((m) => m.trim())
   .filter(Boolean);
@@ -101,6 +103,22 @@ export const SHOPEE_SESSION_PATH = path.join(repoRoot, '.pw-session', 'shopee.js
  */
 export const GPM_GLOBAL_URL = process.env.GPM_GLOBAL_URL || 'http://127.0.0.1:9495';
 export const GPM_STABLE_URL = process.env.GPM_STABLE_URL || 'http://127.0.0.1:19995';
+
+/**
+ * ===== Check shadowban (services/shadowbanCheck.ts) =====
+ * Nick "viewer": 1 profile GPM DA DANG NHAP Threads bang nick KHAC (khong phai nick dang check),
+ * dung de search @username xem nick co hien trong ket qua tim kiem khong. De trong -> bo qua buoc
+ * nay, chi check bang trang profile/bai luc khong dang nhap.
+ */
+export const SHADOWBAN_VIEWER_PROFILE_ID = process.env.SHADOWBAN_VIEWER_PROFILE_ID?.trim() || '';
+export const SHADOWBAN_VIEWER_EDITION: 'global' | 'stable' =
+  process.env.SHADOWBAN_VIEWER_EDITION?.trim().toLowerCase() === 'global' ? 'global' : 'stable';
+
+/** So bai gan nhat (da dang >= 12h) dung tinh median view "hien tai". */
+export const SHADOWBAN_RECENT_POSTS = Number(process.env.SHADOWBAN_RECENT_POSTS) || 5;
+
+/** So bai cu hon lay them moi lan check de lam baseline (cong voi lich su da luu trong DB). */
+export const SHADOWBAN_BASELINE_POSTS = Number(process.env.SHADOWBAN_BASELINE_POSTS) || 5;
 
 /**
  * Khoa cho tool auto dang goi API bao ket qua dang bai (header X-Api-Key). KHONG co gia tri mac

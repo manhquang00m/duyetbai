@@ -260,7 +260,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
           {proxyMode === 'select' ? (
             <>
               <select
-                className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+                className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
                 value={form.proxy ?? ''}
                 onChange={(e) => setForm((f) => ({ ...f, proxy: e.target.value || null }))}
               >
@@ -320,7 +320,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Platform</label>
           <select
-            className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+            className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
             value={form.platform ?? ''}
             onChange={(e) =>
               setForm((f) => ({
@@ -341,7 +341,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
               Loại proxy
             </label>
             <select
-              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
               value={form.proxy_type ?? ''}
               onChange={(e) =>
                 setForm((f) => ({
@@ -363,7 +363,7 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
               Trạng thái
             </label>
             <select
-              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
+              className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9"
               value={form.appeal_status ?? ''}
               onChange={(e) =>
                 setForm((f) => ({
@@ -371,6 +371,9 @@ export function AccountFormDialog({ open, account, onClose, onSaved }: Props) {
                   appeal_status: e.target.value
                     ? (e.target.value as (typeof APPEAL_STATUSES)[number])
                     : null,
+                  // Cung luat voi dropdown o bang + import: "Die" <=> banned. Khong dong bo thi nick
+                  // doi Die -> Live van banned, bi loai khoi Phan phoi bai ma khong ai thay.
+                  banned: e.target.value === 'Die',
                 }))
               }
             >

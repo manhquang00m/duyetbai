@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import multer from 'multer';
+import { z } from 'zod';
 import { exportShopeeInput, exportPosts } from '../services/exporter';
 import { importShopeeLinks } from '../services/importer';
 import { db } from '../db';
@@ -51,6 +52,41 @@ router.get('/export/posts', async (req, res, next) => {
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const out = path.join(EXPORT_DIR, 'posts.xlsx');
     await exportPosts(out, filterOpts);
+    res.download(out, `posts_${fileStamp()}.xlsx`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Xuat dung cac bai dang tick chon (bo qua bo loc). POST vi danh sach id co the qua dai cho URL.
+const SelectedBody = z.object({
+  postIds: z.array(z.string().trim().min(1).max(200)).min(1).max(5000),
+});
+
+function parseSelected(body: unknown, res: Response): string[] | null {
+  const parsed = SelectedBody.safeParse(body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Danh sách bài không hợp lệ (1–5000 bài)' });
+    return null;
+  }
+  return [...new Set(parsed.data.postIds)];
+}
+
+// POST /api/export/posts/selected/check { postIds } -> canh bao truoc khi xuat cac bai da chon
+router.post('/export/posts/selected/check', (req, res) => {
+  const postIds = parseSelected(req.body, res);
+  if (!postIds) return;
+  res.json(getExportWarnings({ postIds }));
+});
+
+// POST /api/export/posts/selected { postIds } -> file posts.xlsx (cung dinh dang GET /export/posts)
+router.post('/export/posts/selected', async (req, res, next) => {
+  const postIds = parseSelected(req.body, res);
+  if (!postIds) return;
+  try {
+    fs.mkdirSync(EXPORT_DIR, { recursive: true });
+    const out = path.join(EXPORT_DIR, 'posts_selected.xlsx');
+    await exportPosts(out, { postIds });
     res.download(out, `posts_${fileStamp()}.xlsx`);
   } catch (err) {
     next(err);

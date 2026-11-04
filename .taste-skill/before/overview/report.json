@@ -1,0 +1,1728 @@
+{
+ "url": "http://localhost:5173/",
+ "at": "2026-11-03T17:45:25.873Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.99
+   ],
+   "motion": {
+    "elements": 14,
+    "css": 10,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 246,
+     "img": 5,
+     "video": 0,
+     "canvas": 0,
+     "svg": 21,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [
+      "😃",
+      "😳",
+      "🙏",
+      "🏻",
+      "🥹",
+      "👍",
+      "💋",
+      "🥲",
+      "🤡",
+      "😭"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Tổng quan",
+     "words": 2,
+     "lines": 1,
+     "size": 24,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "737",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.16,
+      "top": 243,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "1.540",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.16,
+      "top": 243,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "807",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.16,
+      "top": 243,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "72",
+      "words": 1,
+      "chars": 2,
+      "lines": 1,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.16,
+      "top": 243,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 4,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      12,
+      14,
+      16,
+      18,
+      24,
+      30
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6
+     },
+     "measureChars": 138,
+     "max": {
+      "size": 30,
+      "vw": 2.1,
+      "font": "Inter Variable",
+      "text": "737"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.02,
+     "centerShare": 0.01,
+     "smallText": 1
+    },
+    "eyebrows": [
+     {
+      "text": "Bài viết",
+      "above": "737",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 203
+     },
+     {
+      "text": "Media đã tải",
+      "above": "1.540",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 203
+     },
+     {
+      "text": "Link Shopee",
+      "above": "807",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 203
+     },
+     {
+      "text": "Account",
+      "above": "72",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 203
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#60626f",
+       "share": 0.87
+      },
+      {
+       "color": "#0d0f18",
+       "share": 0.09
+      },
+      {
+       "color": "#5f626f",
+       "share": 0.02
+      },
+      {
+       "color": "#5a54f7",
+       "share": 0.02
+      }
+     ],
+     "button": null,
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 0,
+     "inHero": 0,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": []
+    },
+    "surfaces": {
+     "shadowStatic": 5,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 6,
+     "hairlineSamples": [
+      "aside.sticky.top-0 240px",
+      "header.sticky.top-0 1190px",
+      "a.flex.items-center 1124px",
+      "a.flex.items-center 1124px",
+      "a.flex.items-center 1124px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 5,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 174
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": true,
+     "height": 900,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": 24,
+     "right": 55
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 174,
+      "height": 126,
+      "words": 12,
+      "media": 0,
+      "middle": 227,
+      "heading": {
+       "text": "737",
+       "size": 30,
+       "tag": "div"
+      },
+      "left": 293,
+      "right": 235,
+      "textLeft": 293,
+      "textRight": 235,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.space-y-3",
+      "tag": "section",
+      "top": 332,
+      "height": 366,
+      "words": 157,
+      "media": 0,
+      "middle": 8,
+      "heading": {
+       "text": "Bài gần đây",
+       "size": 18,
+       "tag": "h2"
+      },
+      "left": 272,
+      "right": 55,
+      "textLeft": 272,
+      "textRight": 55,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Tổng quan",
+      "size": 24,
+      "top": 88,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 272,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 2,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.17,
+    "voidBox": {
+     "x": 240,
+     "y": 720,
+     "w": 1200,
+     "h": 180
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": {
+     "w": 240,
+     "tag": "aside",
+     "links": 13,
+     "share": 0.17
+    },
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 32,
+     "right": -837
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 88,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 5,
+     "firstScreen": 5,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       16,
+       5
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 10,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 4,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 1,
+     "kpiMax": 30
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.09,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      16,
+      18,
+      24,
+      30
+     ]
+    },
+    "title": {
+     "text": "Tổng quan",
+     "size": 24,
+     "top": 88
+    },
+    "colourShare": 0.003
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.99
+   ],
+   "motion": {
+    "elements": 14,
+    "css": 10,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1024,
+     "screens": 1,
+     "words": 246,
+     "img": 5,
+     "video": 0,
+     "canvas": 0,
+     "svg": 21,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [
+      "😃",
+      "😳",
+      "🙏",
+      "🏻",
+      "🥹",
+      "👍",
+      "💋",
+      "🥲",
+      "🤡",
+      "😭"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 76,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Tổng quan",
+     "words": 2,
+     "lines": 1,
+     "size": 24,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "737",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.25,
+      "top": 231,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "1.540",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.25,
+      "top": 231,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "807",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.25,
+      "top": 373,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "72",
+      "words": 1,
+      "chars": 2,
+      "lines": 1,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.25,
+      "top": 373,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 4,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      11,
+      12,
+      14,
+      16,
+      18,
+      24,
+      30
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6
+     },
+     "measureChars": 45,
+     "max": {
+      "size": 30,
+      "vw": 3.9,
+      "font": "Inter Variable",
+      "text": "737"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.02,
+     "centerShare": 0.01,
+     "smallText": 1
+    },
+    "eyebrows": [
+     {
+      "text": "Bài viết",
+      "above": "737",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 191
+     },
+     {
+      "text": "Media đã tải",
+      "above": "1.540",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 191
+     },
+     {
+      "text": "Link Shopee",
+      "above": "807",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 333
+     },
+     {
+      "text": "Account",
+      "above": "72",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 333
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#60626f",
+       "share": 0.87
+      },
+      {
+       "color": "#0d0f18",
+       "share": 0.09
+      },
+      {
+       "color": "#5f626f",
+       "share": 0.02
+      },
+      {
+       "color": "#5a54f7",
+       "share": 0.02
+      }
+     ],
+     "button": null,
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 0,
+     "inHero": 0,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": []
+    },
+    "surfaces": {
+     "shadowStatic": 5,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 6,
+     "hairlineSamples": [
+      "aside.sticky.top-0 240px",
+      "header.sticky.top-0 518px",
+      "a.flex.items-center 476px",
+      "a.flex.items-center 476px",
+      "a.flex.items-center 476px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 5,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 162
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": true,
+     "height": 1024,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1024,
+    "margins": {
+     "left": 24,
+     "right": 43
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 162,
+      "height": 268,
+      "words": 12,
+      "media": 0,
+      "middle": 165,
+      "heading": {
+       "text": "737",
+       "size": 30,
+       "tag": "div"
+      },
+      "left": 281,
+      "right": 154,
+      "textLeft": 281,
+      "textRight": 154,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.space-y-3",
+      "tag": "section",
+      "top": 462,
+      "height": 366,
+      "words": 157,
+      "media": 0,
+      "middle": 8,
+      "heading": {
+       "text": "Bài gần đây",
+       "size": 18,
+       "tag": "h2"
+      },
+      "left": 260,
+      "right": 43,
+      "textLeft": 260,
+      "textRight": 43,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Tổng quan",
+      "size": 24,
+      "top": 76,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 260,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 2,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": {
+     "w": 240,
+     "tag": "aside",
+     "links": 13,
+     "share": 0.31
+    },
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 20,
+     "right": -1497
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.33,
+     "top": 76,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 5,
+     "firstScreen": 5,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       16,
+       5
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 10,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 4,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 1,
+     "kpiMax": 30
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.09,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      16,
+      18,
+      24,
+      30
+     ]
+    },
+    "title": {
+     "text": "Tổng quan",
+     "size": 24,
+     "top": 76
+    },
+    "colourShare": 0.005
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.93
+   ],
+   "motion": {
+    "elements": 14,
+    "css": 10,
+    "transitions": 4,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 844,
+     "screens": 1,
+     "words": 204,
+     "img": 5,
+     "video": 0,
+     "canvas": 0,
+     "svg": 21,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [
+      "😃",
+      "😳",
+      "🙏",
+      "🏻",
+      "🥹",
+      "👍",
+      "💋",
+      "🥲",
+      "🤡",
+      "😭"
+     ],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.4,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Tổng quan",
+     "words": 2,
+     "lines": 1,
+     "size": 20,
+     "font": "Inter Variable"
+    },
+    "headings": [
+     {
+      "text": "737",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 203,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "1.540",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 203,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "807",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 325,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "72",
+      "words": 1,
+      "chars": 2,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.33,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 325,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 4,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter Variable",
+       "share": 1,
+       "mono": false
+      }
+     ],
+     "familyCount": 1,
+     "sizes": [
+      12,
+      14,
+      16,
+      20,
+      24
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter Variable",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 6
+     },
+     "measureChars": 29,
+     "max": {
+      "size": 24,
+      "vw": 6.2,
+      "font": "Inter Variable",
+      "text": "737"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#fdfdff",
+     "bodyBgHsl": {
+      "h": 240,
+      "s": 1,
+      "l": 1
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 450,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#60626f",
+       "share": 0.88
+      },
+      {
+       "color": "#0d0f18",
+       "share": 0.11
+      },
+      {
+       "color": "#5a54f7",
+       "share": 0.01
+      }
+     ],
+     "button": null,
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 0,
+     "inHero": 0,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": []
+    },
+    "surfaces": {
+     "shadowStatic": 5,
+     "shadowOverlay": 0,
+     "shadowSamples": [
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0",
+      "div.rounded-xl.border → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 5,
+     "hairlineSamples": [
+      "header.sticky.top-0 390px",
+      "a.flex.items-center 364px",
+      "a.flex.items-center 364px",
+      "a.flex.items-center 364px",
+      "a.flex.items-center 364px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 0,
+     "blurred": 1,
+     "roundedBoxes": 5,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": true,
+       "rounded": true,
+       "top": 142
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 0,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter variable"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 844,
+    "margins": {
+     "left": 12,
+     "right": 25
+    },
+    "sections": [
+     {
+      "sel": "div.grid.grid-cols-2",
+      "tag": "div",
+      "top": 142,
+      "height": 232,
+      "words": 12,
+      "media": 0,
+      "middle": 107,
+      "heading": {
+       "text": "737",
+       "size": 24,
+       "tag": "div"
+      },
+      "left": 29,
+      "right": 91,
+      "textLeft": 29,
+      "textRight": 91,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.space-y-3",
+      "tag": "section",
+      "top": 398,
+      "height": 378,
+      "words": 157,
+      "media": 0,
+      "middle": 8,
+      "heading": {
+       "text": "Bài gần đây",
+       "size": 16,
+       "tag": "h2"
+      },
+      "left": 12,
+      "right": 25,
+      "textLeft": 12,
+      "textRight": 25,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Tổng quan",
+      "size": 20,
+      "top": 68,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [
+     {
+      "text": "Tổng quan",
+      "side": "left",
+      "px": 12
+     },
+     {
+      "text": "Thống kê nhanh toàn bộ dữ liệu đã thu thập",
+      "side": "left",
+      "px": 12
+     },
+     {
+      "text": "Bài gần đây",
+      "side": "left",
+      "px": 12
+     }
+    ],
+    "edges": [
+     {
+      "x": 12,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 2,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#fdfdff",
+    "sidebar": null,
+    "topbar": {
+     "h": 56
+    },
+    "canvas": {
+     "left": 8,
+     "right": -1627
+    },
+    "hero": {
+     "text": "Tổng quan",
+     "words": 2,
+     "chars": 9,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Inter Variable",
+     "weight": 600,
+     "tracking": -0.02,
+     "leading": 1.4,
+     "top": 68,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 5,
+     "firstScreen": 5,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       16,
+       5
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 10,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 4,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      },
+      {
+       "hue": 240,
+       "size": 36,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 4,
+     "tabularShare": 1,
+     "kpiMax": 24
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.08,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      16,
+      20,
+      24
+     ]
+    },
+    "title": {
+     "text": "Tổng quan",
+     "size": 20,
+     "top": 68
+    },
+    "colourShare": 0.005
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "emoji",
+   "width": 1440,
+   "message": "Emoji in the page: 😃 😳 🙏 🏻 🥹 👍 💋 🥲 🤡 😭",
+   "fix": "Remove. Use words or real imagery.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "dev-server",
+   "width": 1440,
+   "message": "This page is served by a development server (Vite, webpack or Next in dev mode).",
+   "fix": "Run the last gate on the production build too (vite build && vite preview, next build && next start, or the built index.html): minifiers and bundlers change the CSS a visitor receives.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "icon-chips",
+   "width": 1440,
+   "message": "4 icons sit in tinted squares or circles.",
+   "fix": "This is the commonest tell of a generated dashboard. Drop the tinted square: a KPI is a label and a number; an icon, if it helps, is plain and in the text colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "edge-text",
+   "width": 390,
+   "message": "3 text block(s) sit 12–15px from the phone's edge: \"Tổng quan\" (12px); \"Thống kê nhanh toàn bộ dữ liệu\" (12px); \"Bài gần đây\" (12px)",
+   "fix": "The page margin is 16–20px on a phone; the header and the corner labels sit on it too."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\overview\\desktop-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\overview\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\overview\\tablet-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\overview\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\duyetbai\\.taste-skill\\before\\overview\\mobile-fold.jpg",
+   "pages": [
+    "D:\\duyetbai\\.taste-skill\\before\\overview\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

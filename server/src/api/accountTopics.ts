@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { ACCOUNT_TOPICS, listAccountTopics, setAuthorTopic, setPostTopic, setPostsTopic } from '../db/accountTopics';
+import { listAccountTopics, setAuthorTopic, setPostTopic, setPostsTopic } from '../db/accountTopics';
+import { isTopic } from '../db/topics';
 
 const router = Router();
 
@@ -51,7 +52,7 @@ router.post('/posts', (req, res) => {
     res.status(400).json({ error: 'Danh sách bài không hợp lệ' });
     return;
   }
-  if (topic !== null && !(ACCOUNT_TOPICS as readonly string[]).includes(topic)) {
+  if (topic !== null && !isTopic(topic)) {
     res.status(400).json({ error: 'Chủ đề không hợp lệ' });
     return;
   }

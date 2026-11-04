@@ -40,7 +40,7 @@ export function SingleFilterDropdown<V extends string>({
         aria-haspopup="menu"
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          isActive && 'border-primary text-foreground',
+          isActive && 'border-foreground/60 text-foreground',
         )}
       >
         {label}
@@ -109,7 +109,7 @@ export function TopicFilterDropdown({
         aria-haspopup="menu"
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          isActive && 'border-primary text-foreground',
+          isActive && 'border-foreground/60 text-foreground',
         )}
       >
         {label}
@@ -201,7 +201,7 @@ export function MultiFilterDropdown({ groups, activeCount, onClearAll }: MultiFi
         aria-haspopup="menu"
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          activeCount > 0 && 'border-primary text-foreground',
+          activeCount > 0 && 'border-foreground/60 text-foreground',
         )}
       >
         <Filter className="h-3.5 w-3.5" />
@@ -221,7 +221,7 @@ export function MultiFilterDropdown({ groups, activeCount, onClearAll }: MultiFi
               </label>
             ) : (
               <div key={g.key}>
-                <div className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g.label}</div>
+                <div className="mb-1 px-1 text-xs text-muted-foreground">{g.label}</div>
                 <div className="space-y-0.5">
                   {g.options.map((opt) => (
                     <button

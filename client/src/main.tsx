@@ -18,6 +18,7 @@ import { RewritePage } from '@/pages/RewritePage'
 import { AffiliatePage } from '@/pages/AffiliatePage'
 import { InsightsPage } from './pages/InsightsPage'
 import { PostLogPage } from '@/pages/PostLogPage'
+import { TopicsPage } from '@/pages/TopicsPage'
 
 initTheme()
 
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: 'affiliate', element: <AffiliatePage /> },
       { path: 'insights', element: <InsightsPage /> },
       { path: 'post-log', element: <PostLogPage /> },
+      { path: 'topics', element: <TopicsPage /> },
     ],
   },
 ])
