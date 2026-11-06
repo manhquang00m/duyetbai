@@ -44,8 +44,9 @@ export function StatusCheckboxFilter({
           selected.size > 0 && 'border-foreground/60 text-foreground',
         )}
       >
-        Trạng thái
-        {selected.size > 0 && <span className="font-semibold">: {selected.size}</span>}
+        <span>
+          Trạng thái{selected.size > 0 && <span className="font-semibold">: {selected.size}</span>}
+        </span>
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </button>
       <PopoverPanel popover={popover} className="w-56 p-2">

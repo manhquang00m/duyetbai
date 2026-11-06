@@ -1,39 +1,72 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Play, Save, Trash2, RefreshCw, Search, Copy, Pencil, ServerOff } from 'lucide-react'
+import { Loader2, Play, Save, Trash2, RefreshCw, Copy, Pencil, ServerOff } from 'lucide-react'
 import {
   checkProxies,
   fetchProxies,
   saveProxies,
   deleteProxy,
   recheckProxy,
+  startProxyCheckJob,
+  batchStreamUrl,
   PROXY_TYPES,
+  type JobState,
   type SaveProxyItem,
-  type ProxyCheckResult,
   type ProxyType,
   type SavedProxy,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { Field } from '@/components/ui/field'
 import { ProxyEditDialog } from '@/components/ProxyEditDialog'
 import { PageHeader } from '@/components/PageHeader'
 import { FloatingBar } from '@/components/FloatingBar'
 import { EmptyState } from '@/components/EmptyState'
+import { BulkPasteField } from '@/components/BulkPasteField'
+import { SearchInput } from '@/components/filters/SearchInput'
+import { FilterChips, type FilterChip } from '@/components/filters/FilterChips'
+import { SavedViews } from '@/components/filters/SavedViews'
 import { cn } from '@/lib/utils'
+import { q, useUrlState } from '@/lib/useUrlState'
+import { maskProxy, parseProxies, proxyKey } from '@/lib/parsers'
+import { confirmDialog, undoable } from '@/lib/confirm'
+
+/*
+ * Bo loc tren URL. tab=die mo thang tab Proxy Die (link tu Ctrl+K). Tab "Proxy da luu" mac dinh chi
+ * hien proxy Live (Die co tab rieng) - mac dinh do khong tinh la "dang loc".
+ */
+const FILTERS = {
+  tab: q.enum(['all', 'die'] as const, 'all'),
+  q: q.str(),
+  status: q.enum(['live', 'all', 'die', 'unchecked'] as const, 'live'),
+  assigned: q.enum(['all', 'assigned', 'unassigned'] as const, 'all'),
+}
+const STATUS_OPTS = [
+  { value: 'live' as const, label: 'Live' },
+  { value: 'all' as const, label: 'Tất cả' },
+  { value: 'die' as const, label: 'Die' },
+  { value: 'unchecked' as const, label: 'Chưa kiểm tra' },
+]
+const ASSIGN_OPTS = [
+  { value: 'all' as const, label: 'Tất cả' },
+  { value: 'assigned' as const, label: 'Đã gán' },
+  { value: 'unassigned' as const, label: 'Chưa gán' },
+]
+
+interface CheckRow {
+  proxy: string
+  status: 'live' | 'die'
+  ip?: string
+  ms?: number
+  error?: string
+}
 
 const SELECT_CLS =
   'flex h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:h-9'
-
-const tabClass = (active: boolean) =>
-  cn(
-    'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:py-1.5',
-    active ? 'bg-active text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-  )
 
 function StatusBadge({ status }: { status: string | null }) {
   if (status === 'live') return <span className="whitespace-nowrap text-xs text-muted-foreground">Live</span>
@@ -91,8 +124,11 @@ function ProxyActions({ isChecking, onEdit, onCopy, onRecheck, onDelete }: Proxy
 
 export function ProxyPage() {
   const qc = useQueryClient()
+  // Chuoi proxy co user/pass -> KHONG luu nhap vao localStorage.
   const [text, setText] = useState('')
-  const [results, setResults] = useState<ProxyCheckResult[]>([])
+  const [job, setJob] = useState<JobState | null>(null)
+  const [checking, setChecking] = useState(false)
+  const esRef = useRef<EventSource | null>(null)
   // Loai proxy + ghi chu ap cho CA LO vua dan (nhap 1 lan thay vi go lai tung dong).
   const [importType, setImportType] = useState<ProxyType | ''>('')
   const [importNote, setImportNote] = useState('')
@@ -104,15 +140,19 @@ export function ProxyPage() {
   })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['proxies'] })
 
-  // "Tất cả": xem/quan ly binh thuong (mac dinh Live). "Proxy Die": tab rieng de theo doi + kiem
-  // tra lai dinh ky cac proxy Die - khong xoa di vi sau nay check lai co the da Live tro lai.
-  const [savedTab, setSavedTab] = useState<'all' | 'die'>('all')
-  const [savedSearch, setSavedSearch] = useState('')
-  const [savedStatusFilter, setSavedStatusFilter] = useState<'all' | 'live' | 'die' | 'unchecked'>(
-    'live',
-  )
-  const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+  // "Proxy da luu": xem/quan ly binh thuong (mac dinh Live). "Proxy Die": tab rieng de theo doi +
+  // kiem tra lai dinh ky cac proxy Die - khong xoa di vi sau nay check lai co the da Live tro lai.
+  const { values: f, set: setF } = useUrlState(FILTERS)
+  const savedTab = f.tab
+  const savedSearch = f.q
+  const savedStatusFilter = f.status
+  const assignFilter = f.assigned
   const [sel, setSel] = useState<Set<number>>(new Set())
+
+  const existingKeys = useMemo(() => new Set((saved ?? []).map((p) => proxyKey(p.proxy))), [saved])
+  const parsed = useMemo(() => parseProxies(text, existingKeys), [text, existingKeys])
+
+  useEffect(() => () => esRef.current?.close(), [])
 
   const dieProxies = useMemo(() => (saved ?? []).filter((p) => p.status === 'die'), [saved])
 
@@ -135,36 +175,51 @@ export function ProxyPage() {
     })
   }, [saved, dieProxies, savedTab, savedSearch, savedStatusFilter, assignFilter])
 
-  const checkMut = useMutation({
-    mutationFn: (proxies: string[]) => checkProxies(proxies),
-    onSuccess: (res) => {
-      setResults(res)
-      const live = res.filter((r) => r.status === 'live').length
-      toast.success(`Xong: ${live} Live / ${res.length - live} Die`)
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi check'),
-  })
+  const results: CheckRow[] = (job?.items ?? []).map((it) => ({
+    proxy: it.url,
+    status: it.ok ? 'live' : 'die',
+    ip: it.ip,
+    ms: it.ms,
+    error: it.error,
+  }))
+  const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
+  // Ap loai proxy + ghi chu cua lo cho cac proxy vua kiem tra (job da luu status/ip).
+  const batchMeta = () => ({ proxy_type: importType || null, note: importNote.trim() || null })
   const saveMut = useMutation({
     mutationFn: (items: SaveProxyItem[]) => saveProxies(items),
-    onSuccess: () => {
-      invalidate()
-      toast.success('Đã lưu')
-    },
+    onSuccess: invalidate,
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lưu proxy không thành công'),
   })
 
   const delMut = useMutation({
     mutationFn: (id: number) => deleteProxy(id),
-    onSuccess: () => {
-      invalidate()
-      toast.success('Đã xoá')
-    },
+    onSettled: invalidate,
   })
 
   const recheckMut = useMutation({
     mutationFn: (id: number) => recheckProxy(id),
     onSuccess: invalidate,
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi kiểm tra lại'),
   })
+
+  /** Xoa 1 proxy: an ngay, 5 giay de Hoan tac roi moi goi server. */
+  const deleteOne = (p: SavedProxy) => {
+    const snapshot = qc.getQueryData<SavedProxy[]>(['proxies'])
+    qc.cancelQueries({ queryKey: ['proxies'] })
+    qc.setQueryData<SavedProxy[]>(['proxies'], (old) => (old ?? []).filter((x) => x.id !== p.id))
+    setSel((prev) => {
+      if (!prev.has(p.id)) return prev
+      const next = new Set(prev)
+      next.delete(p.id)
+      return next
+    })
+    undoable({
+      message: `Đã xoá proxy ${maskProxy(p.proxy)}` + (p.account_count ? ` (${p.account_count} account đang dùng)` : ''),
+      run: () => delMut.mutateAsync(p.id),
+      onUndo: () => qc.setQueryData(['proxies'], snapshot),
+    })
+  }
 
   // Kiem tra lai HANG LOAT toan bo proxy Die da luu - proxy thue thuong xoay IP nen Die hom nay
   // co the da Live tro lai, khong nen phai bam kiem tra lai tung dong 1.
@@ -244,8 +299,11 @@ export function ProxyPage() {
     )
   }
 
+  const visibleSel = filteredSaved.filter((p) => sel.has(p.id))
+  const hiddenSelCount = sel.size - visibleSel.length
+
   const copyAllSaved = () => {
-    const list = sel.size > 0 ? (saved ?? []).filter((p) => sel.has(p.id)) : filteredSaved
+    const list = sel.size > 0 ? visibleSel : filteredSaved
     if (list.length === 0) {
       toast.error('Không có proxy nào để copy')
       return
@@ -253,110 +311,185 @@ export function ProxyPage() {
     copyText(list.map((p) => p.proxy).join('\n'), `Đã copy ${list.length} proxy`)
   }
 
+  /**
+   * Kiem tra + luu 1 buoc qua job nen (SSE, co tien do). Server luu thang ket qua (ca Live lan Die)
+   * vao kho - proxy Die khong bi bo vi sau nay kiem tra lai co the Live tro lai (tab "Proxy Die").
+   * Xong thi ap loai proxy + ghi chu cua lo, xoa o dan.
+   */
   const runCheck = () => {
-    const proxies = text
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
+    if (checking) return
+    const proxies = parsed.values
     if (proxies.length === 0) {
-      toast.error('Nhập ít nhất 1 proxy')
+      toast.error(
+        parsed.lines.length === 0
+          ? 'Nhập ít nhất 1 proxy'
+          : 'Không có proxy mới hợp lệ để kiểm tra (xem dòng lỗi / đã có)',
+      )
       return
     }
-    checkMut.mutate(proxies)
+    esRef.current?.close()
+    setJob(null)
+    setChecking(true)
+    const meta = batchMeta()
+    startProxyCheckJob(proxies)
+      .then(({ jobId }) => {
+        const es = new EventSource(batchStreamUrl(jobId))
+        esRef.current = es
+        es.onmessage = async (e) => {
+          const d = JSON.parse(e.data) as { type: string; job: JobState }
+          setJob(d.job)
+          if (d.type !== 'end') return
+          es.close()
+          esRef.current = null
+          const items = d.job.items
+          try {
+            if (items.length > 0 && (meta.proxy_type || meta.note))
+              await saveProxies(items.map((it) => ({ proxy: it.url, ...meta })))
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Không áp được loại proxy / ghi chú')
+          }
+          setChecking(false)
+          invalidate()
+          qc.invalidateQueries({ queryKey: ['accounts'] })
+          if (d.job.status === 'error') {
+            toast.error(d.job.error ?? 'Lỗi kiểm tra proxy')
+            return
+          }
+          const live = items.filter((it) => it.ok).length
+          toast.success(`Đã kiểm tra & lưu ${items.length} proxy: ${live} Live / ${items.length - live} Die`)
+          setText('')
+        }
+        es.onerror = () => {
+          es.close()
+          esRef.current = null
+          setChecking(false)
+          toast.error('Mất kết nối tới tiến trình kiểm tra')
+        }
+      })
+      .catch((err) => {
+        setChecking(false)
+        toast.error(err instanceof Error ? err.message : 'Lỗi kiểm tra proxy')
+      })
   }
 
-  // Luu TOAN BO ket qua da kiem tra (ca Live lan Die) - proxy Die khong bi bo/xoa vi sau nay kiem
-  // tra lai co the da Live tro lai (xem tab "Proxy Die" ben duoi).
-  const saveAllChecked = () => {
-    const items = results.map((r) => ({
-      proxy: r.proxy,
-      status: r.status,
-      ip: r.ip,
-      proxy_type: importType || null,
-      note: importNote.trim() || null,
-    }))
-    if (items.length === 0) {
-      toast.error('Không có proxy để lưu')
-      return
-    }
-    saveMut.mutate(items)
+  // Doi loai / ghi chu sau khi da kiem tra -> ap lai cho ca lo vua kiem tra.
+  const reapplyMeta = () => {
+    if (results.length === 0) return
+    const meta = batchMeta()
+    saveMut.mutate(
+      results.map((r) => ({ proxy: r.proxy, ...meta })),
+      { onSuccess: () => toast.success(`Đã cập nhật loại & ghi chú cho ${results.length} proxy`) },
+    )
   }
+
+  const statusLabel = STATUS_OPTS.find((o) => o.value === savedStatusFilter)?.label
+  const chipList: (FilterChip | false)[] = [
+    !!savedSearch && { key: 'q', label: 'Tìm', value: `“${savedSearch}”`, onRemove: () => setF({ q: '' }) },
+    savedTab === 'all' &&
+      savedStatusFilter !== 'live' && {
+        key: 'status',
+        label: 'Trạng thái',
+        value: statusLabel,
+        onRemove: () => setF({ status: 'live' }),
+      },
+    assignFilter !== 'all' && {
+      key: 'assigned',
+      label: 'Gán account',
+      value: ASSIGN_OPTS.find((o) => o.value === assignFilter)?.label,
+      onRemove: () => setF({ assigned: 'all' }),
+    },
+  ]
+  const chips = chipList.filter((c): c is FilterChip => !!c)
+  const clearAll = () => setF({ q: '', status: 'live', assigned: 'all' })
 
   const allSelected = filteredSaved.length > 0 && filteredSaved.every((p) => sel.has(p.id))
   const someSelected = filteredSaved.some((p) => sel.has(p.id)) && !allSelected
-  const emptyText = (saved ?? []).length === 0 ? 'Chưa lưu proxy nào.' : 'Không có proxy khớp bộ lọc.'
+  const emptyText =
+    (saved ?? []).length === 0
+      ? 'Chưa lưu proxy nào.'
+      : savedTab === 'die' && dieProxies.length === 0
+        ? 'Không có proxy Die nào.'
+        : 'Không có proxy khớp bộ lọc.'
 
   return (
     <div className={cn('mx-auto max-w-6xl space-y-5 sm:space-y-6', sel.size > 0 && 'pb-24')}>
       <PageHeader
         title="Proxy"
-        description={
-          <>
-            Nhập <code className="rounded bg-muted px-1">ip:port:username:password</code> (mỗi dòng 1
-            proxy), kiểm tra Live/Die rồi lưu.
-          </>
-        }
+        description="Dán proxy mỗi dòng 1 cái — nhận ip:port, ip:port:user:pass, user:pass@ip:port hoặc http(s)/socks5://… — kiểm tra Live/Die và lưu vào kho."
       />
 
-      <Textarea
-        placeholder="1.2.3.4:8080:user:pass&#10;5.6.7.8:9090:user:pass"
+      <BulkPasteField
+        id="proxy-paste"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={setText}
+        result={parsed}
+        onSubmit={runCheck}
+        noun="proxy"
+        formatRaw={maskProxy}
         rows={5}
-        disabled={checkMut.isPending}
-        className="font-mono"
+        disabled={checking}
+        placeholder={'1.2.3.4:8080:user:pass\n5.6.7.8:9090'}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Loại proxy (áp cho cả lô vừa dán)
-          </label>
-          <select
-            className={SELECT_CLS}
-            value={importType}
-            onChange={(e) => setImportType(e.target.value as ProxyType | '')}
-          >
-            <option value="">— Không đặt —</option>
-            {PROXY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Ghi chú (áp cho cả lô)
-          </label>
-          <Input
-            value={importNote}
-            onChange={(e) => setImportNote(e.target.value)}
-            placeholder="vd: mua ngày 20/09, hạn 1 tháng"
-          />
-        </div>
+        <Field label="Loại proxy" hint="Áp cho cả lô vừa dán">
+          {(fp) => (
+            <select
+              {...fp}
+              className={SELECT_CLS}
+              value={importType}
+              onChange={(e) => setImportType(e.target.value as ProxyType | '')}
+            >
+              <option value="">— Không đặt —</option>
+              {PROXY_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label="Ghi chú" hint="Áp cho cả lô">
+          {(fp) => (
+            <Input
+              {...fp}
+              value={importNote}
+              onChange={(e) => setImportNote(e.target.value)}
+              placeholder="vd: mua ngày 20/09, hạn 1 tháng"
+            />
+          )}
+        </Field>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={runCheck} disabled={checkMut.isPending} className="flex-1 sm:flex-none">
-          {checkMut.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Play className="h-4 w-4" />
-          )}
-          Kiểm tra
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={runCheck} disabled={checking || parsed.values.length === 0} className="flex-1 sm:flex-none">
+          {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {parsed.values.length > 0 ? `Kiểm tra & lưu ${parsed.values.length} proxy` : 'Kiểm tra & lưu'}
         </Button>
-        {results.length > 0 && (
+        {results.length > 0 && !checking && (
           <Button
             variant="outline"
-            onClick={saveAllChecked}
+            onClick={reapplyMeta}
             disabled={saveMut.isPending}
             className="flex-1 sm:flex-none"
+            title="Đổi loại proxy / ghi chú ở trên rồi bấm để áp lại cho lô vừa kiểm tra"
           >
-            <Save className="h-4 w-4" /> Lưu tất cả kết quả
+            <Save className="h-4 w-4" /> Áp loại & ghi chú cho {results.length} proxy vừa kiểm tra
           </Button>
         )}
       </div>
+
+      {job && (checking || job.total > 0) && (
+        <div className="space-y-1" aria-live="polite">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full bg-chart-1 transition-[width]" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="text-xs tabular-nums text-muted-foreground">
+            {job.done}/{job.total} proxy · {results.filter((r) => r.status === 'live').length} Live
+            {checking ? ' · đang kiểm tra…' : ' · đã lưu vào kho'}
+          </div>
+        </div>
+      )}
 
       {results.length > 0 && (
         <div className="overflow-hidden rounded-xl border bg-card">
@@ -374,8 +507,8 @@ export function ProxyPage() {
               <tbody>
                 {results.map((r, i) => (
                   <tr key={i} className="border-b border-rule last:border-0">
-                    <td className="max-w-xs truncate p-3 font-mono text-xs" title={r.proxy}>
-                      {r.proxy}
+                    <td className="max-w-xs truncate p-3 text-xs tabular-nums" title={maskProxy(r.proxy)}>
+                      {maskProxy(r.proxy)}
                     </td>
                     <td className="p-3">
                       <StatusBadge status={r.status} />
@@ -390,9 +523,12 @@ export function ProxyPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Lưu proxy"
+                        aria-label="Lưu lại kèm loại & ghi chú của lô"
+                        title="Lưu lại kèm loại & ghi chú của lô"
                         onClick={() =>
-                          saveMut.mutate([{ proxy: r.proxy, status: r.status, ip: r.ip }])
+                          saveMut.mutate([{ proxy: r.proxy, status: r.status, ip: r.ip, ...batchMeta() }], {
+                            onSuccess: () => toast.success('Đã lưu'),
+                          })
                         }
                       >
                         <Save className="h-4 w-4" />
@@ -406,20 +542,18 @@ export function ProxyPage() {
         </div>
       )}
 
-      <div className="flex w-full gap-0.5 rounded-lg border bg-muted/40 p-0.5 sm:w-fit">
-        <button type="button" onClick={() => setSavedTab('all')} className={tabClass(savedTab === 'all')}>
-          Proxy đã lưu
-        </button>
-        <button type="button" onClick={() => setSavedTab('die')} className={tabClass(savedTab === 'die')}>
-          Proxy Die{dieProxies.length > 0 ? ` (${dieProxies.length})` : ''}
-        </button>
-      </div>
+      <SavedViews
+        views={[
+          { id: 'all', label: 'Proxy đã lưu', count: saved?.length, active: savedTab === 'all', onSelect: () => setF({ tab: 'all' }) },
+          { id: 'die', label: 'Proxy Die', count: dieProxies.length, active: savedTab === 'die', onSelect: () => setF({ tab: 'die' }) },
+        ]}
+      />
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="space-y-2 border-b px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="mr-auto text-base font-medium">
-              {savedTab === 'die' ? 'Proxy Die' : 'Proxy đã lưu'}{' '}
+              {savedTab === 'die' ? 'Proxy Die' : savedStatusFilter === 'live' ? 'Proxy Live' : 'Proxy đã lưu'}{' '}
               <span className="font-normal tabular-nums text-muted-foreground">
                 ({filteredSaved.length}/{savedTab === 'die' ? dieProxies.length : (saved?.length ?? 0)})
               </span>
@@ -436,43 +570,32 @@ export function ProxyPage() {
               </Button>
             )}
             <Button size="sm" variant="outline" onClick={copyAllSaved}>
-              <Copy className="h-4 w-4" /> {sel.size > 0 ? `Copy đã chọn (${sel.size})` : 'Copy tất cả'}
+              <Copy className="h-4 w-4" /> {sel.size > 0 ? `Copy đã chọn (${visibleSel.length})` : 'Copy tất cả'}
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Tìm proxy / account"
-                value={savedSearch}
-                onChange={(e) => setSavedSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+            <SearchInput
+              value={savedSearch}
+              onChange={(v) => setF({ q: v }, { replace: true })}
+              placeholder="Tìm proxy / account / ghi chú…"
+            />
             {savedTab === 'all' && (
               <SingleFilterDropdown
                 label="Trạng thái"
                 value={savedStatusFilter}
-                onChange={setSavedStatusFilter}
-                options={[
-                  { value: 'all', label: 'Tất cả' },
-                  { value: 'live', label: 'Live' },
-                  { value: 'die', label: 'Die' },
-                  { value: 'unchecked', label: 'Chưa kiểm tra' },
-                ]}
+                onChange={(v) => setF({ status: v })}
+                options={STATUS_OPTS}
+                activeWhen="live"
               />
             )}
             <SingleFilterDropdown
               label="Gán account"
               value={assignFilter}
-              onChange={setAssignFilter}
-              options={[
-                { value: 'all', label: 'Tất cả' },
-                { value: 'assigned', label: 'Đã gán' },
-                { value: 'unassigned', label: 'Chưa gán' },
-              ]}
+              onChange={(v) => setF({ assigned: v })}
+              options={ASSIGN_OPTS}
             />
           </div>
+          <FilterChips chips={chips} onClearAll={clearAll} />
         </div>
 
         {savedLoading ? (
@@ -482,7 +605,17 @@ export function ProxyPage() {
             ))}
           </div>
         ) : filteredSaved.length === 0 ? (
-          <EmptyState icon={ServerOff} title={emptyText} />
+          <EmptyState
+            icon={ServerOff}
+            title={emptyText}
+            action={
+              chips.length > 0 ? (
+                <Button variant="outline" size="sm" onClick={clearAll}>
+                  Xóa bộ lọc
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="md:hidden">
@@ -494,7 +627,7 @@ export function ProxyPage() {
                 {filteredSaved.map((p) => {
                   const isChecking = recheckMut.isPending && recheckMut.variables === p.id
                   return (
-                    <li key={p.id} className={cn('flex gap-3 p-3', sel.has(p.id) && 'bg-active/60')}>
+                    <li key={p.id} className={cn('flex gap-3 p-3', sel.has(p.id) && 'bg-chart-1/[0.06]')}>
                       <Checkbox
                         className="mt-1"
                         checked={sel.has(p.id)}
@@ -502,7 +635,7 @@ export function ProxyPage() {
                       />
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
-                          <span className="min-w-0 break-all font-mono text-xs">{p.proxy}</span>
+                          <span className="min-w-0 break-all text-xs tabular-nums">{maskProxy(p.proxy)}</span>
                           <StatusBadge status={p.status} />
                         </div>
                         {(p.ip || p.proxy_type) && (
@@ -521,7 +654,7 @@ export function ProxyPage() {
                             onEdit={() => setEditing(p)}
                             onCopy={() => copyText(p.proxy, 'Đã copy proxy')}
                             onRecheck={() => recheckMut.mutate(p.id)}
-                            onDelete={() => delMut.mutate(p.id)}
+                            onDelete={() => deleteOne(p)}
                           />
                         </div>
                       </div>
@@ -553,13 +686,16 @@ export function ProxyPage() {
                     return (
                       <tr
                         key={p.id}
-                        className={cn('border-b border-rule last:border-0 hover:bg-accent/60', sel.has(p.id) && 'bg-active/60')}
+                        className={cn(
+                          'border-b border-rule last:border-0 hover:bg-accent/60',
+                          sel.has(p.id) && 'bg-chart-1/[0.06] hover:bg-chart-1/[0.09]',
+                        )}
                       >
                         <td className="p-3">
                           <Checkbox checked={sel.has(p.id)} onCheckedChange={() => toggleSel(p.id)} />
                         </td>
-                        <td className="max-w-xs truncate p-3 font-mono text-xs" title={p.proxy}>
-                          {p.proxy}
+                        <td className="max-w-xs truncate p-3 text-xs tabular-nums" title={maskProxy(p.proxy)}>
+                          {maskProxy(p.proxy)}
                         </td>
                         <td className="p-3">
                           <StatusBadge status={p.status} />
@@ -585,7 +721,7 @@ export function ProxyPage() {
                               onEdit={() => setEditing(p)}
                               onCopy={() => copyText(p.proxy, 'Đã copy proxy')}
                               onRecheck={() => recheckMut.mutate(p.id)}
-                              onDelete={() => delMut.mutate(p.id)}
+                              onDelete={() => deleteOne(p)}
                             />
                           </div>
                         </td>
@@ -601,15 +737,18 @@ export function ProxyPage() {
 
       {sel.size > 0 && (
         <FloatingBar>
-          <span className="px-2 text-sm font-medium tabular-nums">{sel.size} đã chọn</span>
-          <Button size="sm" variant="outline" onClick={copyAllSaved}>
+          <span className="px-2 text-sm tabular-nums">
+            <span className="font-medium text-chart-1-ink">{visibleSel.length}</span> đã chọn
+            {hiddenSelCount > 0 && <span className="text-muted-foreground"> ({hiddenSelCount} không hiển thị)</span>}
+          </span>
+          <Button size="sm" variant="outline" onClick={copyAllSaved} disabled={visibleSel.length === 0}>
             <Copy className="h-4 w-4" /> Copy
           </Button>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => bulkRecheckMut.mutate((saved ?? []).filter((p) => sel.has(p.id)))}
-            disabled={bulkRecheckMut.isPending}
+            onClick={() => bulkRecheckMut.mutate(visibleSel)}
+            disabled={bulkRecheckMut.isPending || visibleSel.length === 0}
           >
             <RefreshCw className={cn('h-4 w-4', bulkRecheckMut.isPending && 'animate-spin')} />
             Re-check
@@ -617,10 +756,21 @@ export function ProxyPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => {
-              if (confirm(`Xoá ${sel.size} proxy đã chọn?`)) bulkDeleteMut.mutate([...sel])
+            onClick={async () => {
+              const targets = visibleSel
+              const used = targets.filter((p) => p.account_count > 0).length
+              const ok = await confirmDialog({
+                title: `Xoá ${targets.length} proxy?`,
+                description:
+                  used > 0
+                    ? `${used} proxy trong số này đang được account dùng — account sẽ mất proxy.`
+                    : 'Không hoàn tác được.',
+                confirmLabel: `Xoá ${targets.length} proxy`,
+                destructive: true,
+              })
+              if (ok) bulkDeleteMut.mutate(targets.map((p) => p.id))
             }}
-            disabled={bulkDeleteMut.isPending}
+            disabled={bulkDeleteMut.isPending || visibleSel.length === 0}
           >
             <Trash2 className="h-4 w-4 text-destructive" /> Xóa
           </Button>

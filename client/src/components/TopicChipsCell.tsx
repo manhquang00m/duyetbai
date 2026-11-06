@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Loader2, Plus } from 'lucide-react'
 import { useTopics } from '@/lib/useTopics'
@@ -18,20 +18,31 @@ interface Props {
  * (PostingTopicsCell / AssignTopicDialog) tu quyet dinh goi API nao. Tach ra dung chung cho ca 2
  * loai chu de (tai khoan dang vs tac gia bai cao) vi UI giong het nhau.
  */
-export function TopicChipsCell({ topics, onToggle, compact }: Props) {
+export function TopicChipsCell({ topics: saved, onToggle, compact }: Props) {
   const topicOptions = useTopics()
   const popover = usePopover()
-  const [pending, setPending] = useState<string | null>(null)
+  const [pending, setPending] = useState<Set<string>>(() => new Set())
+  // Optimistic: chip doi ngay khi bam, khong cho request + refetch. Du lieu moi tu cha ve -> bo
+  // ban tam. Loi -> tra ve ban da luu + toast.
+  const [optimistic, setOptimistic] = useState<string[] | null>(null)
+  useEffect(() => setOptimistic(null), [saved])
+  const topics = optimistic ?? saved
 
   const handleToggle = async (topic: string) => {
     const has = topics.includes(topic)
-    setPending(topic)
+    setOptimistic(has ? topics.filter((t) => t !== topic) : [...topics, topic])
+    setPending((p) => new Set(p).add(topic))
     try {
       await onToggle(topic, has)
     } catch (err) {
+      setOptimistic(null)
       toast.error(err instanceof Error ? err.message : 'Lỗi cập nhật chủ đề')
     } finally {
-      setPending(null)
+      setPending((p) => {
+        const next = new Set(p)
+        next.delete(topic)
+        return next
+      })
     }
   }
 
@@ -78,7 +89,7 @@ export function TopicChipsCell({ topics, onToggle, compact }: Props) {
                 key={t}
                 type="button"
                 onClick={() => handleToggle(t)}
-                disabled={pending === t}
+                disabled={pending.has(t)}
                 className={cn(
                   'inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 sm:px-2 sm:py-1',
                   active
@@ -86,7 +97,7 @@ export function TopicChipsCell({ topics, onToggle, compact }: Props) {
                     : 'text-muted-foreground hover:bg-accent',
                 )}
               >
-                {pending === t ? (
+                {pending.has(t) ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
                   active && <Check className="h-3 w-3" />

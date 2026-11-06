@@ -73,6 +73,32 @@ export const CLEAN_POST_COND = `(
   )
 )`;
 
+/** Bai chua tung dang (ca danh dau tay lan nhat ky tool auto) - chi bai nay moi duoc "loai". */
+const NOT_POSTED = `(p.post_status <> 'posted'
+  AND NOT EXISTS (SELECT 1 FROM post_runs r WHERE r.post_id = p.post_id))`;
+const HAS_ENTRY = 'EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id)';
+const entryWith = (cond: string) =>
+  `EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id AND ${cond})`;
+
+/**
+ * Ly do 1 bai "BI LOAI" (bo, khong dem di dang). Thu tu = uu tien khi bai dinh nhieu ly do:
+ * khong co link > link chet > het hang > can xem lai (giong LinkHealthBadge o client).
+ * noShopee CHI tinh bai cao comment thanh cong ma khong thay link - scrape_error (cao loi) co
+ * the chi la loi tam, khong duoc xoa nham (de "Lay lai comment").
+ */
+export const REJECT_REASONS = ['noShopee', 'dead', 'oos', 'review'] as const;
+export type RejectReason = (typeof REJECT_REASONS)[number];
+const REJECT_REASON_CONDS: Record<RejectReason, string> = {
+  noShopee: `(NOT ${HAS_ENTRY} AND (p.scrape_error IS NULL OR p.scrape_error = ''))`,
+  dead: entryWith("s.link_status = 'dead'"),
+  oos: entryWith("s.link_status = 'out_of_stock'"),
+  review: entryWith("s.link_status = 'unknown'"),
+};
+const REJECT_REASON_CASE = `CASE ${REJECT_REASONS.map((r) => `WHEN ${REJECT_REASON_CONDS[r]} THEN '${r}'`).join(' ')} END`;
+
+/** Bai bi loai: chua dang VA dinh it nhat 1 ly do o tren. Dung chung cho bo loc + nut xoa. */
+export const REJECT_COND = `(${NOT_POSTED} AND (${REJECT_REASONS.map((r) => REJECT_REASON_CONDS[r]).join(' OR ')}))`;
+
 /**
  * Bo loc DUNG CHUNG cho danh sach bai (listPosts) VA xuat file (exportPosts/getExportWarnings) -
  * dam bao "loc the nao, xuat y nhu the" (1 nguon su that duy nhat cho dieu kien loc).
@@ -92,6 +118,7 @@ export interface PostFilterOpts {
   linkStatus?: LinkStatusFilter; // loc theo tinh trang link Shopee da kiem tra
   cleanOnly?: boolean; // chi bai du dieu kien phan phoi, xem CLEAN_POST_COND
   rewritten?: 'yes' | 'no'; // da/chua du 3 ban caption AI, xem post_caption_variants
+  reject?: boolean; // bai bi loai (khong link / link chet / het hang / can xem lai), xem REJECT_COND
   scrapedFrom?: string; // 'YYYY-MM-DD' - loc theo scraped_at (thoi diem THU THAP), khong phai post_date
   scrapedTo?: string; // 'YYYY-MM-DD', bao gom ca ngay nay
   postIds?: string[]; // chi cac bai nay (bai dang tick chon tren trang Bai viet)
@@ -175,6 +202,9 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
   }
   if (opts.cleanOnly) {
     conds.push(CLEAN_POST_COND);
+  }
+  if (opts.reject) {
+    conds.push(REJECT_COND);
   }
   if (opts.rewritten === 'yes') {
     // 3 = VARIANT_COUNT (services/postCaptionVariants.ts) - hardcode o day de tranh vong lap
@@ -371,11 +401,12 @@ export interface ShopeeCheckTarget {
  * - postIds: neu truyen vao, chi lay link cua cac bai nay - dung cho nut kiem tra o trang Bai viet.
  */
 export function getShopeeCheckTargets(
-  opts: { entryIds?: number[]; postIds?: string[] } = {},
+  opts: { entryIds?: number[]; postIds?: string[]; uncheckedOnly?: boolean } = {},
 ): ShopeeCheckTarget[] {
   const targetExpr = 'link';
   const conds = [`${targetExpr} IS NOT NULL`, `${targetExpr} <> ''`];
   const args: unknown[] = [];
+  if (opts.uncheckedOnly) conds.push('link_status IS NULL');
   if (opts.entryIds && opts.entryIds.length > 0) {
     conds.push(`id IN (${opts.entryIds.map(() => '?').join(',')})`);
     args.push(...opts.entryIds);
@@ -389,6 +420,62 @@ export function getShopeeCheckTargets(
       `SELECT id, post_id, ${targetExpr} AS target FROM shopee_entries WHERE ${conds.join(' AND ')}`,
     )
     .all(...args) as ShopeeCheckTarget[];
+}
+
+export type PostVerdict = RejectReason | 'pass' | 'scrapeError' | 'unchecked' | 'posted';
+
+export interface PostVerdictRow {
+  post_id: string;
+  verdict: PostVerdict;
+  variant_count: number;
+  need_new_link: number; // 1 = con link chua co new_link (buoc "Cap nhat" thu cong)
+}
+
+// Chia lo de khong cham gioi han so tham so SQLite khi danh sach dai.
+function chunks<T>(arr: T[], size = 500): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Phan loai tung bai sau khi kiem tra link (luong tu dong sau khi cao):
+ * posted (khong dong vao) > ly do loai > scrapeError (khong co link vi cao loi) > unchecked > pass.
+ */
+export function classifyPosts(postIds: string[]): PostVerdictRow[] {
+  const sql = `SELECT p.post_id,
+       CASE
+         WHEN NOT ${NOT_POSTED} THEN 'posted'
+         WHEN ${REJECT_COND} THEN ${REJECT_REASON_CASE}
+         WHEN NOT ${HAS_ENTRY} THEN 'scrapeError'
+         WHEN ${entryWith('s.link_status IS NULL')} THEN 'unchecked'
+         ELSE 'pass'
+       END AS verdict,
+       (SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) AS variant_count,
+       ${entryWith("(s.new_link IS NULL OR s.new_link = '')")} AS need_new_link
+     FROM posts p WHERE p.post_id IN `;
+  return chunks(postIds).flatMap(
+    (ids) => db.prepare(`${sql}(${ids.map(() => '?').join(',')})`).all(...ids) as unknown as PostVerdictRow[],
+  );
+}
+
+/** Bai bi loai kem ly do. postIds: chi xet trong cac bai nay (giao voi REJECT_COND, khong tin client). */
+export function listRejectedPosts(postIds?: string[]): { post_id: string; reason: RejectReason }[] {
+  const sql = `SELECT p.post_id, ${REJECT_REASON_CASE} AS reason FROM posts p WHERE ${REJECT_COND}`;
+  if (!postIds) return db.prepare(sql).all() as unknown as { post_id: string; reason: RejectReason }[];
+  return chunks(postIds).flatMap(
+    (ids) =>
+      db
+        .prepare(`${sql} AND p.post_id IN (${ids.map(() => '?').join(',')})`)
+        .all(...ids) as unknown as { post_id: string; reason: RejectReason }[],
+  );
+}
+
+/** "Xu ly kho": moi bai chua dang (kiem tra link chua kiem tra + viet lai bai dat chua du ban). */
+export function listBacklogPostIds(): string[] {
+  return (db.prepare(`SELECT p.post_id FROM posts p WHERE ${NOT_POSTED}`).all() as { post_id: string }[]).map(
+    (r) => r.post_id,
+  );
 }
 
 /** Bai da co trong DB chua (dedup theo post_id). */

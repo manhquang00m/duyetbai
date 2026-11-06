@@ -5,6 +5,7 @@ import { Loader2, AlertTriangle } from 'lucide-react'
 import { syncGpmProxies, type ProxySyncResult } from '@/lib/api'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { maskProxy } from '@/lib/parsers'
 
 interface Props {
   open: boolean
@@ -112,10 +113,10 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
                   {result.changed.map((c) => (
                     <tr key={c.account} className="border-b last:border-0">
                       <td className="p-2 font-medium">{c.account}</td>
-                      <td className="max-w-[10rem] truncate p-2 font-mono text-muted-foreground">
-                        {c.oldProxy ?? '—'}
+                      <td className="max-w-[10rem] truncate p-2 tabular-nums text-muted-foreground">
+                        {c.oldProxy ? maskProxy(c.oldProxy) : '—'}
                       </td>
-                      <td className="max-w-[10rem] truncate p-2 font-mono">{c.newProxy}</td>
+                      <td className="max-w-[10rem] truncate p-2 tabular-nums">{maskProxy(c.newProxy)}</td>
                       <td className="p-2">
                         <StatusBadge status={c.status} />
                       </td>
@@ -129,13 +130,13 @@ export function GpmProxySyncDialog({ open, onClose }: Props) {
           {result.unmatchedAccounts.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Không tìm thấy profile GPM trùng tên:{' '}
-              <span className="break-words font-mono">{result.unmatchedAccounts.join(', ')}</span>
+              <span className="break-words text-foreground">{result.unmatchedAccounts.join(', ')}</span>
             </p>
           )}
           {result.skippedNoPlatform.length > 0 && (
             <p className="text-xs text-muted-foreground">
               Chưa gán Platform (Stable/Global) nên bỏ qua:{' '}
-              <span className="break-words font-mono">{result.skippedNoPlatform.join(', ')}</span>
+              <span className="break-words text-foreground">{result.skippedNoPlatform.join(', ')}</span>
             </p>
           )}
         </div>

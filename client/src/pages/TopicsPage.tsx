@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
+import { confirmDialog } from '@/lib/confirm'
 
 export function TopicsPage() {
   const qc = useQueryClient()
@@ -76,12 +77,17 @@ export function TopicsPage() {
     renameMut.mutate({ oldName: editing, name: editName.trim() })
   }
 
-  const confirmDelete = (t: Topic) => {
-    const usage =
-      t.post_count || t.account_count
-        ? `\n\nĐang dùng ở ${t.post_count} bài và ${t.account_count} account - các chỗ này sẽ bị bỏ gán chủ đề.`
-        : ''
-    if (confirm(`Xoá chủ đề "${t.name}"?${usage}`)) deleteMut.mutate(t.name)
+  const confirmDelete = async (t: Topic) => {
+    const ok = await confirmDialog({
+      title: `Xóa chủ đề “${t.name}”?`,
+      description:
+        t.post_count || t.account_count
+          ? `Đang dùng ở ${t.post_count} bài và ${t.account_count} account — các chỗ này sẽ bị bỏ gán chủ đề.`
+          : 'Chưa bài hay account nào dùng chủ đề này.',
+      confirmLabel: 'Xóa chủ đề',
+      destructive: true,
+    })
+    if (ok) deleteMut.mutate(t.name)
   }
 
   const move = (i: number, dir: -1 | 1) => {

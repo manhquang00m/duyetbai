@@ -5,6 +5,7 @@ import { Loader2, ShieldOff } from 'lucide-react'
 import { startProxyCheckJob, batchStreamUrl, type JobState } from '@/lib/api'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { maskProxy } from '@/lib/parsers'
 
 interface Props {
   open: boolean
@@ -138,14 +139,14 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full bg-primary transition-[width,transform,opacity,background-color] duration-300"
+                  className="h-full bg-chart-1 transition-[width] duration-300"
                   style={{ width: `${pct}%` }}
                 />
               </div>
               {inFlight.length > 0 && (
-                <div className="mt-1.5 truncate text-xs text-muted-foreground" title={inFlight.join(", ")}>
+                <div className="mt-1.5 truncate text-xs text-muted-foreground" title={inFlight.map(maskProxy).join(', ')}>
                   <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
-                  Đang kiểm tra: {inFlight.join(', ')}
+                  Đang kiểm tra: {inFlight.map(maskProxy).join(', ')}
                 </div>
               )}
             </div>
@@ -175,7 +176,7 @@ export function AccountProxyCheckDialog({ open, proxies, description, onClose }:
                 )}
                 {results.map((r) => (
                     <tr key={r.proxy} className="border-b last:border-0">
-                      <td className="max-w-[14rem] truncate p-2.5 font-mono text-xs" title={r.proxy}>{r.proxy}</td>
+                      <td className="max-w-[14rem] truncate p-2.5 text-xs tabular-nums" title={maskProxy(r.proxy)}>{maskProxy(r.proxy)}</td>
                       <td className="p-2.5">
                         <StatusBadge status={r.status} />
                       </td>

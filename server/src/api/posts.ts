@@ -3,9 +3,22 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
-import { listPosts, getPostDetail, deletePost, type PostSort } from '../db/queries';
+import {
+  listPosts,
+  getPostDetail,
+  deletePost,
+  listRejectedPosts,
+  listBacklogPostIds,
+  REJECT_REASONS,
+  type PostSort,
+} from '../db/queries';
 import { markPostsPosted } from '../db/repository';
-import { startRescrapeJob, startBeautifyJob, startShopeeLinkCheckJob } from '../services/jobs';
+import {
+  startRescrapeJob,
+  startBeautifyJob,
+  startShopeeLinkCheckJob,
+  startPostPipelineJob,
+} from '../services/jobs';
 import { BeautifyConfigSchema } from '../services/beautify';
 import { parsePostFilterQuery } from '../utils/postFilters';
 import { DOWNLOAD_DIR } from '../config';
@@ -77,16 +90,69 @@ router.post('/check-shopee-links', (req, res) => {
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 
+/** Xoa bai (FK cascade media/shopee_entries/variants) + folder media da tai. */
+function deletePostsWithMedia(postIds: string[]): void {
+  for (const id of postIds) {
+    deletePost(id);
+    fs.rm(path.join(DOWNLOAD_DIR, `post_${id}`), { recursive: true, force: true }, () => {});
+  }
+}
+
+const MAX_PIPELINE_IDS = 5000;
+// post_id la shortcode Threads (chu/so/_/-) - chan gia tri la truoc khi dung lam ten thu muc.
+const POST_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** postIds tu body: undefined neu khong gui; null neu sai kieu / qua dai / co id khong hop le. */
+function readPostIds(raw: unknown): string[] | undefined | null {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length > MAX_PIPELINE_IDS) return null;
+  const ids = raw.map((s) => (typeof s === 'string' ? s.trim() : ''));
+  return ids.every((id) => POST_ID_RE.test(id)) ? [...new Set(ids)] : null;
+}
+
 // POST /api/posts/delete { postIds: string[] } -> xoa bai + folder media
 router.post('/delete', (req, res) => {
   const postIds = (Array.isArray(req.body?.postIds) ? req.body.postIds : [])
     .map((s: unknown) => String(s).trim())
     .filter(Boolean);
-  for (const id of postIds) {
-    deletePost(id);
-    fs.rm(path.join(DOWNLOAD_DIR, `post_${id}`), { recursive: true, force: true }, () => {});
-  }
+  deletePostsWithMedia(postIds);
   res.json({ deleted: postIds.length });
+});
+
+// POST /api/posts/delete-rejected { postIds?: string[] } -> xoa bai BI LOAI (khong link / link chet /
+// het hang / can xem lai, chua dang). Danh sach do SERVER tinh lai theo REJECT_COND - postIds chi
+// thu hep pham vi (vd bai cua 1 lan cao), gui kem bai dat cung khong xoa nham.
+router.post('/delete-rejected', (req, res) => {
+  const postIds = readPostIds(req.body?.postIds);
+  if (postIds === null) {
+    res.status(400).json({ error: 'postIds không hợp lệ' });
+    return;
+  }
+  const rows = listRejectedPosts(postIds);
+  deletePostsWithMedia(rows.map((r) => r.post_id));
+  const byReason = Object.fromEntries(REJECT_REASONS.map((r) => [r, 0])) as Record<string, number>;
+  for (const r of rows) byReason[r.reason]++;
+  res.json({ deleted: rows.length, byReason });
+});
+
+// POST /api/posts/pipeline { postIds?: string[], scope?: 'backlog', checkLinks?, rewrite? }
+// -> luong tu dong (kiem tra link -> phan loai -> viet lai), job nen. scope=backlog: moi bai chua dang.
+router.post('/pipeline', (req, res) => {
+  const postIds = readPostIds(req.body?.postIds);
+  if (postIds === null) {
+    res.status(400).json({ error: 'postIds không hợp lệ' });
+    return;
+  }
+  const ids = req.body?.scope === 'backlog' ? listBacklogPostIds() : (postIds ?? []);
+  if (ids.length === 0) {
+    res.status(400).json({ error: 'Không có bài nào để xử lý' });
+    return;
+  }
+  const job = startPostPipelineJob(ids, {
+    checkLinks: req.body?.checkLinks !== false,
+    rewrite: req.body?.rewrite !== false,
+  });
+  res.status(202).json({ jobId: job.id, total: job.total });
 });
 
 // POST /api/posts/beautify (multipart: postIds, config = JSON string, watermarkImage? = file)

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -6,7 +6,6 @@ import {
   Info,
   AlertTriangle,
   ExternalLink,
-  Loader2,
   MousePointerClick,
   ChevronDown,
   ChevronRight,
@@ -23,28 +22,24 @@ import {
   type AffAccountRow,
 } from '@/lib/api'
 import { useTopics } from '@/lib/useTopics'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sheet } from '@/components/ui/sheet'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
-import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { TopicFilterDropdown } from '@/components/ui/filter-dropdown'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { usePopover, PopoverPanel } from '@/components/ui/popover'
+import { DailyBars } from '@/components/charts/DailyBars'
+import { AccountAvatar } from '@/components/AccountAvatar'
+import { PostThumb } from '@/components/PostThumb'
+import { FileDropOverlay } from '@/components/FileDropOverlay'
+import { q, useUrlState } from '@/lib/useUrlState'
+import { addDaysIso, datePresets, todayIso } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-
-const pad = (n: number) => String(n).padStart(2, '0')
-/** Ngay theo gio MAY (khong dung toISOString - buoi toi VN se ra ngay hom truoc). */
-function localDate(offsetDays = 0): string {
-  const d = new Date()
-  d.setDate(d.getDate() + offsetDays)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
 
 const money = (milli: number) => `${Math.round(milli / 1000).toLocaleString('vi-VN')}đ`
 const pct = (num: number, den: number) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : '—')
-const shortDate = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
 
 type View = 'clicks' | 'cr' | 'zero' | 'commission'
 const VIEWS: { value: View; label: string; hint: string }[] = [
@@ -127,132 +122,6 @@ function HeroKpi({ label, value, sub }: { label: string; value: string; sub?: st
   )
 }
 
-/** Be rong that cua phan tu (de SVG ve theo px that, chu truc khong bi co nho tren man hep). */
-function useElementWidth<T extends HTMLElement>(fallback: number) {
-  const ref = useRef<T>(null)
-  const [width, setWidth] = useState(fallback)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(200, Math.round(entry.contentRect.width))))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  return [ref, width] as const
-}
-
-/** So gon de in tren dau cot: 1.234 -> 1,2k; 1.234.567 -> 1,2tr. */
-function compact(n: number): string {
-  const fmt = (v: number) => (v < 10 ? v.toFixed(1).replace(/\.0$/, '') : String(Math.round(v))).replace('.', ',')
-  if (n >= 1_000_000) return `${fmt(n / 1_000_000)}tr`
-  if (n >= 1_000) return `${fmt(n / 1_000)}k`
-  return String(n)
-}
-
-/** Cot theo ngay, 1 chuoi, so in san tren dau cot (tooltip khi re chuot cho so day du). */
-function DailyBars({
-  title,
-  data,
-  unit,
-  total: totalProp,
-}: {
-  title: string
-  data: { date: string; value: number }[]
-  unit: string
-  /** Tong lam tron 1 lan tu so goc (vd tien) - tranh lech voi KPI khi cong cac cot da lam tron. */
-  total?: number
-}) {
-  const [hover, setHover] = useState<number | null>(null)
-  const [boxRef, W] = useElementWidth<HTMLDivElement>(560)
-  const H = 160
-  const top = 18
-  const bottom = 20
-  const max = Math.max(1, ...data.map((d) => d.value))
-  const total = totalProp ?? data.reduce((s, d) => s + d.value, 0)
-  const slot = data.length > 0 ? W / data.length : W
-  const barW = Math.max(2, Math.min(28, slot - 2))
-  const labelEvery = Math.ceil(data.length / Math.max(3, Math.floor(W / 64)))
-  const showValues = slot >= 22
-  const plotH = H - top - bottom
-  return (
-    <Card className="relative p-4">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <span className="text-xs text-muted-foreground">
-          Tổng <b className="font-semibold text-foreground tabular-nums">{total.toLocaleString('vi-VN')}</b> {unit}
-        </span>
-      </div>
-      <div ref={boxRef} className="min-w-0 overflow-hidden">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={title}>
-        <line
-          x1={0}
-          x2={W}
-          y1={top + plotH}
-          y2={top + plotH}
-          className="stroke-border"
-          strokeWidth={1}
-        />
-        {data.map((d, i) => {
-          const h = d.value > 0 ? Math.max(2, (d.value / max) * plotH) : 0
-          const x = i * slot + (slot - barW) / 2
-          const r = Math.min(4, barW / 2, h)
-          const y = top + plotH - h
-          return (
-            <g
-              key={d.date}
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
-            >
-              {/* vung bat chuot rong hon cot */}
-              <rect x={i * slot} y={top} width={slot} height={plotH} fill="transparent" />
-              {h > 0 && (
-                <path
-                  d={`M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + barW - r} Q${x + barW},${y} ${x + barW},${y + r} V${y + h} Z`}
-                  className={cn('fill-chart-1', hover !== null && hover !== i && 'opacity-40')}
-                />
-              )}
-              {d.value > 0 && showValues && (
-                <text
-                  x={i * slot + slot / 2}
-                  y={y - 4}
-                  textAnchor="middle"
-                  fontSize={11}
-                  className="fill-foreground tabular-nums"
-                >
-                  {compact(d.value)}
-                </text>
-              )}
-              {i % labelEvery === 0 && (
-                <text
-                  x={i * slot + slot / 2}
-                  y={H - 6}
-                  textAnchor="middle"
-                  fontSize={11}
-                  className="fill-muted-foreground"
-                >
-                  {shortDate(d.date)}
-                </text>
-              )}
-            </g>
-          )
-        })}
-      </svg>
-      </div>
-      {hover !== null && data[hover] && (
-        <div
-          className="pointer-events-none absolute top-10 rounded-md border bg-popover px-2 py-1 text-xs"
-          style={{ left: `calc(${((hover + 0.5) / data.length) * 100}% )`, transform: 'translateX(-50%)' }}
-        >
-          <div className="text-muted-foreground">{shortDate(data[hover].date)}</div>
-          <div className="font-medium tabular-nums">
-            {data[hover].value.toLocaleString('vi-VN')} {unit}
-          </div>
-        </div>
-      )}
-    </Card>
-  )
-}
-
 function PostDetailSheet({
   post,
   filter,
@@ -272,11 +141,7 @@ function PostDetailSheet({
       {post && (
         <div className="space-y-4">
           <div className="flex gap-3 pr-10">
-            {post.thumb ? (
-              <img src={`/media/${post.thumb}`} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
-            ) : (
-              <div className="h-16 w-16 shrink-0 rounded-lg bg-muted" />
-            )}
+            <PostThumb thumb={post.thumb} className="h-16 w-16 rounded-lg" />
             <div className="min-w-0">
               <div className="break-all font-mono text-xs text-muted-foreground">
                 {post.post_id} {post.username && `· @${post.username}`}
@@ -365,14 +230,6 @@ function PostDetailSheet({
   )
 }
 
-function PostThumb({ thumb }: { thumb: string | null }) {
-  return thumb ? (
-    <img src={`/media/${thumb}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-md object-cover sm:h-9 sm:w-9" />
-  ) : (
-    <div className="h-10 w-10 shrink-0 rounded-md bg-muted sm:h-9 sm:w-9" />
-  )
-}
-
 function referrersText(r: AffPostRow): string {
   return (
     Object.entries(r.referrers)
@@ -391,7 +248,7 @@ function PostCard({ r, onSelect }: { r: AffPostRow; onSelect: () => void }) {
       className="block w-full space-y-2 p-3 text-left transition-colors hover:bg-muted/30 active:bg-muted/50"
     >
       <div className="flex items-center gap-2.5">
-        <PostThumb thumb={r.thumb} />
+        <PostThumb thumb={r.thumb} className="h-10 w-10 sm:h-9 sm:w-9" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs">{r.caption || <em>(không có caption)</em>}</div>
           <div className="truncate font-mono text-[11px] text-muted-foreground">
@@ -447,12 +304,21 @@ function OrderStatus({ status }: { status: string | null }) {
   )
 }
 
+// Bao cao Shopee tre 1 ngay -> moi preset ket thuc HOM QUA; "Hom nay" = so lieu cua hom qua.
 const PRESETS = [
-  { days: 1, label: 'Hôm nay', hint: 'Click + hoa hồng của hôm qua (báo cáo Shopee trễ 1 ngày)' },
-  { days: 7, label: '7 ngày' },
-  { days: 15, label: '15 ngày' },
-  { days: 30, label: '30 ngày' },
-] as const
+  datePresets.lastDays(1, -1, 'Hôm nay'),
+  datePresets.lastDays(7, -1),
+  datePresets.lastDays(15, -1),
+  datePresets.lastDays(30, -1),
+]
+
+const URL_SCHEMA = {
+  from: q.str(addDaysIso(todayIso(), -7)),
+  to: q.str(addDaysIso(todayIso(), -1)),
+  topics: q.list(),
+  basis: q.enum(['click', 'order'] as const, 'order'),
+  view: q.enum(['clicks', 'cr', 'zero', 'commission'] as const, 'clicks'),
+}
 
 function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; loading: boolean }) {
   return (
@@ -493,7 +359,12 @@ function AccountStats({ rows, loading }: { rows: AffAccountRow[] | undefined; lo
               {rows.map((r) => (
                 <tr key={r.account ?? '__none'} className="border-b last:border-0">
                   <td className="p-2.5 font-medium">
-                    {r.account ?? (
+                    {r.account ? (
+                      <span className="flex items-center gap-2">
+                        <AccountAvatar name={r.account} size="sm" />
+                        <span className="truncate">{r.account}</span>
+                      </span>
+                    ) : (
                       <span className="italic text-muted-foreground" title="Lúc click chưa có tài khoản nào đăng bài đó trong nhật ký">
                         Không xác định
                       </span>
@@ -521,19 +392,15 @@ export function AffiliatePage() {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
-  const [from, setFrom] = useState(localDate(-7))
-  const [to, setTo] = useState(localDate(-1))
-  const [topic, setTopic] = useState<string>('all')
-  const [basis, setBasis] = useState<'click' | 'order'>('order')
-  const [view, setView] = useState<View>('clicks')
+  const url = useUrlState(URL_SCHEMA)
+  const { from, to, topics, basis, view } = url.values
+  const setBasis = (v: typeof basis) => url.set({ basis: v })
+  const setView = (v: View) => url.set({ view: v })
   const [selected, setSelected] = useState<AffPostRow | null>(null)
   const [showUnmatched, setShowUnmatched] = useState(false)
 
-  const filter: AffFilterParams = useMemo(
-    () => ({ from, to, topics: topic === 'all' ? [] : [topic] }),
-    [from, to, topic],
-  )
-  const validRange = from <= to
+  const filter: AffFilterParams = useMemo(() => ({ from, to, topics }), [from, to, topics])
+  const validRange = !!from && !!to && from <= to
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ['aff-summary', filter],
     queryFn: () => fetchAffSummary(filter),
@@ -553,14 +420,13 @@ export function AffiliatePage() {
 
   const rows = useMemo(() => applyView(postsData?.posts ?? [], view), [postsData, view])
 
-  const setPreset = (days: number) => {
-    setFrom(localDate(-days))
-    setTo(localDate(-1))
-  }
-
-  const onFiles = async (e: ChangeEvent<HTMLInputElement>) => {
+  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     const files = [...(e.target.files ?? [])]
     e.target.value = ''
+    void onFiles(files)
+  }
+
+  const onFiles = async (files: File[]) => {
     if (files.length === 0) return
     setImporting(true)
     try {
@@ -630,22 +496,18 @@ export function AffiliatePage() {
       <PageHeader
         title="Hiệu quả Affiliate"
         description="Bài nào được click nhiều, click nào ra đơn — từ báo cáo Click + Hoa hồng của Shopee"
-        actions={
-          <div className="flex items-center gap-1">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv"
-              multiple
-              className="hidden"
-              onChange={onFiles}
-            />
-            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
-              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Import CSV
-            </Button>
+        primary={{
+          label: 'Import CSV',
+          shortLabel: 'Import',
+          icon: Upload,
+          onClick: () => fileRef.current?.click(),
+          busy: importing,
+        }}
+        extra={
+          <>
+            <input ref={fileRef} type="file" accept=".csv" multiple className="hidden" onChange={onPick} />
             <ImportHelp />
-          </div>
+          </>
         }
       />
 
@@ -673,37 +535,26 @@ export function AffiliatePage() {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-w-0 flex-1 sm:w-36 sm:flex-none sm:text-xs" />
-          <span className="text-xs text-muted-foreground">→</span>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-w-0 flex-1 sm:w-36 sm:flex-none sm:text-xs" />
-        </div>
-        <div className="flex items-center gap-1">
-          {PRESETS.map((p) => {
-            const active = from === localDate(-p.days) && to === localDate(-1)
-            return (
-              <Button
-                key={p.days}
-                size="sm"
-                variant="ghost"
-                aria-pressed={active}
-                className={active ? 'bg-active text-foreground hover:bg-active' : 'text-muted-foreground'}
-                title={'hint' in p ? p.hint : undefined}
-                onClick={() => setPreset(p.days)}
-              >
-                {p.label}
-              </Button>
-            )
-          })}
-        </div>
-        <SingleFilterDropdown
+        <DateRangePicker
+          from={from}
+          to={to}
+          onChange={(f, t) => url.set({ from: f, to: t })}
+          presets={PRESETS}
+          stepper
+          max={addDaysIso(todayIso(), -1)}
+        />
+        <TopicFilterDropdown
           label="Chủ đề"
-          value={topic}
-          onChange={setTopic}
-          options={[{ value: 'all', label: 'Tất cả' }, ...topicOptions.map((t) => ({ value: t, label: t }))]}
+          options={topicOptions}
+          selected={topics}
+          onToggle={(t) => url.set({ topics: topics.includes(t) ? topics.filter((x) => x !== t) : [...topics, t] })}
+          onClear={() => url.set({ topics: [] })}
         />
         {basisToggle}
-        {!validRange && <span className="w-full text-xs text-destructive sm:w-auto">Ngày bắt đầu phải trước ngày kết thúc</span>}
+        {from === to && from === addDaysIso(todayIso(), -1) && (
+          <span className="text-xs text-muted-foreground">Click + hoa hồng của hôm qua (báo cáo Shopee trễ 1 ngày)</span>
+        )}
+        {!validRange && <span className="w-full text-xs text-destructive sm:w-auto">Chọn đủ ngày bắt đầu và kết thúc</span>}
       </div>
 
       <div className="space-y-4">
@@ -859,7 +710,7 @@ export function AffiliatePage() {
                   >
                     <td className="max-w-[22rem] p-2.5">
                       <div className="flex items-center gap-2.5">
-                        <PostThumb thumb={r.thumb} />
+                        <PostThumb thumb={r.thumb} className="h-10 w-10 sm:h-9 sm:w-9" />
                         <div className="min-w-0">
                           <div className="truncate text-[13px]">{r.caption || <em>(không có caption)</em>}</div>
                           <div className="truncate font-mono text-xs text-muted-foreground">
@@ -932,6 +783,7 @@ export function AffiliatePage() {
       )}
 
       <PostDetailSheet post={selected} filter={filter} onClose={() => setSelected(null)} />
+      <FileDropOverlay accept={['.csv']} multiple label="Thả báo cáo Click / Hoa hồng của Shopee" onFiles={(f) => void onFiles(f)} disabled={importing} />
     </div>
   )
 }

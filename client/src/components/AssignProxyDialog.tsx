@@ -6,20 +6,13 @@ import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import { proxyHost } from '@/lib/parsers'
 
 interface Props {
   accounts: Account[]
   proxies: SavedProxy[]
   onClose: () => void
   onDone: () => void
-}
-
-/** Chi hien host:port - chuoi proxy co the chua user/pass. */
-export function proxyHost(p: string | null): string {
-  if (!p) return '—'
-  const noScheme = p.replace(/^[a-z0-9]+:\/\//i, '')
-  const afterAuth = noScheme.includes('@') ? noScheme.slice(noScheme.lastIndexOf('@') + 1) : noScheme
-  return afterAuth.split(':').slice(0, 2).join(':')
 }
 
 const ALL_TYPES = '__all__'
@@ -152,7 +145,7 @@ export function AssignProxyDialog({ accounts, proxies, onClose, onDone }: Props)
                       <td className="p-2">
                         <Checkbox checked={on} onCheckedChange={() => toggle(p.id)} />
                       </td>
-                      <td className="p-2 font-mono text-xs">{proxyHost(p.proxy)}</td>
+                      <td className="p-2 text-xs tabular-nums">{proxyHost(p.proxy)}</td>
                       <td className="p-2 text-xs">{p.proxy_type || <span className="text-muted-foreground">—</span>}</td>
                       <td className="p-2 text-right text-xs tabular-nums" title={p.account_names ?? undefined}>
                         {p.account_count === 0 ? (
@@ -183,7 +176,7 @@ export function AssignProxyDialog({ accounts, proxies, onClose, onDone }: Props)
                     <span className="shrink-0 text-muted-foreground">({proxyHost(a.proxy)})</span>
                     <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                     {p ? (
-                      <span className="truncate font-mono">
+                      <span className="truncate tabular-nums">
                         {proxyHost(p.proxy)}
                         {p.proxy_type && <span className="font-sans text-muted-foreground"> · {p.proxy_type}</span>}
                       </span>

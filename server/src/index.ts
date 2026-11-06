@@ -20,6 +20,7 @@ import automationRouter from './api/automation';
 import postRunsRouter from './api/postRuns';
 import shadowbanRouter from './api/shadowban';
 import topicsRouter from './api/topics';
+import seedingRouter from './api/seeding';
 
 installConsoleCapture();
 
@@ -85,6 +86,7 @@ app.use('/api/automation', automationRouter);
 app.use('/api/post-runs', postRunsRouter);
 app.use('/api/shadowban', shadowbanRouter);
 app.use('/api/topics', topicsRouter);
+app.use('/api/seeding', seedingRouter);
 app.use('/api', shopeeRouter); // /api/export/*, /api/import/*, /api/shopee/*
 
 // Loi khong ai bat trong route -> ghi log day du vao file, nhung chi tra thong bao CHUNG cho nguoi

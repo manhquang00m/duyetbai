@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2,
@@ -30,6 +31,14 @@ import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
 import { StatusCheckboxFilter, STATUS_NONE } from '@/components/StatusCheckboxFilter'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { DatePicker } from '@/components/ui/date-picker'
+import { SearchInput } from '@/components/filters/SearchInput'
+import { AccountAvatar } from '@/components/AccountAvatar'
+import { PostThumb } from '@/components/PostThumb'
+import { POSTING_STATUSES } from '@/lib/accountAttention'
+import { confirmDialog } from '@/lib/confirm'
+import { datePresets, todayIso } from '@/lib/dates'
+import { q, useUrlState } from '@/lib/useUrlState'
 import { cn } from '@/lib/utils'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -51,7 +60,8 @@ const STATE_CLASS: Record<PostRunState, string> = {
   missing: 'text-xs text-muted-foreground',
 }
 
-type Tab = 'all' | 'posted' | 'missing' | 'commented' | 'extra'
+const TAB_VALUES = ['all', 'posted', 'missing', 'commented', 'extra'] as const
+type Tab = (typeof TAB_VALUES)[number]
 const TABS: { value: Tab; label: string }[] = [
   { value: 'all', label: 'Tất cả' },
   { value: 'posted', label: 'Thiếu CMT' },
@@ -59,6 +69,15 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'commented', label: 'Hoàn tất' },
   { value: 'extra', label: 'Ngoài kế hoạch' },
 ]
+
+// Trang thai mac dinh giong Phan phoi bai: cac trang thai duoc nhan bai. Rong = khong loc.
+const URL_SCHEMA = {
+  date: q.str(todayIso()),
+  q: q.str(),
+  status: q.list(POSTING_STATUSES),
+  tab: q.enum(TAB_VALUES, 'all'),
+  sort: q.enum(['newest', 'oldest', 'account'] as const, 'newest'),
+}
 
 function StateBadge({ state }: { state: PostRunState }) {
   return (
@@ -69,10 +88,16 @@ function StateBadge({ state }: { state: PostRunState }) {
 }
 
 function RunThumb({ thumb }: { thumb: string | null }) {
-  return thumb ? (
-    <img src={`/media/${thumb}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-md object-cover sm:h-9 sm:w-9" />
-  ) : (
-    <div className="h-10 w-10 shrink-0 rounded-md bg-muted sm:h-9 sm:w-9" />
+  return <PostThumb thumb={thumb} className="h-10 w-10 sm:h-9 sm:w-9" />
+}
+
+/** Nick: avatar mau rieng + ten, de nhan ra nick bang mat tren cac bang dai. */
+function Nick({ name }: { name: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <AccountAvatar name={name} size="sm" />
+      <span className="truncate">{name}</span>
+    </span>
   )
 }
 
@@ -80,7 +105,9 @@ function RunCard({ r }: { r: PostRunDayRow }) {
   return (
     <div className="space-y-2 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-sm font-medium">{r.account_name}</span>
+        <span className="min-w-0 text-sm font-medium">
+          <Nick name={r.account_name} />
+        </span>
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.posted_at?.slice(11, 16) ?? '—'}</span>
       </div>
       <div className="flex items-center gap-2.5">
@@ -251,10 +278,15 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
   const resolve = useMutation({
     mutationFn: (id: number) => resolvePostRunViolation(id),
     onSettled: () => qc.invalidateQueries({ queryKey: ['post-runs-violations'] }),
-    onError: () => alert('Không đánh dấu được, thử lại sau.'),
+    onError: () => toast.error('Không đánh dấu được, thử lại sau.'),
   })
-  const onResolve = (v: PostRunViolation) => {
-    if (confirm(`Đánh dấu đã gỡ vi phạm của nick ${v.account_name}? Dòng này sẽ ẩn khỏi danh sách.`)) resolve.mutate(v.id)
+  const onResolve = async (v: PostRunViolation) => {
+    const ok = await confirmDialog({
+      title: `Đánh dấu đã gỡ vi phạm của ${v.account_name}?`,
+      description: 'Dòng này sẽ ẩn khỏi danh sách Nick vi phạm.',
+      confirmLabel: 'Đã gỡ',
+    })
+    if (ok) resolve.mutate(v.id)
   }
   const nicks = new Set(rows.map((v) => v.account_name)).size
   const clean = !isLoading && total === 0
@@ -288,7 +320,9 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
         {rows.map((v) => (
           <div key={v.id} className="space-y-1.5 p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate text-sm font-medium">{v.account_name}</span>
+              <span className="min-w-0 text-sm font-medium">
+                <Nick name={v.account_name} />
+              </span>
               <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{ddmmHHmm(v.detected_at)}</span>
             </div>
             <ViolationPost v={v} />
@@ -323,7 +357,9 @@ function ViolationsCard({ rows, total, isLoading }: { rows: PostRunViolation[]; 
           <tbody>
             {rows.map((v) => (
               <tr key={v.id} className="border-b border-rule last:border-0 hover:bg-accent">
-                <td className="whitespace-nowrap p-2.5 font-medium">{v.account_name}</td>
+                <td className="whitespace-nowrap p-2.5 font-medium">
+                  <Nick name={v.account_name} />
+                </td>
                 <td className="whitespace-nowrap p-2.5 text-xs tabular-nums text-muted-foreground">
                   {ddmmHHmm(v.detected_at)}
                 </td>
@@ -559,15 +595,12 @@ function ApiDocDialog({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 export function PostLogPage() {
-  const [date, setDate] = useState(fmt(new Date()))
-  const [tab, setTab] = useState<Tab>('all')
-  const [accountSearch, setAccountSearch] = useState('')
-  // Giong mac dinh o Phan phoi bai: cac trang thai duoc phep nhan bai. Rong = khong loc.
-  const [statusFilter, setStatusFilter] = useState<Set<string>>(
-    () => new Set(['Kháng thành công', 'Live', 'Chưa kháng', 'Đang ngâm']),
-  )
+  const url = useUrlState(URL_SCHEMA)
+  const { date, tab, q: accountSearch, sort } = url.values
+  const statusFilter = useMemo(() => new Set(url.values.status), [url.values.status])
+  const setDate = (d: string) => url.set({ date: d })
+  const setTab = (t: Tab) => url.set({ tab: t })
   const [docOpen, setDocOpen] = useState(false)
-  const [sort, setSort] = useState<'newest' | 'oldest' | 'account'>('newest')
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ['post-runs-day', date],
@@ -635,29 +668,30 @@ export function PostLogPage() {
       <PageHeader
         title="Nhật ký đăng"
         description="Nick nào đăng bài gì trong ngày, đã comment chưa — do tool auto báo về qua API"
-        actions={
-          <Button variant="outline" size="sm" onClick={() => setDocOpen(true)}>
-            <FileCode2 className="h-4 w-4" /> API cho tool auto
-          </Button>
-        }
+        secondary={[{ label: 'API cho tool auto', icon: FileCode2, onClick: () => setDocOpen(true) }]}
       />
 
+      {/* Bo loc nick (ten + trang thai) ap cho ca KPI, nick vi pham va bang -> dat o dau trang */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label="Ngày trước">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-w-0 flex-1 sm:w-40 sm:flex-none" />
-          <Button variant="outline" size="icon" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label="Ngày sau">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setDate(fmt(new Date()))}>
-            Hôm nay
-          </Button>
-        </div>
-        <StatusCheckboxFilter selected={statusFilter} onChange={setStatusFilter} includeNone />
+        <DatePicker
+          value={date}
+          onChange={setDate}
+          presets={[datePresets.today(), datePresets.yesterday()]}
+          max={todayIso()}
+        />
+        <SearchInput
+          value={accountSearch}
+          onChange={(v) => url.set({ q: v }, { replace: true })}
+          placeholder="Tìm nick…"
+          className="sm:w-56"
+        />
+        <StatusCheckboxFilter
+          selected={statusFilter}
+          onChange={(next) => url.set({ status: [...next] })}
+          includeNone
+        />
         {(accountSearch || statusFilter.size > 0) && totalNicks > 0 && (
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <span className="text-xs tabular-nums text-muted-foreground sm:ml-auto">
             {nickCount}/{totalNicks} nick
           </span>
         )}
@@ -684,15 +718,6 @@ export function PostLogPage() {
 
       <Card className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
-          <div className="relative w-full sm:w-52">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tìm tài khoản..."
-              value={accountSearch}
-              onChange={(e) => setAccountSearch(e.target.value)}
-              className="h-8 pl-8 sm:text-xs"
-            />
-          </div>
           <div className="table-scroll flex min-w-0 flex-1 items-center gap-1">
             {TABS.map((t) => (
               <button
@@ -712,7 +737,7 @@ export function PostLogPage() {
             label="Sắp xếp"
             activeWhen="newest"
             value={sort}
-            onChange={(v) => setSort(v as typeof sort)}
+            onChange={(v) => url.set({ sort: v as typeof sort })}
             options={[
               { value: 'newest', label: 'Mới nhất' },
               { value: 'oldest', label: 'Cũ nhất' },
@@ -772,7 +797,9 @@ export function PostLogPage() {
             <tbody>
               {visible.map((r) => (
                   <tr key={`${r.account_name}|${r.post_id}`} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="whitespace-nowrap p-2.5 font-medium">{r.account_name}</td>
+                    <td className="whitespace-nowrap p-2.5 font-medium">
+                      <Nick name={r.account_name} />
+                    </td>
                     <td className="max-w-[22rem] p-2.5">
                       <div className="flex items-center gap-2.5">
                         <RunThumb thumb={r.thumb} />
@@ -846,7 +873,9 @@ export function PostLogPage() {
               <tbody>
                 {visibleAccounts.map((a) => (
                   <tr key={a.account_name} className="border-b last:border-0">
-                    <td className="sticky left-0 z-10 max-w-[10rem] truncate bg-card p-2 font-medium">{a.account_name}</td>
+                    <td className="sticky left-0 z-10 max-w-[12rem] bg-card p-2 font-medium">
+                      <Nick name={a.account_name} />
+                    </td>
                     <td className="p-2 text-right tabular-nums">{a.planned}</td>
                     <td className="p-2 text-right tabular-nums">{a.commented}</td>
                     <td

@@ -22,3 +22,6 @@ dist/
 
 # logs
 *.log
+
+# anh chup / report cua skill design-taste-frontend - KHONG commit
+.taste-skill/

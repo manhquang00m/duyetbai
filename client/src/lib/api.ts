@@ -188,6 +188,46 @@ export interface JobState {
   error?: string
   // 1 bai (post_id) bi gan >1 chu de khac nhau trong chinh lan chay nay (hiem gap) - chi de canh bao.
   topicConflicts?: { postId: string; topics: string[] }[]
+  /** Job cao co bat luong tu dong -> job pipeline chay tiep (mo SSE tiep theo id nay). */
+  nextJobId?: string
+  phases?: PipelinePhase[]
+  summary?: PipelineSummary
+}
+
+/** Luong tu dong sau khi cao - khop voi services/jobs.ts ben server. */
+export interface PipelineOptions {
+  checkLinks: boolean
+  rewrite: boolean
+}
+
+export interface PipelinePhase {
+  key: 'check' | 'rewrite'
+  label: string
+  total: number
+  done: number
+  status: 'pending' | 'running' | 'done' | 'skipped'
+}
+
+export type RejectReason = 'noShopee' | 'dead' | 'oos' | 'review'
+
+export const REJECT_REASON_LABEL: Record<RejectReason, string> = {
+  noShopee: 'không có link Shopee',
+  dead: 'link chết',
+  oos: 'hết hàng',
+  review: 'cần xem lại',
+}
+
+export interface PipelineSummary {
+  total: number
+  pass: number
+  rewritten: number
+  rewriteFailed: number
+  reject: Record<RejectReason, number>
+  rejectIds: string[]
+  scrapeErrorIds: string[]
+  unchecked: number
+  posted: number
+  needNewLink: number
 }
 
 /** Trang thai kiem tra 1 link Shopee - khop voi ShopeeLinkStatus ben server. */
@@ -232,6 +272,7 @@ export interface PostFilterParams {
   linkStatus?: LinkStatusFilter
   cleanOnly?: boolean
   rewritten?: 'yes' | 'no'
+  reject?: boolean // bai bi loai: khong link / link chet / het hang / can xem lai (chua dang)
   scrapedFrom?: string // 'YYYY-MM-DD' - loc theo scraped_at (thoi diem thu thap), khong phai post_date
   scrapedTo?: string // 'YYYY-MM-DD', bao gom ca ngay nay
   topics?: string[]
@@ -251,6 +292,7 @@ function postFilterQueryParams(filters: PostFilterParams) {
     linkStatus: filters.linkStatus,
     cleanOnly: filters.cleanOnly ? 1 : undefined,
     rewritten: filters.rewritten,
+    reject: filters.reject ? 1 : undefined,
     scrapedFrom: filters.scrapedFrom || undefined,
     scrapedTo: filters.scrapedTo || undefined,
     topics: filters.topics && filters.topics.length > 0 ? filters.topics.join(',') : undefined,
@@ -325,6 +367,30 @@ export async function checkShopeePostLinks(postIds: string[]) {
 
 export async function deletePosts(postIds: string[]) {
   const { data } = await api.post<{ deleted: number }>('/api/posts/delete', { postIds })
+  return data
+}
+
+/**
+ * Xoa bai bi loai. Server tu tinh lai danh sach (khong tin client); postIds chi thu hep pham vi
+ * (vd bai cua 1 lan cao). Khong truyen = moi bai bi loai trong kho.
+ */
+export async function deleteRejectedPosts(postIds?: string[]) {
+  const { data } = await api.post<{ deleted: number; byReason: Record<RejectReason, number> }>(
+    '/api/posts/delete-rejected',
+    { postIds },
+  )
+  return data
+}
+
+/** Luong tu dong cho bai co san: scope 'backlog' = moi bai chua dang ("Xu ly kho"). */
+export async function startPostPipeline(
+  target: { postIds: string[] } | { scope: 'backlog' },
+  opts?: Partial<PipelineOptions>,
+) {
+  const { data } = await api.post<{ jobId: string; total: number }>('/api/posts/pipeline', {
+    ...target,
+    ...opts,
+  })
   return data
 }
 
@@ -416,11 +482,17 @@ export async function syncGpmProxies() {
 }
 
 /** urlTopics: url (dung nguyen ban da trim, khop 1-1 voi urls) -> chu de gan cho tac gia cua url do. */
-export async function startBatch(urls: string[], force = false, urlTopics?: Record<string, string>) {
+export async function startBatch(
+  urls: string[],
+  force = false,
+  urlTopics?: Record<string, string>,
+  pipeline?: PipelineOptions,
+) {
   const { data } = await api.post<{ jobId: string; total: number }>('/api/batch', {
     urls,
     force,
     urlTopics,
+    pipeline,
   })
   return data
 }
@@ -613,6 +685,56 @@ export async function downloadSelectedPosts(postIds: string[]) {
   URL.revokeObjectURL(url)
 }
 
+// --- Seeding cheo (file Excel cho script GPM SeedingThreads) ---------------------------------
+
+export interface SeedingCandidate {
+  id: number
+  name: string
+  platform: string | null
+  appeal_status: string | null
+  topics: string[]
+  /** null = dung duoc; co gia tri = ly do bi loai. */
+  invalid: string | null
+}
+
+export interface SeedingOptions {
+  accountIds: number[]
+  perRow: number
+  commentsPerRow: number
+  seed: number
+}
+
+export interface SeedingPlan {
+  rows: { profile: string; targets: string[]; comments: string[] }[]
+  perRow: number
+  commentsPerRow: number
+  seed: number
+  commentPool: number
+}
+
+export async function fetchSeedingCandidates() {
+  const { data } = await api.get<SeedingCandidate[]>('/api/seeding/candidates')
+  return data
+}
+
+export async function fetchSeedingPreview(opts: SeedingOptions) {
+  const { data } = await api.post<SeedingPlan>('/api/seeding/preview', opts)
+  return data
+}
+
+/** Cung tham so (ke ca seed) voi ban xem truoc -> file trung khop. */
+export async function downloadSeedingXlsx(opts: SeedingOptions) {
+  const res = await api.post<Blob>('/api/seeding/export', opts, { responseType: 'blob' })
+  const disposition = String(res.headers['content-disposition'] ?? '')
+  const name = disposition.match(/filename="?([^";]+)"?/)?.[1] ?? 'seeding.xlsx'
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export interface Stats {
   posts: number
   media: number
@@ -748,6 +870,16 @@ export async function recheckProxy(id: number) {
 
 // ===== Cai dat: nen tang mac dinh lay metadata/media bai Threads =====
 export type MediaSourceName = 'savethreads' | 'snapsave'
+
+export async function fetchPipelineConfig() {
+  const { data } = await api.get<PipelineOptions>('/api/settings/pipeline-config')
+  return data
+}
+
+export async function savePipelineConfig(cfg: PipelineOptions) {
+  const { data } = await api.put<PipelineOptions>('/api/settings/pipeline-config', cfg)
+  return data
+}
 
 export async function fetchMediaSourceDefault() {
   const { data } = await api.get<{ default: MediaSourceName }>('/api/settings/media-source')

@@ -11,6 +11,8 @@
 :root {
   color-scheme: light;
   --radius: 0.5rem;
+  --radius-control: 6px;
+  --radius-tiny: 4px;
   --frame: #f9fbfc;
   --background: #ffffff;
   --foreground: #131416;
@@ -31,7 +33,7 @@
   --border: #e8eaec;
   --rule: #f0f1f2;
   --input: #cdced1;
-  --ring: #131416;
+  --ring: #ee4d2d;
   --chart-1: #ee4d2d;
   --chart-1-ink: #c9381c;
   --chart-2: #2f70bb;
@@ -71,7 +73,7 @@
   --border: #2e2e2e;
   --rule: #1f1f1f;
   --input: #444444;
-  --ring: #ffffff;
+  --ring: #f0603f;
   --chart-1: #f0603f;
   --chart-1-ink: #f0603f;
   --chart-2: #6ea3e6;
@@ -89,10 +91,59 @@
   --shadow-color: 0 0% 0%;
 }
 
+/*
+ * Theme Hong (cute): van la theme sang, chi doi bang mau + bo tron hon + khung cham bi.
+ * Nut chinh hong dam (chu trang 4.8:1), chu nau tim thay vi den, du lieu chinh (chart-1) chuyen
+ * sang hong, chuoi phu (chart-2) tim lavender. Mau trang thai (xanh/do/vang) giu nghia cu.
+ */
+.pink {
+  color-scheme: light;
+  --radius: 0.875rem;
+  --radius-control: 10px;
+  --radius-tiny: 6px;
+  --frame: #fff5f9;
+  --background: #ffffff;
+  --foreground: #3d1a2a;
+  --card: #ffffff;
+  --card-foreground: #3d1a2a;
+  --popover: #ffffff;
+  --popover-foreground: #3d1a2a;
+  --primary: #d1307a;
+  --primary-foreground: #ffffff;
+  --secondary: #fde2ee;
+  --secondary-foreground: #3d1a2a;
+  --muted: #fdf0f5;
+  --muted-foreground: #8c4d68;
+  --accent: #fde8f1;
+  --accent-foreground: #3d1a2a;
+  --active: #fbd5e5;
+  --destructive: #c8243f;
+  --border: #f8d9e6;
+  --rule: #fcebf2;
+  --input: #eeb6cd;
+  --ring: #ec5a96;
+  --chart-1: #ec5a96;
+  --chart-1-ink: #c2266a;
+  --chart-2: #8b6cd9;
+  --positive: #1e7b4f;
+  --negative: #c8243f;
+  --warning: #92400e;
+  --pill-positive-bg: #ddf6e7;
+  --pill-positive-ink: #0d4a2c;
+  --pill-negative-bg: #ffe3eb;
+  --pill-negative-ink: #8a1538;
+  --pill-warning-bg: #fff1d6;
+  --pill-warning-ink: #8a4b06;
+  --pill-neutral-bg: #fbe6ef;
+  --pill-neutral-ink: #5b3446;
+  --shadow-color: 335 45% 35%;
+}
+
 @theme inline {
-  /* Radius 2 muc: control 6px, card 8px (xl gop ve 8px de cac the rounded-xl cu cung theo). */
-  --radius-sm: 4px;
-  --radius-md: 6px;
+  /* Radius 2 muc: control 6px, card 8px (xl gop ve 8px de cac the rounded-xl cu cung theo).
+     Lay qua bien de theme Hong bo tron hon (10px / 14px). */
+  --radius-sm: var(--radius-tiny);
+  --radius-md: var(--radius-control);
   --radius-lg: var(--radius);
   --radius-xl: var(--radius);
   --container-8xl: 88rem;
@@ -174,9 +225,32 @@
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
+  /* Avatar nick: nen nhat + chu dam cung hue (--h dat inline theo ten). */
+  .avatar-tint {
+    background: oklch(0.94 0.045 var(--h));
+    color: oklch(0.4 0.09 var(--h));
+  }
+  .dark .avatar-tint {
+    background: oklch(0.3 0.05 var(--h));
+    color: oklch(0.86 0.07 var(--h));
+  }
   * {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent) transparent;
+  }
+  /* Theme Hong: khung (sidebar + top bar) cham bi nhat, co dinh theo man hinh de sidebar va
+     header lien mach; boi den chu hong. To giay noi dung van trang tron cho de doc. */
+  .pink .bg-frame {
+    /* radial-gradient o day ve cham tron lap lai (hoa tiet), khong phai nen chuyen mau */
+    background-image: radial-gradient(color-mix(in oklch, var(--chart-1) 22%, transparent) 1.2px, transparent 1.7px); /* taste-skill-ignore */
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+  .pink ::selection {
+    background: color-mix(in oklch, var(--chart-1) 28%, transparent);
+  }
+  .pink * {
+    scrollbar-color: color-mix(in oklch, var(--chart-1) 45%, transparent) transparent;
   }
 }
 

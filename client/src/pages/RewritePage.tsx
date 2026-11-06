@@ -43,6 +43,9 @@ import { Dialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
+import { FileDropOverlay } from '@/components/FileDropOverlay'
+import { ImportResultPanel } from '@/components/ImportResultPanel'
+import { confirmDialog } from '@/lib/confirm'
 import { cn } from '@/lib/utils'
 
 const BATCH_KEY = 'rewrite_batch_id'
@@ -84,14 +87,42 @@ export function RewritePage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const rows = batch.data?.rows ?? []
+  const dirtyRows = rows.filter((r) => edited[r.id] !== undefined && edited[r.id] !== (r.rewritten ?? ''))
+
+  // Con ban sua tay chua luu -> hoi truoc khi lam viec se xoa chung (chay lai, mo file khac)
+  const confirmDropEdits = async (action: string) =>
+    dirtyRows.length === 0 ||
+    confirmDialog({
+      title: `Bỏ ${dirtyRows.length} bản sửa chưa lưu?`,
+      description: `${action} sẽ xóa các chỗ bạn vừa sửa tay mà chưa bấm Lưu.`,
+      confirmLabel: 'Bỏ bản sửa',
+      cancelLabel: 'Quay lại',
+      destructive: true,
+    })
+
+  // Dong tab / F5 khi con ban sua chua luu -> trinh duyet hoi lai
+  useEffect(() => {
+    if (dirtyRows.length === 0) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirtyRows.length])
+
+  const uploadFile = async (f: File) => {
+    if (!(await confirmDropEdits('Mở file mới'))) return
+    uploadMut.mutate(f)
+  }
+
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = '' // cho phep chon lai dung file do
-    if (f) uploadMut.mutate(f)
+    if (f) void uploadFile(f)
   }
 
   const run = async () => {
     if (!batchId) return
+    if (!(await confirmDropEdits('Viết lại cả file'))) return
     try {
       setRunning(true)
       setJob(null)
@@ -134,6 +165,31 @@ export function RewritePage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const [savingAll, setSavingAll] = useState(false)
+  const saveAll = async () => {
+    const targets = dirtyRows.map((r) => ({ id: r.id, text: edited[r.id] ?? '' }))
+    if (targets.length === 0) return
+    setSavingAll(true)
+    let ok = 0
+    for (const t of targets) {
+      try {
+        await saveRewriteRow(t.id, t.text)
+        ok++
+        setEdited((prev) => {
+          const next = { ...prev }
+          if (next[t.id] === t.text) delete next[t.id]
+          return next
+        })
+      } catch {
+        // dong loi giu nguyen ban sua de nguoi dung thu lai
+      }
+    }
+    setSavingAll(false)
+    void qc.invalidateQueries({ queryKey: ['rewrite', batchId] })
+    if (ok === targets.length) toast.success(`Đã lưu ${ok} dòng`)
+    else toast.error(`Lưu được ${ok}/${targets.length} dòng, các dòng lỗi vẫn giữ bản sửa`)
+  }
+
   const againMut = useMutation({
     mutationFn: (rowId: number) => rewriteRowAgain(rowId),
     onSuccess: () => {
@@ -143,20 +199,22 @@ export function RewritePage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
-  const rows = batch.data?.rows ?? []
   const doneCount = rows.filter((r) => r.rewritten).length
   const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
 
   return (
     <div className="mx-auto max-w-8xl space-y-5 sm:space-y-6">
+      <FileDropOverlay
+        accept={['.xlsx', '.csv']}
+        maxSizeMb={10}
+        label="Thả file để AI viết lại caption (cột B)"
+        onFiles={([f]) => void uploadFile(f)}
+        disabled={uploadMut.isPending || running}
+      />
       <PageHeader
         title="Viết lại caption bằng AI"
         description="Tải file Excel lên (caption ở cột B) → AI viết lại → sửa tay nếu cần → tải file mới về (cột B = bản viết lại, cột K = caption gốc)"
-        actions={
-          <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)}>
-            <Settings2 className="h-4 w-4" /> Giọng văn
-          </Button>
-        }
+        secondary={[{ label: 'Giọng văn', icon: Settings2, onClick: () => setPromptOpen(true) }]}
       />
 
       <AiConfigBanner />
@@ -168,7 +226,8 @@ export function RewritePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              File .xlsx hoặc .csv, tối đa 10MB. Caption đọc ở cột B, các cột khác giữ nguyên.
+              File .xlsx hoặc .csv, tối đa 10MB, hoặc kéo thả file vào trang. Caption đọc ở cột B, các cột khác
+              giữ nguyên.
             </p>
             <input ref={fileRef} type="file" accept=".xlsx,.csv" hidden onChange={onFile} />
             <Button
@@ -276,8 +335,14 @@ export function RewritePage() {
 
       {rows.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-row items-center justify-between gap-3">
             <CardTitle className="text-sm text-muted-foreground">Đối chiếu &amp; sửa tay</CardTitle>
+            {dirtyRows.length > 0 && (
+              <Button size="sm" disabled={savingAll} onClick={() => void saveAll()}>
+                {savingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Lưu
+                tất cả ({dirtyRows.length})
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {rows.map((r) => {
@@ -319,8 +384,18 @@ export function RewritePage() {
                       rows={Math.min(12, Math.max(3, value.split('\n').length + 1))}
                       value={value}
                       placeholder="Chưa viết lại"
+                      aria-label={`Bản mới dòng ${r.row_index}`}
+                      title="Ctrl+S để lưu dòng này"
                       onChange={(e) => setEdited((p) => ({ ...p, [r.id]: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                          e.preventDefault()
+                          if (dirty && !saveMut.isPending) saveMut.mutate(r)
+                        }
+                      }}
+                      className={cn(dirty && 'border-chart-1/60')}
                     />
+                    {dirty && <div className="mt-1 text-[11px] text-muted-foreground">Chưa lưu · Ctrl+S</div>}
                     {r.error && <div className="mt-1 text-xs text-destructive">{r.error}</div>}
                   </div>
                 </div>
@@ -377,24 +452,28 @@ function AiConfigBanner() {
 }
 
 function PromptDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const qc = useQueryClient()
   const [text, setText] = useState('')
   const prompt = useQuery({ queryKey: ['rewrite-prompt'], queryFn: fetchRewritePrompt, enabled: open })
 
+  // Moi lan mo lai -> ve ban da luu (bo phan go do lan Huy truoc)
   useEffect(() => {
-    if (prompt.data) setText(prompt.data.prompt)
-  }, [prompt.data])
+    if (open && prompt.data) setText(prompt.data.prompt)
+  }, [open, prompt.data])
 
   const save = useMutation({
     mutationFn: () => saveRewritePrompt(text),
     onSuccess: () => {
       toast.success('Đã lưu giọng văn')
+      void qc.invalidateQueries({ queryKey: ['rewrite-prompt'] })
       onClose()
     },
     onError: (e: Error) => toast.error(e.message),
   })
+  const dirty = !!prompt.data && text !== prompt.data.prompt
 
   return (
-    <Dialog open={open} onClose={onClose} className="max-w-2xl">
+    <Dialog open={open} onClose={onClose} dirty={dirty} busy={save.isPending} className="max-w-2xl">
       <h2 className="pr-8 text-lg font-semibold">Giọng văn AI</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Hướng dẫn cho AI khi viết lại. Để trống rồi lưu sẽ quay về mặc định.
@@ -500,14 +579,14 @@ function CaptionVariantCard() {
     }
   }
 
-  const runAllForce = () => {
-    if (
-      !confirm(
-        `Viết lại lại TOÀN BỘ ${rows.length} bài, kể cả ${doneCount} bài đã có đủ 3 bản?\n\n` +
-          'Bản cũ sẽ bị ghi đè, tốn thêm quota AI cho những bài đã xong.',
-      )
-    )
-      return
+  const runAllForce = async () => {
+    const ok = await confirmDialog({
+      title: `Viết lại toàn bộ ${rows.length} bài?`,
+      description: `Gồm cả ${doneCount} bài đã đủ 3 bản — bản cũ bị ghi đè, tốn thêm quota AI cho những bài đã xong.`,
+      confirmLabel: `Viết lại ${rows.length} bài`,
+      destructive: true,
+    })
+    if (!ok) return
     void runJob(rows.map((r) => r.post_id))
   }
 
@@ -558,7 +637,7 @@ function CaptionVariantCard() {
             size="sm"
             className="flex-1 sm:flex-none"
             disabled={running || rows.length === 0}
-            onClick={runAllForce}
+            onClick={() => void runAllForce()}
           >
             {running ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -592,29 +671,16 @@ function CaptionVariantCard() {
       </p>
 
       {importResult && (importResult.errors.length > 0 || importResult.skipped > 0) && (
-        <div className="rounded-md border p-2.5 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span>
-              Lần nhập gần nhất: lưu <b>{importResult.saved}</b> bài · bỏ qua {importResult.skipped} dòng trống ·{' '}
-              <span className={importResult.errors.length ? 'text-red-600 dark:text-red-400' : ''}>
-                {importResult.errors.length} dòng lỗi
-              </span>
-            </span>
-            <button type="button" className="text-muted-foreground hover:underline" onClick={() => setImportResult(null)}>
-              Ẩn
-            </button>
-          </div>
-          {importResult.errors.length > 0 && (
-            <ul className="mt-1.5 max-h-40 space-y-0.5 overflow-y-auto">
-              {importResult.errors.map((e) => (
-                <li key={e.row}>
-                  Dòng {e.row}
-                  {e.postId && <span className="font-mono"> ({e.postId})</span>}: {e.error}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <ImportResultPanel
+          summary={
+            <>
+              Lần nhập gần nhất: lưu <b className="tabular-nums">{importResult.saved}</b> bài · bỏ qua{' '}
+              <span className="tabular-nums">{importResult.skipped}</span> dòng trống
+            </>
+          }
+          errors={importResult.errors.map((e) => ({ row: e.row, ref: e.postId, error: e.error }))}
+          onDismiss={() => setImportResult(null)}
+        />
       )}
 
       {job && (
@@ -814,6 +880,7 @@ function CaptionVariantRow({
 }
 
 function VariantPromptDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const qc = useQueryClient()
   const [text, setText] = useState('')
   const prompt = useQuery({
     queryKey: ['variant-rewrite-prompt'],
@@ -821,21 +888,24 @@ function VariantPromptDialog({ open, onClose }: { open: boolean; onClose: () => 
     enabled: open,
   })
 
+  // Moi lan mo lai -> ve ban da luu (bo phan go do lan Huy truoc)
   useEffect(() => {
-    if (prompt.data) setText(prompt.data.prompt)
-  }, [prompt.data])
+    if (open && prompt.data) setText(prompt.data.prompt)
+  }, [open, prompt.data])
 
   const save = useMutation({
     mutationFn: () => saveVariantRewritePrompt(text),
     onSuccess: () => {
       toast.success('Đã lưu giọng văn')
+      void qc.invalidateQueries({ queryKey: ['variant-rewrite-prompt'] })
       onClose()
     },
     onError: (e: Error) => toast.error(e.message),
   })
+  const dirty = !!prompt.data && text !== prompt.data.prompt
 
   return (
-    <Dialog open={open} onClose={onClose} className="max-w-2xl">
+    <Dialog open={open} onClose={onClose} dirty={dirty} busy={save.isPending} className="max-w-2xl">
       <h2 className="pr-8 text-lg font-semibold">Giọng văn viết lại caption kho bài</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Hướng dẫn cho AI khi viết 3 bản caption khác nhau cho 1 bài. Để trống rồi lưu sẽ quay về

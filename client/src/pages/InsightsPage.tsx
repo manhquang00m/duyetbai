@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { AlertTriangle, ArrowRight, ExternalLink, Lightbulb, TrendingUp, Info, BarChart3, Loader2, Trash2 } from 'lucide-react'
@@ -13,21 +13,21 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
+import { DateRangePicker } from '@/components/ui/date-picker'
+import { PostThumb } from '@/components/PostThumb'
+import { q, useUrlState } from '@/lib/useUrlState'
+import { addDaysIso, datePresets, fmtVN } from '@/lib/dates'
+import { confirmDialog } from '@/lib/confirm'
 import { cn } from '@/lib/utils'
 
 const MIN_RUNS = 30
 
-const pad = (n: number) => String(n).padStart(2, '0')
-function localDate(offsetDays = 0): string {
-  const d = new Date()
-  d.setDate(d.getDate() + offsetDays)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-const PRESETS = [7, 14, 30] as const
+const PRESETS = [datePresets.lastDays(7), datePresets.lastDays(14), datePresets.lastDays(30)]
+const [DEF_FROM, DEF_TO] = PRESETS[1].range()
+const URL_SCHEMA = { from: q.str(DEF_FROM), to: q.str(DEF_TO) }
 
 const rate = (g: InsightCounts) => (g.runs > 0 ? g.clicks / g.runs : 0)
 const hitRate = (g: InsightCounts) => (g.runs > 0 ? g.hits / g.runs : 0)
@@ -162,11 +162,7 @@ function TrendBars({ data }: { data: InsightsReport['trend'] }) {
 function PostCell({ p }: { p: InsightPost }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      {p.thumb ? (
-        <img src={`/media/${p.thumb}`} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-md object-cover" />
-      ) : (
-        <div className="h-10 w-10 shrink-0 rounded-md bg-muted" />
-      )}
+      <PostThumb thumb={p.thumb} className="h-10 w-10" />
       <div className="min-w-0">
         <div className="line-clamp-2 text-xs">{p.caption || <em className="text-muted-foreground">(không có caption)</em>}</div>
         <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
@@ -282,8 +278,14 @@ function DeadPosts({ dead }: { dead: InsightsReport['deadPosts'] }) {
               size="sm"
               variant="outline"
               disabled={ids.length === 0 || del.isPending}
-              onClick={() => {
-                if (confirm(`Xoá ${ids.length} bài (kèm media đã tải)? Không hoàn tác được.`)) del.mutate(ids)
+              onClick={async () => {
+                const ok = await confirmDialog({
+                  title: `Xoá ${ids.length} bài khỏi kho?`,
+                  description: 'Xoá kèm media đã tải. Không hoàn tác được.',
+                  confirmLabel: `Xoá ${ids.length} bài`,
+                  destructive: true,
+                })
+                if (ok) del.mutate(ids)
               }}
             >
               {del.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
@@ -375,9 +377,9 @@ function LagBars({ lag }: { lag: InsightsReport['lag'] }) {
 }
 
 export function InsightsPage() {
-  const [from, setFrom] = useState(localDate(-14))
-  const [to, setTo] = useState(localDate(0))
-  const validRange = from <= to
+  const url = useUrlState(URL_SCHEMA)
+  const { from, to } = url.values
+  const validRange = !!from && !!to && from <= to
   const { data, isLoading, isError } = useQuery({
     queryKey: ['insights', from, to],
     queryFn: () => fetchInsights(from, to),
@@ -385,6 +387,16 @@ export function InsightsPage() {
   })
 
   const o = data?.overview
+  // Ngay cuoi co du lieu click: khoang loc nam sau ngay nay thi chac chan rong -> goi y lui ve.
+  const cutoffDay = data?.cutoff?.slice(0, 10) ?? null
+  // Mo trang khong chon ngay (mac dinh) ma khoang mac dinh nam sau ngay co bao cao click -> tu lui ve
+  // 14 ngay toi ngay do, thay vi mo ra trang trong. Nguoi dung tu chon ngay thi giu nguyen.
+  const usingDefault = url.isDefault('from') && url.isDefault('to')
+  const shouldSnap = usingDefault && !!o && o.runs === 0 && !!cutoffDay && from > cutoffDay
+  const setUrl = url.set
+  useEffect(() => {
+    if (shouldSnap && cutoffDay) setUrl({ from: addDaysIso(cutoffDay, -13), to: cutoffDay }, { replace: true })
+  }, [shouldSnap, cutoffDay, setUrl])
   const avg = o ? rate(o) : 0
   const dims = data?.dimensions ?? []
   const byId = (id: string) => dims.find((d) => d.id === id)
@@ -398,32 +410,8 @@ export function InsightsPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-w-0 flex-1 sm:w-36 sm:flex-none sm:text-xs" />
-          <span className="text-xs text-muted-foreground">→</span>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-w-0 flex-1 sm:w-36 sm:flex-none sm:text-xs" />
-        </div>
-        <div className="flex items-center gap-1">
-          {PRESETS.map((d) => {
-            const active = from === localDate(-d) && to === localDate(0)
-            return (
-              <Button
-                key={d}
-                size="sm"
-                variant="ghost"
-                aria-pressed={active}
-                className={active ? 'bg-active text-foreground hover:bg-active' : 'text-muted-foreground'}
-                onClick={() => {
-                  setFrom(localDate(-d))
-                  setTo(localDate(0))
-                }}
-              >
-                {d} ngày
-              </Button>
-            )
-          })}
-        </div>
-        {!validRange && <span className="text-xs text-destructive">Ngày bắt đầu phải trước ngày kết thúc</span>}
+        <DateRangePicker from={from} to={to} onChange={(f, t) => url.set({ from: f, to: t })} presets={PRESETS} stepper />
+        {!validRange && <span className="text-xs text-destructive">Chọn đủ ngày bắt đầu và kết thúc</span>}
       </div>
 
       {data && (
@@ -444,7 +432,22 @@ export function InsightsPage() {
           </div>
         )
       ) : o.runs === 0 ? (
-        <EmptyState icon={BarChart3} title="Chưa có lượt đăng nào trong khoảng này" description="Chọn khoảng ngày khác hoặc kiểm tra Nhật ký đăng." />
+        <EmptyState
+          icon={BarChart3}
+          title="Chưa có lượt đăng nào trong khoảng này"
+          description={
+            cutoffDay && from > cutoffDay
+              ? `Lượt đăng sau ${fmtVN(cutoffDay)} chưa được tính vì chưa có báo cáo click.`
+              : 'Chọn khoảng ngày khác hoặc kiểm tra Nhật ký đăng.'
+          }
+          action={
+            cutoffDay && from > cutoffDay ? (
+              <Button size="sm" variant="outline" onClick={() => url.set({ from: addDaysIso(cutoffDay, -13), to: cutoffDay })}>
+                Xem 14 ngày tới {fmtVN(cutoffDay)}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-3 xl:grid-cols-6">

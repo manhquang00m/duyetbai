@@ -67,4 +67,31 @@ router.put('/variant-rewrite-prompt', (req, res) => {
   res.json({ prompt: getVariantRewritePrompt() });
 });
 
+const PIPELINE_KEY = 'pipeline_config';
+const PIPELINE_DEFAULT = { checkLinks: true, rewrite: true };
+
+// GET /api/settings/pipeline-config -> lua chon "sau khi cao tu kiem tra link / viet lai caption"
+router.get('/pipeline-config', (_req, res) => {
+  try {
+    const v = JSON.parse(getSetting(PIPELINE_KEY) ?? 'null') as Record<string, unknown> | null;
+    res.json({
+      checkLinks: typeof v?.checkLinks === 'boolean' ? v.checkLinks : PIPELINE_DEFAULT.checkLinks,
+      rewrite: typeof v?.rewrite === 'boolean' ? v.rewrite : PIPELINE_DEFAULT.rewrite,
+    });
+  } catch {
+    res.json(PIPELINE_DEFAULT);
+  }
+});
+
+// PUT /api/settings/pipeline-config { checkLinks: boolean, rewrite: boolean }
+router.put('/pipeline-config', (req, res) => {
+  const { checkLinks, rewrite } = req.body ?? {};
+  if (typeof checkLinks !== 'boolean' || typeof rewrite !== 'boolean') {
+    res.status(400).json({ error: 'checkLinks/rewrite phai la boolean' });
+    return;
+  }
+  setSetting(PIPELINE_KEY, JSON.stringify({ checkLinks, rewrite }));
+  res.json({ checkLinks, rewrite });
+});
+
 export default router;

@@ -8,12 +8,20 @@ import { closeBrowser, closeShopeeBrowser } from './browser';
 import { beautifyVideo, type BeautifyConfig } from './beautify';
 import { checkProxy } from './proxyCheck';
 import { saveProxies } from '../db/proxies';
-import { getPostBrief, getVideoMedia, getShopeeCheckTargets } from '../db/queries';
+import {
+  getPostBrief,
+  getVideoMedia,
+  getShopeeCheckTargets,
+  classifyPosts,
+  REJECT_REASONS,
+  type RejectReason,
+  type ShopeeCheckTarget,
+} from '../db/queries';
 import { saveScrape, setProcessedFile, setShopeeLinkStatus } from '../db/repository';
 import { checkShopeeLink } from './shopeeLinkCheck';
 import { checkAccount, openViewer, type Viewer } from './shadowbanCheck';
 import { listRows, rewriteRow } from './rewrite';
-import { listMissingPostIds, generateVariantsForPost } from './postCaptionVariants';
+import { listMissingPostIds, generateVariantsForPost, VARIANT_COUNT } from './postCaptionVariants';
 import { setPostTopic } from '../db/accountTopics';
 import { withRetry } from '../utils/retry';
 import { DOWNLOAD_DIR, LLM_CONCURRENCY } from '../config';
@@ -34,6 +42,37 @@ export interface JobState {
   // 1 bai (post_id) bi 2 URL KHAC NHAU trong chinh lan chay nay gan cho 2 chu de khac nhau (vd
   // 2 share-link trung nhau lai nam o 2 nhom chu de khac nhau) - hiem gap, chi de canh bao.
   topicConflicts?: { postId: string; topics: string[] }[];
+  /** Job cao co bat luong tu dong -> id job pipeline chay tiep ngay sau (client mo SSE tiep). */
+  nextJobId?: string;
+  /** Job pipeline: tien trinh tung chang (status 'skipped' = nguoi dung tat chang do). */
+  phases?: PipelinePhase[];
+  summary?: PipelineSummary;
+}
+
+export interface PipelinePhase {
+  key: 'check' | 'rewrite';
+  label: string;
+  total: number;
+  done: number;
+  status: 'pending' | 'running' | 'done' | 'skipped';
+}
+
+export interface PipelineOptions {
+  checkLinks: boolean;
+  rewrite: boolean;
+}
+
+export interface PipelineSummary {
+  total: number;
+  pass: number; // co link, moi link con hang
+  rewritten: number;
+  rewriteFailed: number;
+  reject: Record<RejectReason, number>;
+  rejectIds: string[]; // bai bi loai - nut "Xoa N bai bi loai" (server van tinh lai khi xoa)
+  scrapeErrorIds: string[]; // cao comment loi -> khong loai, goi y "Lay lai comment"
+  unchecked: number; // con link chua kiem tra (tat chang kiem tra)
+  posted: number; // da dang tu truoc -> khong dong vao
+  needNewLink: number; // bai dat con link chua co new_link (buoc Cap nhat thu cong tiep theo)
 }
 
 export interface JobEvent {
@@ -62,6 +101,15 @@ export function subscribe(id: string, l: Listener): () => void {
   return () => listeners.get(id)?.delete(l);
 }
 
+/** Ghi 1 dong log vao job + day qua SSE. */
+function logTo(job: JobState): (url: string, message: string) => void {
+  return (url, message) => {
+    const l = { url, message };
+    job.logs.push(l);
+    emit(job.id, { type: 'log', job, log: l });
+  };
+}
+
 function newJob(total: number): JobState {
   const id = randomUUID();
   const job: JobState = { id, status: 'running', total, done: 0, items: [], logs: [] };
@@ -80,6 +128,7 @@ export function startBatchJob(
   urls: string[],
   force = false,
   urlTopics?: Record<string, string>,
+  pipeline?: PipelineOptions,
 ): JobState {
   const job = newJob(urls.length);
   // Hiem gap: 2 URL KHAC NHAU trong chinh lan chay nay lai tro ve CUNG 1 post_id (vd 2 share-link
@@ -116,6 +165,14 @@ export function startBatchJob(
         .map(([postId, topics]) => ({ postId, topics: [...topics] }));
       if (conflicts.length > 0) job.topicConflicts = conflicts;
       await closeBrowser().catch(() => {});
+      // Luong tu dong: chi bai MOI cua lan cao nay (bai da co tu truoc -> skipped, khong dong vao).
+      // Chay sau closeBrowser (tuan tu, khong tranh browser) va gan nextJobId TRUOC khi bao 'end'.
+      if (pipeline && (pipeline.checkLinks || pipeline.rewrite) && job.status === 'done') {
+        const fresh = [
+          ...new Set(job.items.filter((i) => i.ok && !i.skipped && i.postId).map((i) => i.postId!)),
+        ];
+        if (fresh.length > 0) job.nextJobId = startPostPipelineJob(fresh, pipeline).id;
+      }
       emit(job.id, { type: 'end', job });
     }
   })();
@@ -296,51 +353,17 @@ export function startProxyCheckJob(proxies: string[]): JobState {
 export function startShopeeLinkCheckJob(
   opts: { entryIds?: number[]; postIds?: string[] } = {},
 ): JobState {
-  const rows = getShopeeCheckTargets({ entryIds: opts.entryIds, postIds: opts.postIds });
-  const byTarget = new Map<string, { id: number; post_id: string }[]>();
-  for (const r of rows) {
-    if (!byTarget.has(r.target)) byTarget.set(r.target, []);
-    byTarget.get(r.target)!.push({ id: r.id, post_id: r.post_id });
-  }
-  const targets = [...byTarget.keys()];
-  const job = newJob(targets.length);
+  const byTarget = groupCheckTargets(
+    getShopeeCheckTargets({ entryIds: opts.entryIds, postIds: opts.postIds }),
+  );
+  const job = newJob(byTarget.size);
   void (async () => {
     try {
-      // Dung trinh duyet that (Playwright) -> gioi han thap hon check qua HTTP thuan, giong cac
-      // job Playwright khac (rescrape/beautify dung 2).
-      const limit = pLimit(2);
-      await Promise.all(
-        targets.map((target) =>
-          limit(async () => {
-            const entries = byTarget.get(target)!;
-            const log = (message: string) => {
-              const l = { url: target, message };
-              job.logs.push(l);
-              emit(job.id, { type: 'log', job, log: l });
-            };
-            const result = await withRetry(() => checkShopeeLink(target, log), {
-              retries: 1,
-              label: `shopee-check ${target}`,
-            });
-            for (const e of entries) {
-              setShopeeLinkStatus(e.id, result.status, result.message, result.title, result.image);
-            }
-
-            const item: BatchItemResult = {
-              url: target,
-              ok: result.status === 'available',
-              username: entries[0]?.post_id,
-              error: result.status !== 'available' ? result.message : undefined,
-              shopeeStatus: result.status,
-              shopeeTitle: result.title,
-              shopeeImage: result.image,
-            };
-            job.done++;
-            job.items.push(item);
-            emit(job.id, { type: 'progress', job, item });
-          }),
-        ),
-      );
+      await runShopeeLinkChecks(byTarget, logTo(job), (item) => {
+        job.done++;
+        job.items.push(item);
+        emit(job.id, { type: 'progress', job, item });
+      });
       job.status = 'done';
     } catch (err) {
       job.status = 'error';
@@ -352,6 +375,49 @@ export function startShopeeLinkCheckJob(
     }
   })();
   return job;
+}
+
+/** Gom dong theo link (dedup): 1 link kiem tra 1 lan, ghi ket qua cho moi dong trung link. */
+function groupCheckTargets(rows: ShopeeCheckTarget[]): Map<string, { id: number; post_id: string }[]> {
+  const byTarget = new Map<string, { id: number; post_id: string }[]>();
+  for (const r of rows) {
+    if (!byTarget.has(r.target)) byTarget.set(r.target, []);
+    byTarget.get(r.target)!.push({ id: r.id, post_id: r.post_id });
+  }
+  return byTarget;
+}
+
+/** Loi kiem tra link dung chung cho job kiem tra rieng va pipeline. Nguoi goi tu dong browser Shopee. */
+async function runShopeeLinkChecks(
+  byTarget: Map<string, { id: number; post_id: string }[]>,
+  log: (url: string, message: string) => void,
+  onItem: (item: BatchItemResult) => void,
+): Promise<void> {
+  // Dung trinh duyet that (Playwright) -> gioi han thap hon check qua HTTP thuan, giong cac
+  // job Playwright khac (rescrape/beautify dung 2).
+  const limit = pLimit(2);
+  await Promise.all(
+    [...byTarget.entries()].map(([target, entries]) =>
+      limit(async () => {
+        const result = await withRetry(() => checkShopeeLink(target, (m) => log(target, m)), {
+          retries: 1,
+          label: `shopee-check ${target}`,
+        });
+        for (const e of entries) {
+          setShopeeLinkStatus(e.id, result.status, result.message, result.title, result.image);
+        }
+        onItem({
+          url: target,
+          ok: result.status === 'available',
+          username: entries[0]?.post_id,
+          error: result.status !== 'available' ? result.message : undefined,
+          shopeeStatus: result.status,
+          shopeeTitle: result.title,
+          shopeeImage: result.image,
+        });
+      }),
+    ),
+  );
 }
 
 /** Viet lai caption bang AI cho toan bo dong cua 1 batch (trang "Viet lai caption"). */
@@ -398,23 +464,134 @@ export function startCaptionVariantJob(postIds?: string[]): JobState {
   const job = newJob(ids.length);
   void (async () => {
     try {
-      const limit = pLimit(LLM_CONCURRENCY);
-      await Promise.all(
-        ids.map((postId) =>
-          limit(async () => {
-            const r = await generateVariantsForPost(postId, true);
-            const item: BatchItemResult = r.ok
-              ? { url: postId, ok: true }
-              : { url: postId, ok: false, error: r.error };
-            const l = { url: postId, message: r.ok ? 'Đã viết lại' : `LỖI: ${r.error}` };
-            job.logs.push(l);
-            emit(job.id, { type: 'log', job, log: l });
-            job.done++;
-            job.items.push(item);
-            emit(job.id, { type: 'progress', job, item });
-          }),
-        ),
-      );
+      await runCaptionVariants(ids, true, logTo(job), (item) => {
+        job.done++;
+        job.items.push(item);
+        emit(job.id, { type: 'progress', job, item });
+      });
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/** Loi viet lai caption dung chung cho job rieng va pipeline. force=false: bo qua bai da du ban. */
+async function runCaptionVariants(
+  ids: string[],
+  force: boolean,
+  log: (url: string, message: string) => void,
+  onItem: (item: BatchItemResult) => void,
+): Promise<void> {
+  const limit = pLimit(LLM_CONCURRENCY);
+  await Promise.all(
+    ids.map((postId) =>
+      limit(async () => {
+        const r = await generateVariantsForPost(postId, force);
+        log(postId, r.ok ? 'Đã viết lại' : `LỖI: ${r.error}`);
+        onItem(r.ok ? { url: postId, ok: true, postId } : { url: postId, ok: false, postId, error: r.error });
+      }),
+    ),
+  );
+}
+
+/**
+ * Luong tu dong cho danh sach bai (sau khi cao, hoac "Xu ly kho"), TUAN TU tung chang:
+ *   1. Kiem tra link Shopee chua kiem tra
+ *   2. Phan loai: dat / bi loai (khong link, chet, het hang, can xem lai) / cao loi / da dang
+ *   3. Viet lai caption cho bai DAT chua du ban (bai bi loai khong ton luot AI)
+ * KHONG tu xoa: tra summary de nguoi dung bam 1 nut xoa (POST /api/posts/delete-rejected).
+ */
+export function startPostPipelineJob(postIds: string[], opts: PipelineOptions): JobState {
+  const ids = [...new Set(postIds)];
+  // ids rong -> getShopeeCheckTargets hieu la "khong loc" = kiem tra ca kho -> chan truoc
+  const byTarget =
+    opts.checkLinks && ids.length > 0
+      ? groupCheckTargets(getShopeeCheckTargets({ postIds: ids, uncheckedOnly: true }))
+      : new Map<string, { id: number; post_id: string }[]>();
+  const job = newJob(ids.length);
+  const check: PipelinePhase = {
+    key: 'check',
+    label: 'Kiểm tra link',
+    total: byTarget.size,
+    done: 0,
+    status: opts.checkLinks ? 'pending' : 'skipped',
+  };
+  const rewrite: PipelinePhase = {
+    key: 'rewrite',
+    label: 'Viết lại caption',
+    total: 0,
+    done: 0,
+    status: opts.rewrite ? 'pending' : 'skipped',
+  };
+  job.phases = [check, rewrite];
+  const log = logTo(job);
+  const progress = (item?: BatchItemResult) => {
+    if (item) job.items.push(item);
+    emit(job.id, { type: 'progress', job, item });
+  };
+
+  void (async () => {
+    let rewritten = 0;
+    let rewriteFailed = 0;
+    try {
+      if (check.status === 'pending') {
+        check.status = 'running';
+        progress();
+        try {
+          await runShopeeLinkChecks(byTarget, log, (item) => {
+            check.done++;
+            progress(item);
+          });
+        } finally {
+          await closeShopeeBrowser().catch(() => {});
+        }
+        check.status = 'done';
+      }
+
+      const verdicts = classifyPosts(ids);
+      if (rewrite.status === 'pending') {
+        const todo = verdicts
+          .filter((v) => v.verdict === 'pass' && v.variant_count < VARIANT_COUNT)
+          .map((v) => v.post_id);
+        rewrite.total = todo.length;
+        rewrite.status = 'running';
+        progress();
+        await runCaptionVariants(todo, false, log, (item) => {
+          rewrite.done++;
+          if (item.ok) rewritten++;
+          else rewriteFailed++;
+          progress(item);
+        });
+        rewrite.status = 'done';
+      }
+
+      const reject = Object.fromEntries(REJECT_REASONS.map((r) => [r, 0])) as Record<RejectReason, number>;
+      const rejectIds: string[] = [];
+      for (const v of verdicts) {
+        if ((REJECT_REASONS as readonly string[]).includes(v.verdict)) {
+          reject[v.verdict as RejectReason]++;
+          rejectIds.push(v.post_id);
+        }
+      }
+      const pass = verdicts.filter((v) => v.verdict === 'pass');
+      job.summary = {
+        total: ids.length,
+        pass: pass.length,
+        rewritten,
+        rewriteFailed,
+        reject,
+        rejectIds,
+        scrapeErrorIds: verdicts.filter((v) => v.verdict === 'scrapeError').map((v) => v.post_id),
+        unchecked: verdicts.filter((v) => v.verdict === 'unchecked').length,
+        posted: verdicts.filter((v) => v.verdict === 'posted').length,
+        needNewLink: pass.filter((v) => v.need_new_link).length,
+      };
+      job.done = job.total;
       job.status = 'done';
     } catch (err) {
       job.status = 'error';

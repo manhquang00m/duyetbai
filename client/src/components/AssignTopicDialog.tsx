@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { ChevronDown, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
 import { fetchAccountTopics, fetchPosts, setAuthorTopic } from '@/lib/api'
 import { useTopics } from '@/lib/useTopics'
@@ -180,6 +181,8 @@ function AuthorTopicSelect({
     setSaving(true)
     try {
       await onChange(value || null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi gán chủ đề')
     } finally {
       setSaving(false)
     }

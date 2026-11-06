@@ -19,6 +19,8 @@ import { AffiliatePage } from '@/pages/AffiliatePage'
 import { InsightsPage } from './pages/InsightsPage'
 import { PostLogPage } from '@/pages/PostLogPage'
 import { TopicsPage } from '@/pages/TopicsPage'
+import { SeedingPage } from '@/pages/SeedingPage'
+import { ConfirmHost } from '@/components/ConfirmDialog'
 
 initTheme()
 
@@ -41,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'insights', element: <InsightsPage /> },
       { path: 'post-log', element: <PostLogPage /> },
       { path: 'topics', element: <TopicsPage /> },
+      { path: 'seeding', element: <SeedingPage /> },
     ],
   },
 ])
@@ -50,6 +53,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
       <Toaster richColors position="top-right" />
+      <ConfirmHost />
     </QueryClientProvider>
   </StrictMode>,
 )

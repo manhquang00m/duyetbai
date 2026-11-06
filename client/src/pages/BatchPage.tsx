@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -21,14 +21,18 @@ import {
   deleteCollectHistory,
   fetchMediaSourceDefault,
   setMediaSourceDefault,
+  fetchPipelineConfig,
+  savePipelineConfig,
   type JobState,
+  type PipelineOptions,
   type BatchItemResult,
   type CollectHistoryRow,
   type MediaSourceName,
 } from '@/lib/api'
 import { useTopics } from '@/lib/useTopics'
+import { parseThreadsUrl, parseThreadsUrls, type ParseResult } from '@/lib/parsers'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { BulkPasteField } from '@/components/BulkPasteField'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/PageHeader'
@@ -36,10 +40,50 @@ import { FloatingBar } from '@/components/FloatingBar'
 import { EmptyState } from '@/components/EmptyState'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { PipelineProgress } from '@/components/PipelineProgress'
 import { cn } from '@/lib/utils'
 
 function isFailed(it: BatchItemResult): boolean {
   return !it.ok || (it.mediaFail ?? 0) > 0
+}
+
+/** Nhap cac nhom URL dang go do (URL bai Threads khong nhay cam) - roi trang quay lai van con. */
+const DRAFT_KEY = 'batch-draft'
+/** Chu de da gan theo shortcode bai (lan chay truoc) - de Retry tu Lich su van giu dung chu de. */
+const TOPIC_MEMO_KEY = 'batch-url-topics'
+const TOPIC_MEMO_MAX = 1000
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function rememberTopics(urlTopics: Record<string, string>) {
+  const memo = readJson<Record<string, string>>(TOPIC_MEMO_KEY, {})
+  for (const [url, topic] of Object.entries(urlTopics)) {
+    const r = parseThreadsUrl(url)
+    if ('key' in r) {
+      delete memo[r.key]
+      memo[r.key] = topic // xoa roi gan lai -> dua len cuoi (moi nhat)
+    }
+  }
+  const keys = Object.keys(memo)
+  for (const k of keys.slice(0, Math.max(0, keys.length - TOPIC_MEMO_MAX))) delete memo[k]
+  localStorage.setItem(TOPIC_MEMO_KEY, JSON.stringify(memo))
+}
+
+function recallTopics(urls: string[]): Record<string, string> {
+  const memo = readJson<Record<string, string>>(TOPIC_MEMO_KEY, {})
+  const out: Record<string, string> = {}
+  for (const url of urls) {
+    const r = parseThreadsUrl(url)
+    if ('key' in r && memo[r.key]) out[url] = memo[r.key]
+  }
+  return out
 }
 
 const tabClass = (active: boolean) =>
@@ -172,7 +216,7 @@ function HistoryPanel({ onRetry }: { onRetry: (urls: string[]) => void }) {
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState icon={History} title="Chưa có lịch sử thu thập." />
+          <EmptyState icon={History} title={onlyFailed ? 'Không có lần thu thập lỗi' : 'Chưa có lịch sử thu thập.'} />
         ) : (
           <>
             <div className="max-h-[70dvh] overflow-auto md:hidden">
@@ -371,15 +415,31 @@ export function BatchPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<'collect' | 'history'>('collect')
   const groupIdRef = useRef(0)
-  const [groups, setGroups] = useState<UrlGroup[]>(() => [
-    { id: groupIdRef.current++, topic: null, text: '' },
-  ])
+  const [groups, setGroups] = useState<UrlGroup[]>(() => {
+    const draft = readJson<{ topic: string | null; text: string }[]>(DRAFT_KEY, [])
+    return draft.length > 0
+      ? draft.map((d) => ({ id: groupIdRef.current++, topic: d.topic ?? null, text: d.text ?? '' }))
+      : [{ id: groupIdRef.current++, topic: null, text: '' }]
+  })
   const [running, setRunning] = useState(false)
   const [job, setJob] = useState<JobState | null>(null)
   // Chu de theo url cua lan chay GAN NHAT - dung de hien chip chu de trong JobProgressCard va de
   // "Retry" giu duoc dung chu de da gan cho tung url thay vi mat het khi chay lai.
   const [lastUrlTopics, setLastUrlTopics] = useState<Record<string, string>>({})
   const esRef = useRef<EventSource | null>(null)
+  // Luong tu dong sau khi cao: lua chon luu o server (app_settings), chup lai luc bam Chay
+  const { data: pipelineCfg } = useQuery({ queryKey: ['pipeline-config'], queryFn: fetchPipelineConfig })
+  const pipelineMut = useMutation({
+    mutationFn: savePipelineConfig,
+    onMutate: (cfg) => qc.setQueryData(['pipeline-config'], cfg),
+    onError: (e: unknown) => {
+      qc.invalidateQueries({ queryKey: ['pipeline-config'] })
+      toast.error(e instanceof Error ? e.message : 'Lỗi lưu lựa chọn')
+    },
+  })
+  const pipeline: PipelineOptions = pipelineCfg ?? { checkLinks: true, rewrite: true }
+  const [runPipeline, setRunPipeline] = useState<PipelineOptions | null>(null)
+  const [pipeJobId, setPipeJobId] = useState<string | null>(null)
 
   const addGroup = () =>
     setGroups((gs) => [...gs, { id: groupIdRef.current++, topic: null, text: '' }])
@@ -387,6 +447,23 @@ export function BatchPage() {
     setGroups((gs) => (gs.length > 1 ? gs.filter((g) => g.id !== id) : gs))
   const updateGroup = (id: number, patch: Partial<Pick<UrlGroup, 'topic' | 'text'>>) =>
     setGroups((gs) => gs.map((g) => (g.id === id ? { ...g, ...patch } : g)))
+
+  useEffect(() => {
+    if (groups.every((g) => !g.text.trim())) localStorage.removeItem(DRAFT_KEY)
+    else localStorage.setItem(DRAFT_KEY, JSON.stringify(groups.map(({ topic, text }) => ({ topic, text }))))
+  }, [groups])
+
+  // Moi nhom parse rieng; link da co o nhom phia tren tinh la "da co" (khong gui 2 lan)
+  const parsed = useMemo<ParseResult[]>(() => {
+    const seen = new Set<string>()
+    return groups.map((g) => {
+      const r = parseThreadsUrls(g.text, new Set(seen))
+      for (const l of r.lines) if (l.key) seen.add(l.key)
+      return r
+    })
+  }, [groups])
+  const validTotal = parsed.reduce((n, r) => n + r.values.length, 0)
+  const invalidTotal = parsed.reduce((n, r) => n + r.counts.invalid, 0)
 
   const { data: mediaSource } = useQuery({
     queryKey: ['media-source-default'],
@@ -401,15 +478,25 @@ export function BatchPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi đổi nền tảng'),
   })
 
-  const runUrls = async (urls: string[], force: boolean, urlTopics?: Record<string, string>) => {
+  const runUrls = async (
+    urls: string[],
+    force: boolean,
+    urlTopics?: Record<string, string>,
+    onStarted?: () => void,
+  ) => {
     if (urls.length === 0) {
       toast.error('Không có URL')
       return
     }
     setRunning(true)
     setJob(null)
+    setPipeJobId(null)
+    const usePipeline = pipeline.checkLinks || pipeline.rewrite ? pipeline : undefined
+    setRunPipeline(usePipeline ?? null)
     try {
-      const { jobId } = await startBatch(urls, force, urlTopics)
+      const { jobId } = await startBatch(urls, force, urlTopics, usePipeline)
+      if (urlTopics) rememberTopics(urlTopics)
+      onStarted?.()
       const es = new EventSource(batchStreamUrl(jobId))
       esRef.current = es
       es.onmessage = (e) => {
@@ -418,7 +505,9 @@ export function BatchPage() {
         if (data.type === 'end') {
           es.close()
           esRef.current = null
-          setRunning(false)
+          // Co chang tu dong chay tiep -> van "dang chay" cho toi khi PipelineProgress bao xong
+          if (data.job.nextJobId) setPipeJobId(data.job.nextJobId)
+          else setRunning(false)
           qc.invalidateQueries({ queryKey: ['posts'] })
           qc.invalidateQueries({ queryKey: ['stats'] })
           qc.invalidateQueries({ queryKey: ['collect-history'] })
@@ -455,20 +544,19 @@ export function BatchPage() {
   }
 
   const run = () => {
+    if (running) return
     const urls: string[] = []
     const urlTopics: Record<string, string> = {}
-    for (const g of groups) {
-      const lines = g.text
-        .split('\n')
-        .map((s) => s.trim())
-        .filter((l) => l && !l.startsWith('#'))
-      for (const l of lines) {
-        urls.push(l)
-        if (g.topic) urlTopics[l] = g.topic
+    groups.forEach((g, i) => {
+      for (const url of parsed[i].values) {
+        urls.push(url)
+        if (g.topic) urlTopics[url] = g.topic
       }
-    }
+    })
+    if (urls.length > 0 && invalidTotal > 0) toast.info(`Bỏ qua ${invalidTotal} dòng không phải link bài`)
     setLastUrlTopics(urlTopics)
-    runUrls(urls, false, urlTopics)
+    // Chay duoc roi moi xoa nhap: giu chu de tung nhom, xoa link
+    runUrls(urls, false, urlTopics, () => setGroups((gs) => gs.map((g) => ({ ...g, text: '' }))))
   }
 
   const retryFailed = () => {
@@ -477,10 +565,30 @@ export function BatchPage() {
   }
 
   const retryFromHistory = (urls: string[]) => {
-    runUrls(urls, true)
+    // Lich su khong luu chu de -> lay lai chu de da gan o lan chay truoc (theo shortcode bai)
+    const urlTopics = recallTopics(urls)
+    setLastUrlTopics(urlTopics)
+    runUrls(urls, true, urlTopics)
   }
 
   const failedCount = (job?.items ?? []).filter(isFailed).length
+
+  const progress = job && (
+    <>
+      {runPipeline && (
+        <PipelineProgress
+          collect={job}
+          jobId={pipeJobId}
+          planned={runPipeline}
+          onEnd={(j) => {
+            setRunning(false)
+            if (j.status === 'error') toast.error(`Luồng tự động lỗi: ${j.error ?? ''}`)
+          }}
+        />
+      )}
+      <JobProgressCard job={job} urlTopics={lastUrlTopics} />
+    </>
+  )
 
   return (
     <div className="max-w-5xl space-y-5 sm:space-y-6">
@@ -501,7 +609,7 @@ export function BatchPage() {
       {tab === 'history' && (
         <>
           <HistoryPanel onRetry={retryFromHistory} />
-          {job && <JobProgressCard job={job} urlTopics={lastUrlTopics} />}
+          {progress}
         </>
       )}
 
@@ -539,13 +647,18 @@ export function BatchPage() {
                     </Button>
                   )}
                 </div>
-                <Textarea
-                  placeholder="https://www.threads.com/@user/post/XXXX&#10;https://www.threads.com/@user/post/YYYY"
+                <BulkPasteField
+                  id={`batch-group-${g.id}`}
+                  noun="link"
+                  placeholder={'https://www.threads.com/@user/post/XXXX\nhttps://www.threads.com/@user/post/YYYY'}
                   value={g.text}
-                  onChange={(e) => updateGroup(g.id, { text: e.target.value })}
-                  rows={4}
+                  onChange={(text) => updateGroup(g.id, { text })}
+                  result={parsed[i]}
+                  onSubmit={run}
+                  existingLabel="trùng nhóm trên"
+                  existingHint="Trùng link ở nhóm phía trên"
+                  rows={5}
                   disabled={running}
-                  className="font-mono text-xs"
                 />
               </div>
             ))}
@@ -556,9 +669,9 @@ export function BatchPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={run} disabled={running}>
+              <Button onClick={run} disabled={running || validTotal === 0}>
                 {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                {running ? 'Đang chạy...' : 'Chạy'}
+                {running ? 'Đang chạy...' : validTotal > 0 ? `Chạy ${validTotal} link` : 'Chạy'}
               </Button>
               {!running && failedCount > 0 && (
                 <Button variant="outline" onClick={retryFailed}>
@@ -566,18 +679,42 @@ export function BatchPage() {
                 </Button>
               )}
             </div>
-            <SingleFilterDropdown
-              label="Nền tảng mặc định"
-              value={mediaSource ?? 'savethreads'}
-              onChange={(v) => mediaSourceMut.mutate(v as MediaSourceName)}
-              options={[
-                { value: 'savethreads', label: 'savethreads.io' },
-                { value: 'snapsave', label: 'snapsave.vn' },
-              ]}
-            />
+            {/* Cao xong tu chay tiep (chi bai MOI): kiem tra link -> phan loai -> viet lai bai dat */}
+            <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:order-last">
+              <span className="text-muted-foreground">Cào xong tự:</span>
+              {(
+                [
+                  ['checkLinks', 'Kiểm tra link Shopee'],
+                  ['rewrite', 'Viết lại caption bằng AI'],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={pipeline[key]}
+                    onCheckedChange={(v) => pipelineMut.mutate({ ...pipeline, [key]: v })}
+                  />
+                  {label}
+                </label>
+              ))}
+              <span className="text-xs text-muted-foreground">
+                Bài không có link / link hỏng được gom lại để xoá 1 lần, bài đạt mới được viết lại.
+              </span>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Nền tảng tải media
+              <select
+                value={mediaSource ?? 'savethreads'}
+                onChange={(e) => mediaSourceMut.mutate(e.target.value as MediaSourceName)}
+                disabled={mediaSourceMut.isPending}
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/15 sm:h-8"
+              >
+                <option value="savethreads">savethreads.io</option>
+                <option value="snapsave">snapsave.vn</option>
+              </select>
+            </label>
           </div>
 
-          {job && <JobProgressCard job={job} urlTopics={lastUrlTopics} />}
+          {progress}
         </>
       )}
     </div>

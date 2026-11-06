@@ -1,10 +1,12 @@
+import type { MouseEvent } from 'react'
 import { Check, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CheckboxProps {
   checked: boolean
   indeterminate?: boolean
-  onCheckedChange: (v: boolean) => void
+  /** `e` de nguoi goi doc shiftKey (chon theo khoang). */
+  onCheckedChange: (v: boolean, e: MouseEvent) => void
   className?: string
 }
 
@@ -17,11 +19,11 @@ export function Checkbox({ checked, indeterminate, onCheckedChange, className }:
       aria-checked={indeterminate ? 'mixed' : checked}
       onClick={(e) => {
         e.stopPropagation()
-        onCheckedChange(!checked)
+        onCheckedChange(!checked, e)
       }}
       className={cn(
         'relative flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors before:absolute before:-inset-3 before:content-[""] sm:before:-inset-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        checked || indeterminate ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background',
+        checked || indeterminate ? 'border-chart-1 bg-chart-1 text-white' : 'border-input bg-background',
         className,
       )}
     >

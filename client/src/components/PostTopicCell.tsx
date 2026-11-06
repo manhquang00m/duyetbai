@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Check, Loader2, Plus } from 'lucide-react'
 import { useTopics } from '@/lib/useTopics'
@@ -14,21 +14,24 @@ interface Props {
  * Chip hien chu de cua DUNG 1 bai + popover chon 1 chu de (thay the, khac TopicChipsCell la
  * multi-select cho tai khoan) - bam la luu ngay, khong qua dialog rieng.
  */
-export function PostTopicCell({ topic, onChange }: Props) {
+export function PostTopicCell({ topic: saved, onChange }: Props) {
   const topicOptions = useTopics()
   const popover = usePopover()
   const [saving, setSaving] = useState(false)
+  // Optimistic: hien chu de moi ngay khi chon; danh sach tai lai -> bo ban tam; loi -> tra ve cu.
+  const [optimistic, setOptimistic] = useState<{ topic: string | null } | null>(null)
+  useEffect(() => setOptimistic(null), [saved])
+  const topic = optimistic ? optimistic.topic : saved
 
   const handlePick = async (next: string | null) => {
-    if (next === topic) {
-      popover.setOpen(false)
-      return
-    }
+    popover.setOpen(false)
+    if (next === topic) return
+    setOptimistic({ topic: next })
     setSaving(true)
     try {
       await onChange(next)
-      popover.setOpen(false)
     } catch (err) {
+      setOptimistic(null)
       toast.error(err instanceof Error ? err.message : 'Lỗi cập nhật chủ đề')
     } finally {
       setSaving(false)
@@ -43,11 +46,11 @@ export function PostTopicCell({ topic, onChange }: Props) {
         type="button"
         onClick={() => popover.setOpen(!popover.open)}
         disabled={saving}
-        className="flex min-h-8 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent disabled:opacity-60 sm:min-h-0"
+        aria-busy={saving}
+        className="flex min-h-8 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-accent disabled:opacity-80 sm:min-h-0"
       >
-        {saving ? (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-        ) : topic ? (
+        {saving && <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />}
+        {topic ? (
           <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2 py-0.5 text-[11px] font-medium text-pill-neutral-ink">
             {topic}
           </span>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard,
   LayoutGrid,
@@ -19,18 +20,27 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
+  Repeat2,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/lib/useOverlay'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { ServerHealthButton } from '@/components/ServerHealthButton'
+import { SidebarProfile } from '@/components/SidebarProfile'
+import { fetchAccounts } from '@/lib/api'
+import { accountsNeedingAttention } from '@/lib/accountAttention'
+import { CommandPalette } from '@/layout/CommandPalette'
+import { openCommandPalette } from '@/lib/commandPalette'
 
 interface NavItem {
   to: string
   label: string
   icon: LucideIcon
   end?: boolean
+  /** Hang doi can xu ly -> hien so dem ben phai muc menu. */
+  queue?: 'accounts'
 }
 
 const groups: { title: string; items: NavItem[] }[] = [
@@ -47,10 +57,11 @@ const groups: { title: string; items: NavItem[] }[] = [
   {
     title: 'Vận hành',
     items: [
-      { to: '/accounts', label: 'Accounts', icon: Users },
+      { to: '/accounts', label: 'Accounts', icon: Users, queue: 'accounts' },
       { to: '/proxy', label: 'Proxy', icon: Network },
       { to: '/distribution', label: 'Phân phối bài', icon: CalendarDays },
       { to: '/post-log', label: 'Nhật ký đăng', icon: ClipboardList },
+      { to: '/seeding', label: 'Seeding chéo', icon: Repeat2 },
     ],
   },
   {
@@ -65,6 +76,34 @@ const groups: { title: string; items: NavItem[] }[] = [
 
 const COLLAPSE_KEY = 'sidebar-collapsed'
 
+const PAGES = groups.flatMap((g) => g.items.map((n) => ({ to: n.to, label: n.label, icon: n.icon, group: g.title })))
+
+/** O tim dau sidebar: mo Ctrl+K. Thu gon -> chi icon. */
+function SearchTrigger({ compact }: { compact?: boolean }) {
+  return (
+    <div className="px-2 pb-2">
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        aria-label="Tìm hoặc nhảy tới (Ctrl K)"
+        title={compact ? 'Tìm hoặc nhảy tới (Ctrl K)' : undefined}
+        className={cn(
+          'flex h-9 w-full items-center gap-2 rounded-md border bg-card px-2.5 text-sm text-muted-foreground transition-colors hover:border-input hover:text-foreground lg:h-8',
+          compact && 'justify-center px-0',
+        )}
+      >
+        <Search className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+        {!compact && (
+          <>
+            <span className="flex-1 truncate text-left">Tìm, nhảy tới…</span>
+            <kbd className="font-sans rounded border px-1 text-[11px]">Ctrl K</kbd>
+          </>
+        )}
+      </button>
+    </div>
+  )
+}
+
 function currentRoute(pathname: string): { group?: string; label: string } {
   for (const g of groups) {
     const hit = g.items.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to)))
@@ -76,7 +115,7 @@ function currentRoute(pathname: string): { group?: string; label: string } {
 /** Mark: @ (handle Threads) to mau cam Shopee - noi 2 the gioi cua san pham. */
 function Brand({ compact }: { compact?: boolean }) {
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2" title="Threads Affiliate · Phase 2 · v0.1">
       <AtSign className="h-5 w-5 shrink-0 text-chart-1" strokeWidth={2.5} aria-hidden />
       {compact ? (
         <span className="sr-only">Threads Affiliate</span>
@@ -88,6 +127,9 @@ function Brand({ compact }: { compact?: boolean }) {
 }
 
 function NavList({ compact, onNavigate }: { compact?: boolean; onNavigate?: () => void }) {
+  // Cung cache ['accounts'] voi trang Accounts / Tong quan - khong goi them request.
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts, staleTime: 60_000 })
+  const queues = { accounts: accounts ? accountsNeedingAttention(accounts).length : 0 }
   return (
     <nav className="flex-1 space-y-5 overflow-y-auto px-2 py-2" aria-label="Điều hướng chính">
       {groups.map((g) => (
@@ -112,8 +154,25 @@ function NavList({ compact, onNavigate }: { compact?: boolean; onNavigate?: () =
                 )
               }
             >
-              <n.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-              {compact ? <span className="sr-only">{n.label}</span> : <span className="truncate">{n.label}</span>}
+              <span className="relative shrink-0">
+                <n.icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                {compact && n.queue && queues[n.queue] > 0 && (
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-chart-1" aria-hidden />
+                )}
+              </span>
+              {compact ? (
+                <span className="sr-only">{n.label}</span>
+              ) : (
+                <span className="min-w-0 flex-1 truncate">{n.label}</span>
+              )}
+              {n.queue && queues[n.queue] > 0 && (
+                <span
+                  className={cn('text-xs tabular-nums text-chart-1-ink', compact && 'sr-only')}
+                  title={`${queues[n.queue]} account cần xử lý`}
+                >
+                  {compact ? `, ${queues[n.queue]} cần xử lý` : queues[n.queue]}
+                </span>
+              )}
             </NavLink>
           ))}
         </div>
@@ -159,9 +218,10 @@ export function AppLayout() {
         <div className={cn('flex h-12 items-center px-5', collapsed && 'justify-center px-0')}>
           <Brand compact={collapsed} />
         </div>
+        <SearchTrigger compact={collapsed} />
         <NavList compact={collapsed} />
-        <div className={cn('flex items-center p-2', collapsed ? 'justify-center' : 'justify-between pl-5')}>
-          {!collapsed && <span className="text-xs text-muted-foreground">Phase 2 · v0.1</span>}
+        <div className={cn('flex items-center gap-1 p-2', collapsed && 'flex-col')}>
+          <SidebarProfile compact={collapsed} />
           <button
             type="button"
             onClick={toggleCollapsed}
@@ -193,9 +253,10 @@ export function AppLayout() {
                 <X className="h-5 w-5" />
               </button>
             </div>
+            <SearchTrigger />
             <NavList onNavigate={() => setDrawerOpen(false)} />
-            <div className="px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground">
-              Phase 2 · v0.1
+            <div className="flex p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <SidebarProfile />
             </div>
           </aside>
         </div>
@@ -221,12 +282,21 @@ export function AppLayout() {
             )}
             <span className="truncate">{route.label}</span>
           </nav>
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label="Tìm hoặc nhảy tới"
+            className="rounded-md p-2.5 text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
+          >
+            <Search className="h-5 w-5" />
+          </button>
           <ServerHealthButton />
           <ThemeToggle />
         </header>
         <main className="min-w-0 flex-1 bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 lg:rounded-2xl lg:border xl:px-8">
           <Outlet />
         </main>
+        <CommandPalette pages={PAGES} />
       </div>
     </div>
   )

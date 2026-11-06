@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -21,7 +21,6 @@ import {
   type ShopeeLinkRow,
   type JobState,
   type ShopeeLinkCheckResult,
-  type ShopeeLinkStatus,
 } from '@/lib/api'
 import { LinkStatusBadge, ShopeeItemIcon } from '@/components/LinkStatusBadge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -32,7 +31,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { SingleFilterDropdown } from '@/components/ui/filter-dropdown'
+import { SearchInput } from '@/components/filters/SearchInput'
+import { FileDropOverlay } from '@/components/FileDropOverlay'
+import { q, useUrlState } from '@/lib/useUrlState'
 import { cn } from '@/lib/utils'
+
+const STATUS_VALUES = ['all', 'unchecked', 'available', 'dead', 'out_of_stock', 'unknown'] as const
+// 'unchecked' = chua kiem tra bao gio (link_status con trong)
+const URL_SCHEMA = { status: q.enum(STATUS_VALUES, 'all'), q: q.str() }
 
 /** Panel tien trinh kiem tra link Shopee: progress bar + tung link kem log chi tiet tung buoc. */
 function LinkCell({ href, className, empty = '—' }: { href: string | null; className: string; empty?: string }) {
@@ -167,8 +173,9 @@ export function ShopeePage() {
   const [checkJob, setCheckJob] = useState<JobState | null>(null)
   const [checking, setChecking] = useState(false)
   const [sel, setSel] = useState<Set<number>>(new Set())
-  // 'unchecked' = chua kiem tra bao gio (link_status con trong)
-  const [statusFilter, setStatusFilter] = useState<ShopeeLinkStatus | 'all' | 'unchecked'>('all')
+  const url = useUrlState(URL_SCHEMA)
+  const statusFilter = url.values.status
+  const search = url.values.q
   const esRef = useRef<EventSource | null>(null)
 
   const [adhocLink, setAdhocLink] = useState('')
@@ -234,16 +241,20 @@ export function ShopeePage() {
     e.target.value = ''
   }
 
-  const allRows = links ?? []
+  const allRows = useMemo(() => links ?? [], [links])
   const updated = allRows.filter((r) => r.new_link).length
   const uncheckedCount = allRows.filter((r) => !r.link_status).length
 
-  const rows =
-    statusFilter === 'all'
-      ? allRows
-      : allRows.filter((r) =>
-          statusFilter === 'unchecked' ? !r.link_status : r.link_status === statusFilter,
-        )
+  const rows = useMemo(() => {
+    const needle = search.trim().toLowerCase()
+    return allRows.filter((r) => {
+      if (statusFilter === 'unchecked' ? !!r.link_status : statusFilter !== 'all' && r.link_status !== statusFilter)
+        return false
+      if (!needle) return true
+      return [r.post_id, r.product_title, r.link, r.new_link].some((v) => v?.toLowerCase().includes(needle))
+    })
+  }, [allRows, statusFilter, search])
+  const filtering = statusFilter !== 'all' || search.trim() !== ''
 
   const allChecked = rows.length > 0 && rows.every((r) => sel.has(r.id))
   const someChecked = rows.some((r) => sel.has(r.id)) && !allChecked
@@ -368,11 +379,17 @@ export function ShopeePage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <SearchInput
+              value={search}
+              onChange={(v) => url.set({ q: v }, { replace: true })}
+              placeholder="Tìm post id, sản phẩm, link…"
+              className="sm:w-64"
+            />
             <SingleFilterDropdown
               label="Tình trạng"
               value={statusFilter}
               onChange={(v) => {
-                setStatusFilter(v as ShopeeLinkStatus | 'all' | 'unchecked')
+                url.set({ status: v as (typeof STATUS_VALUES)[number] })
                 setSel(new Set()) // bo chon cu de khong lo kiem tra nham dong da bi loc di
               }}
               options={[
@@ -393,16 +410,31 @@ export function ShopeePage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => runLinkCheck(statusFilter === 'all' ? undefined : rows.map((r) => r.id))}
+              onClick={() => runLinkCheck(filtering ? rows.map((r) => r.id) : undefined)}
               disabled={checking || rows.length === 0}
             >
               {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              {statusFilter === 'all'
-                ? 'Kiểm tra tất cả'
-                : `Kiểm tra ${rows.length} link đang lọc`}
+              {filtering ? `Kiểm tra ${rows.length} link đang lọc` : 'Kiểm tra tất cả'}
             </Button>
           </div>
         </div>
+        {filtering && allRows.length > 0 && (
+          <div className="flex items-center gap-2 text-xs tabular-nums text-muted-foreground">
+            <span>
+              {rows.length}/{allRows.length} link
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                url.reset()
+                setSel(new Set())
+              }}
+              className="rounded-md px-1.5 py-0.5 hover:bg-accent hover:text-foreground"
+            >
+              Xóa lọc
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 p-3">
           <span className="w-full shrink-0 text-xs text-muted-foreground sm:w-auto">
@@ -414,6 +446,12 @@ export function ShopeePage() {
             onChange={(e) => {
               setAdhocLink(e.target.value)
               setAdhocResult(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void runAdhocCheck()
+              }
             }}
             className="w-full min-w-0 sm:max-w-sm sm:flex-1"
           />
@@ -450,6 +488,13 @@ export function ShopeePage() {
             <EmptyState
               icon={Link2Off}
               title={allRows.length === 0 ? 'Chưa có link shopee nào.' : 'Không có link nào khớp bộ lọc.'}
+              action={
+                allRows.length > 0 ? (
+                  <Button size="sm" variant="outline" onClick={() => url.reset()}>
+                    Xóa lọc
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <>
@@ -460,7 +505,7 @@ export function ShopeePage() {
                 </div>
                 <ul className="divide-y">
                   {rows.map((r: ShopeeLinkRow) => (
-                    <li key={r.id} className={cn('flex gap-3 p-3', sel.has(r.id) && 'bg-primary/5')}>
+                    <li key={r.id} className={cn('flex gap-3 p-3', sel.has(r.id) && 'bg-chart-1/[0.06]')}>
                       <Checkbox className="mt-1" checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
@@ -500,7 +545,7 @@ export function ShopeePage() {
                   </thead>
                   <tbody>
                     {rows.map((r: ShopeeLinkRow) => (
-                      <tr key={r.id} className={cn('border-b border-rule last:border-0', sel.has(r.id) && 'bg-active/60')}>
+                      <tr key={r.id} className={cn('border-b border-rule last:border-0', sel.has(r.id) && 'bg-chart-1/[0.06]')}>
                         <td className="p-3">
                           <Checkbox checked={sel.has(r.id)} onCheckedChange={() => toggleRow(r.id)} />
                         </td>
@@ -526,6 +571,12 @@ export function ShopeePage() {
           )}
         </div>
       </div>
+      <FileDropOverlay
+        accept={['.xlsx', '.csv']}
+        label="Thả file link mới Shopee trả về"
+        onFiles={([f]) => importMut.mutate(f)}
+        disabled={importMut.isPending}
+      />
     </div>
   )
 }

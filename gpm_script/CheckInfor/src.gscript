@@ -1,0 +1,336 @@
+{
+  "$type": "GPMAutomateEditor.Models.Editor, GPMAutomateEditor.Models",
+  "before_init": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "5c37ae52-f5bc-41ad-b894-cb0d33d1a3e4",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Before browser opened"
+  },
+  "main_logic": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [
+      {
+        "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+        "nodes": [
+          {
+            "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 39,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "047a8b75-c918-426e-bb66-33914d350ef8",
+                "display_text": "Go to URL",
+                "raw_input": "[{\"Key\": \"URL\", \"Value\": \"https://www.threads.com/\"}, {\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+                "comment": "go to threads home"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 7,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "4cb68e42-aa19-441d-baf7-c08f92c72204",
+                "display_text": "Delay",
+                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"3000\"}, {\"Key\": \"MAX\", \"Value\": \"5000\"}]",
+                "comment": "wait threads home..."
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "selfName",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "f6b52c3f-8520-49c6-9799-e9fde1610799",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+                "start": "0",
+                "end": "3",
+                "step": "1",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 68,
+                    "element_xpath": null,
+                    "output_variable_name": "selfName",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "e5705367-75d1-495d-843d-1cabde28d2ea",
+                    "display_text": "Execute JS code",
+                    "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){\\nvar svg=document.querySelector(\\\"svg[aria-label='Trang cá nhân'],svg[aria-label='Profile']\\\");\\nvar a=svg?svg.closest(\\\"a\\\"):null;\\nvar m=a?(a.getAttribute(\\\"href\\\")||\\\"\\\").match(/^\\\\/@([^\\\\/?#]+)/):null;\\nvar u=m?m[1]:\\\"\\\";\\nif(!u){var L=document.querySelectorAll(\\\"img[alt^='Ảnh đại diện của ']\\\"),P=\\\"Ảnh đại diện của \\\";\\nfor(var i=0;i<L.length;i++){if(L[i].closest(\\\"[data-pressable-container]\\\"))continue;u=L[i].getAttribute(\\\"alt\\\").slice(P.length).trim();break;}}\\nreturn /^[A-Za-z0-9._]{1,30}$/.test(u)?u:\\\"\\\";}\\nreturn A();\"}]",
+                    "comment": "get logged-in username (nav profile link)"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                    "condition": "$selfName != \"\"",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 5,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "1579d734-0512-4ac2-adf4-ba82438d187b",
+                        "display_text": "Exit loop",
+                        "raw_input": "[]",
+                        "comment": "username found"
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "77580b2b-c59b-460c-8f60-9fab788a222b",
+                    "display_text": "If",
+                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$selfName != \\\"\\\"\"}]",
+                    "comment": "found -> stop retry"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 7,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "23b79e23-0177-44c2-8ccd-cd14d70c6999",
+                    "display_text": "Delay",
+                    "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2500\"}, {\"Key\": \"MAX\", \"Value\": \"4000\"}]",
+                    "comment": "wait render..."
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "d6d2d9b9-934c-4e49-9f41-742cebe12213",
+                "display_text": "For",
+                "raw_input": "[{\"Key\": \"START\", \"Value\": \"0\"}, {\"Key\": \"END\", \"Value\": \"3\"}, {\"Key\": \"STEP\", \"Value\": \"1\"}]",
+                "comment": "retry up to 3 times"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$selfName = \"\"",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 1,
+                    "element_xpath": null,
+                    "output_variable_name": "selfName",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "6d0b332b-f200-43e2-b4b5-6fc423b83b11",
+                    "display_text": "Set variable",
+                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"NOT_FOUND\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "001da1f8-f285-49f3-9fb6-50fb22837d0b",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$selfName = \\\"\\\"\"}]",
+                "comment": "not logged in / element not found"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 22,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "0086c490-7409-4fc8-8c54-ab8d54cc3470",
+                "display_text": "Write excel file",
+                "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$inputExcelFileLocation\"}, {\"Key\": \"SHEET_ID\", \"Value\": \"0\"}, {\"Key\": \"COL_NAME_OR_INDEX\", \"Value\": \"B\"}, {\"Key\": \"ROW_INDEX\", \"Value\": \"$inputExcelCurrentRow\"}, {\"Key\": \"DATA\", \"Value\": \"$selfName\"}]",
+                "comment": "write username to column B"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "29a54350-bb64-47ca-a3bf-fb473eb611a7",
+            "display_text": "Normal block",
+            "raw_input": null,
+            "comment": "threads username -> col B"
+          },
+          {
+            "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+            "nodes": [
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 39,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "dea125af-b5a2-41e9-a2c0-e1218ca6fa0d",
+                "display_text": "Go to URL",
+                "raw_input": "[{\"Key\": \"URL\", \"Value\": \"https://myaccount.google.com/\"}, {\"Key\": \"TIME_OUT\", \"Value\": \"30\"}]",
+                "comment": "go to google account"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 7,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": false,
+                "id": "0e853502-1888-4d16-8745-8f1e7883183b",
+                "display_text": "Delay",
+                "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"3000\"}, {\"Key\": \"MAX\", \"Value\": \"5000\"}]",
+                "comment": "wait google account..."
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 1,
+                "element_xpath": null,
+                "output_variable_name": "selfEmail",
+                "delay": "",
+                "continue_on_error": false,
+                "id": "117e8e7d-df0f-4faf-874a-d5c3cdea1e87",
+                "display_text": "Set variable",
+                "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                "comment": null
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ForBlockNode, GPMAutomateEditor.Models",
+                "start": "0",
+                "end": "3",
+                "step": "1",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 68,
+                    "element_xpath": null,
+                    "output_variable_name": "selfEmail",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "52ae4bf4-5b54-4468-9e67-8a7c9b0a6dbf",
+                    "display_text": "Execute JS code",
+                    "raw_input": "[{\"Key\": \"FILE_OR_CODE\", \"Value\": \"function A(){\\nvar R=/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}/,e=\\\"\\\";\\nvar L=document.querySelectorAll(\\\"[data-email],a[aria-label*='@'],button[aria-label*='@']\\\");\\nfor(var i=0;i<L.length&&!e;i++){var s=L[i].getAttribute(\\\"data-email\\\")||L[i].getAttribute(\\\"aria-label\\\")||\\\"\\\";var m=s.match(R);if(m)e=m[0];}\\nreturn /^[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}$/.test(e)?e.toLowerCase():\\\"\\\";}\\nreturn A();\"}]",
+                    "comment": "get google email (account button aria-label)"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                    "condition": "$selfEmail != \"\"",
+                    "nodes": [
+                      {
+                        "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                        "type": 5,
+                        "element_xpath": null,
+                        "output_variable_name": null,
+                        "delay": "",
+                        "continue_on_error": false,
+                        "id": "1d443003-2fd0-44f3-904d-a45fa00c7135",
+                        "display_text": "Exit loop",
+                        "raw_input": "[]",
+                        "comment": "email found"
+                      }
+                    ],
+                    "expanded": true,
+                    "continue_on_error": false,
+                    "id": "c8c43e4e-3394-4494-b8a5-907b26a4a722",
+                    "display_text": "If",
+                    "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$selfEmail != \\\"\\\"\"}]",
+                    "comment": "found -> stop retry"
+                  },
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 7,
+                    "element_xpath": null,
+                    "output_variable_name": null,
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "c7bc3d31-117c-47c5-9cb2-8fdaddf8ed41",
+                    "display_text": "Delay",
+                    "raw_input": "[{\"Key\": \"MIN\", \"Value\": \"2500\"}, {\"Key\": \"MAX\", \"Value\": \"4000\"}]",
+                    "comment": "wait render..."
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "9799baf2-2994-4fa7-8724-ab1f17134271",
+                "display_text": "For",
+                "raw_input": "[{\"Key\": \"START\", \"Value\": \"0\"}, {\"Key\": \"END\", \"Value\": \"3\"}, {\"Key\": \"STEP\", \"Value\": \"1\"}]",
+                "comment": "retry up to 3 times"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.IfBlockNode, GPMAutomateEditor.Models",
+                "condition": "$selfEmail = \"\"",
+                "nodes": [
+                  {
+                    "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                    "type": 1,
+                    "element_xpath": null,
+                    "output_variable_name": "selfEmail",
+                    "delay": "",
+                    "continue_on_error": false,
+                    "id": "1ac4d95b-929a-4145-9635-baaea8a37f39",
+                    "display_text": "Set variable",
+                    "raw_input": "[{\"Key\": \"VALUE\", \"Value\": \"NOT_FOUND\"}, {\"Key\": \"ALLOW_USER_INPUT\", \"Value\": \"False\"}, {\"Key\": \"USER_INPUT_TYPE\", \"Value\": \"Text\"}, {\"Key\": \"COMBOBOX_DATA\", \"Value\": \"\"}, {\"Key\": \"INPUT_REQUIRED\", \"Value\": \"False\"}]",
+                    "comment": null
+                  }
+                ],
+                "expanded": true,
+                "continue_on_error": false,
+                "id": "3f76baa6-b0c4-4331-bb03-8778409051c5",
+                "display_text": "If",
+                "raw_input": "[{\"Key\": \"CONDITION\", \"Value\": \"$selfEmail = \\\"\\\"\"}]",
+                "comment": "not logged in / element not found"
+              },
+              {
+                "$type": "GPMAutomateEditor.Models.ActionNode, GPMAutomateEditor.Models",
+                "type": 22,
+                "element_xpath": null,
+                "output_variable_name": null,
+                "delay": "",
+                "continue_on_error": true,
+                "id": "d709f71f-d41f-4db9-aeae-28337c653156",
+                "display_text": "Write excel file",
+                "raw_input": "[{\"Key\": \"FILE_PATH\", \"Value\": \"$inputExcelFileLocation\"}, {\"Key\": \"SHEET_ID\", \"Value\": \"0\"}, {\"Key\": \"COL_NAME_OR_INDEX\", \"Value\": \"C\"}, {\"Key\": \"ROW_INDEX\", \"Value\": \"$inputExcelCurrentRow\"}, {\"Key\": \"DATA\", \"Value\": \"$selfEmail\"}]",
+                "comment": "write email to column C"
+              }
+            ],
+            "expanded": true,
+            "continue_on_error": false,
+            "id": "34498b24-bcb5-44e0-9c5c-bb9b32ac554b",
+            "display_text": "Normal block",
+            "raw_input": null,
+            "comment": "google email -> col C"
+          }
+        ],
+        "expanded": true,
+        "continue_on_error": false,
+        "id": "c377a83c-1b17-46b3-a499-58d18e0814a6",
+        "display_text": "Normal block",
+        "raw_input": null,
+        "comment": "threads username + google email -> excel col B, C"
+      }
+    ],
+    "expanded": true,
+    "continue_on_error": false,
+    "id": "18823ada-f5a5-4543-955d-755daac66f63",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "Main logic"
+  },
+  "after_quit": {
+    "$type": "GPMAutomateEditor.Models.NormalBlockNode, GPMAutomateEditor.Models",
+    "nodes": [],
+    "expanded": false,
+    "continue_on_error": false,
+    "id": "036e15ee-c533-4bf3-99f6-b70c407564ab",
+    "display_text": null,
+    "raw_input": null,
+    "comment": "After browser closed"
+  },
+  "name": "Main"
+}

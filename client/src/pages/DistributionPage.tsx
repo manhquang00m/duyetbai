@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -11,7 +11,6 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
-  Search,
 } from 'lucide-react'
 import {
   fetchPostingAccounts,
@@ -36,15 +35,98 @@ import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
 import { AssignPostingTopicsDialog } from '@/components/AssignPostingTopicsDialog'
 import { PostingTopicsCell } from '@/components/PostingTopicsCell'
-import { StatusCheckboxFilter } from '@/components/StatusCheckboxFilter'
+import { StatusCheckboxFilter, STATUS_NONE } from '@/components/StatusCheckboxFilter'
+import { SearchInput } from '@/components/filters/SearchInput'
+import { DatePicker, DateRangePicker } from '@/components/ui/date-picker'
+import { AccountAvatar } from '@/components/AccountAvatar'
+import { POSTING_STATUSES } from '@/lib/accountAttention'
+import { confirmDialog } from '@/lib/confirm'
+import { addDaysIso, datePresets, todayIso } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
-/** Hom nay theo gio MAY, khong dung toISOString (buoi toi VN se ra ngay hom truoc). */
-function todayLocal(): string {
-  const d = new Date()
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+// Thiet lap ke hoach lan truoc (so ngay, so bai/ngay, khoang thu thap) - khong nhay cam.
+const PLAN_PREFS_KEY = 'distribution-plan-prefs'
+interface PlanPrefs {
+  days: number
+  perDay: number
+  scrapedFrom: string
+  scrapedTo: string
 }
+function loadPlanPrefs(): PlanPrefs {
+  const def: PlanPrefs = { days: 1, perDay: 6, scrapedFrom: '', scrapedTo: '' }
+  try {
+    const v = JSON.parse(localStorage.getItem(PLAN_PREFS_KEY) ?? 'null') as Partial<PlanPrefs> | null
+    if (!v) return def
+    return {
+      days: clampInt(v.days, 1, 60, def.days),
+      perDay: clampInt(v.perDay, 1, 20, def.perDay),
+      scrapedFrom: typeof v.scrapedFrom === 'string' ? v.scrapedFrom : '',
+      scrapedTo: typeof v.scrapedTo === 'string' ? v.scrapedTo : '',
+    }
+  } catch {
+    return def
+  }
+}
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof v === 'number' ? v : Number.parseInt(String(v), 10)
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(max, Math.max(min, Math.round(n)))
+}
+
+/**
+ * O so: giu chuoi khi dang go (xoa trang de go lai khong bi nhay ve 1), kep min/max khi roi o.
+ */
+function NumberField({
+  value,
+  onChange,
+  min,
+  max,
+  id,
+}: {
+  value: number
+  onChange: (n: number) => void
+  min: number
+  max: number
+  id?: string
+}) {
+  const [text, setText] = useState(String(value))
+  useEffect(() => setText(String(value)), [value])
+  const commit = () => {
+    const n = clampInt(text, min, max, value)
+    setText(String(n))
+    if (n !== value) onChange(n)
+  }
+  return (
+    <Input
+      id={id}
+      inputMode="numeric"
+      value={text}
+      onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ''))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          const n = clampInt(clampInt(text, min, max, value) + (e.key === 'ArrowUp' ? 1 : -1), min, max, value)
+          setText(String(n))
+          onChange(n)
+        }
+      }}
+      className="tabular-nums"
+      aria-describedby={id ? `${id}-range` : undefined}
+    />
+  )
+}
+
+const tomorrow = () => addDaysIso(todayIso(), 1)
+
+const SCRAPED_PRESETS = [
+  datePresets.lastDays(3),
+  datePresets.lastDays(7),
+  datePresets.lastDays(30),
+  datePresets.thisMonth(),
+]
 
 export function DistributionPage() {
   const topicOptions = useTopics()
@@ -62,15 +144,17 @@ export function DistributionPage() {
   const [accountSearch, setAccountSearch] = useState('')
   // Rong = khong loc (hien tat ca). Mac dinh tich san 4 trang thai "dung de dang duoc / sap dung
   // duoc" - "Dang ngam" van hien de tien gan chu de truoc, du Lap ke hoach co the chua nhan.
-  const [accountStatusFilter, setAccountStatusFilter] = useState<Set<string>>(
-    () => new Set(['Kháng thành công', 'Live', 'Chưa kháng', 'Đang ngâm']),
-  )
+  const [accountStatusFilter, setAccountStatusFilter] = useState<Set<string>>(() => new Set(POSTING_STATUSES))
 
-  const [days, setDays] = useState(1)
-  const [perDay, setPerDay] = useState(6)
-  const [startDate, setStartDate] = useState(todayLocal())
-  const [scrapedFrom, setScrapedFrom] = useState('')
-  const [scrapedTo, setScrapedTo] = useState('')
+  const [prefs] = useState(loadPlanPrefs)
+  const [days, setDays] = useState(prefs.days)
+  const [perDay, setPerDay] = useState(prefs.perDay)
+  const [startDate, setStartDate] = useState(todayIso())
+  const [scrapedFrom, setScrapedFrom] = useState(prefs.scrapedFrom)
+  const [scrapedTo, setScrapedTo] = useState(prefs.scrapedTo)
+  useEffect(() => {
+    localStorage.setItem(PLAN_PREFS_KEY, JSON.stringify({ days, perDay, scrapedFrom, scrapedTo } satisfies PlanPrefs))
+  }, [days, perDay, scrapedFrom, scrapedTo])
   const [planName, setPlanName] = useState('')
   const [onlySelected, setOnlySelected] = useState(false)
   const [preview, setPreview] = useState<PlanPreview | null>(null)
@@ -88,7 +172,7 @@ export function DistributionPage() {
     const q = accountSearch.trim().toLowerCase()
     return (accounts ?? []).filter((a) => {
       if (q && !a.name.toLowerCase().includes(q)) return false
-      if (accountStatusFilter.size > 0 && !accountStatusFilter.has(a.appeal_status ?? ''))
+      if (accountStatusFilter.size > 0 && !accountStatusFilter.has(a.appeal_status || STATUS_NONE))
         return false
       return true
     })
@@ -119,6 +203,15 @@ export function DistributionPage() {
       const n = new Set(p)
       if (n.has(id)) n.delete(id)
       else n.add(id)
+      return n
+    })
+
+  const allFilteredSelected = filteredAccounts.length > 0 && filteredAccounts.every((a) => sel.has(a.id))
+  const toggleAllFiltered = () =>
+    setSel((p) => {
+      const n = new Set(p)
+      if (allFilteredSelected) filteredAccounts.forEach((a) => n.delete(a.id))
+      else filteredAccounts.forEach((a) => n.add(a.id))
       return n
     })
 
@@ -194,16 +287,22 @@ export function DistributionPage() {
   }
 
   const removePlan = async (id: string) => {
-    if (
-      !confirm(
-        'Xoá kế hoạch này?\n\nLƯU Ý: xoá kế hoạch cũng xoá lịch sử chống trùng của nó — ' +
-          'các bài trong kế hoạch này sẽ được phát lại cho chính những tài khoản đó ở lần sau.',
-      )
-    )
-      return
-    await deleteDistributionPlan(id)
-    invalidate()
-    toast.success('Đã xoá kế hoạch')
+    const ok = await confirmDialog({
+      title: 'Xoá kế hoạch này?',
+      description:
+        'Xoá kế hoạch cũng xoá lịch sử chống trùng của nó: các bài trong kế hoạch này sẽ được phát lại cho chính những tài khoản đó ở lần sau.',
+      confirmLabel: 'Xoá kế hoạch',
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      await deleteDistributionPlan(id)
+      toast.success('Đã xoá kế hoạch')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không xoá được kế hoạch')
+    } finally {
+      invalidate()
+    }
   }
 
   return (
@@ -211,11 +310,7 @@ export function DistributionPage() {
       <PageHeader
         title="Phân phối bài"
         description="Chọn tài khoản theo chủ đề → bốc bài ngẫu nhiên không trùng → xuất file cho tool auto đăng"
-        actions={
-          <Button variant="outline" size="sm" onClick={() => setRulesOpen(true)}>
-            <Info className="h-4 w-4" /> Quy tắc chia bài
-          </Button>
-        }
+        secondary={[{ label: 'Quy tắc chia bài', icon: Info, onClick: () => setRulesOpen(true) }]}
       />
 
       {/* 1. Kho bài sạch */}
@@ -262,16 +357,8 @@ export function DistributionPage() {
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-b p-3">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tìm tên tài khoản..."
-              value={accountSearch}
-              onChange={(e) => setAccountSearch(e.target.value)}
-              className="pl-8 sm:text-xs"
-            />
-          </div>
-          <StatusCheckboxFilter selected={accountStatusFilter} onChange={setAccountStatusFilter} />
+          <SearchInput value={accountSearch} onChange={setAccountSearch} placeholder="Tìm tên tài khoản…" />
+          <StatusCheckboxFilter selected={accountStatusFilter} onChange={setAccountStatusFilter} includeNone />
           {(accountSearch || accountStatusFilter.size > 0) && (
             <span className="text-xs tabular-nums text-muted-foreground">
               Hiển thị {filteredAccounts.length}/{all.length} tài khoản
@@ -281,25 +368,19 @@ export function DistributionPage() {
 
         <div className="md:hidden">
           <label className="flex items-center gap-3 border-b bg-card px-4 py-2.5 text-xs text-muted-foreground">
-            <Checkbox
-              checked={filteredAccounts.length > 0 && filteredAccounts.every((a) => sel.has(a.id))}
-              onCheckedChange={() =>
-                setSel((p) =>
-                  filteredAccounts.every((a) => p.has(a.id))
-                    ? new Set()
-                    : new Set(filteredAccounts.map((a) => a.id)),
-                )
-              }
-            />
+            <Checkbox checked={allFilteredSelected} onCheckedChange={toggleAllFiltered} />
             Chọn tất cả ({filteredAccounts.length})
           </label>
           <div className="max-h-[60dvh] divide-y overflow-y-auto">
             {filteredAccounts.map((a: PostingAccount) => (
-              <div key={a.id} className={cn('flex items-start gap-3 px-4 py-3', sel.has(a.id) && 'bg-primary/5')}>
+              <div key={a.id} className={cn('flex items-start gap-3 px-4 py-3', sel.has(a.id) && 'bg-chart-1/[0.06]')}>
                 <Checkbox className="mt-0.5" checked={sel.has(a.id)} onCheckedChange={() => toggle(a.id)} />
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium">{a.name}</span>
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                      <AccountAvatar name={a.name} size="sm" />
+                      <span className="truncate">{a.name}</span>
+                    </span>
                     <span className="shrink-0 text-xs text-muted-foreground">{a.platform ?? '—'}</span>
                   </div>
                   <PostingTopicsCell
@@ -321,16 +402,7 @@ export function DistributionPage() {
             <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
               <tr>
                 <th className="w-10 p-2.5 text-left">
-                  <Checkbox
-                    checked={filteredAccounts.length > 0 && filteredAccounts.every((a) => sel.has(a.id))}
-                    onCheckedChange={() =>
-                      setSel((p) =>
-                        filteredAccounts.every((a) => p.has(a.id))
-                          ? new Set()
-                          : new Set(filteredAccounts.map((a) => a.id)),
-                      )
-                    }
-                  />
+                  <Checkbox checked={allFilteredSelected} onCheckedChange={toggleAllFiltered} />
                 </th>
                 <th className="w-[32%] p-2.5 text-left">Tài khoản</th>
                 <th className="w-28 p-2.5 text-left">Platform</th>
@@ -339,11 +411,16 @@ export function DistributionPage() {
             </thead>
             <tbody>
               {filteredAccounts.map((a: PostingAccount) => (
-                <tr key={a.id} className={cn('border-b last:border-0', sel.has(a.id) && 'bg-primary/5')}>
+                <tr key={a.id} className={cn('border-b last:border-0', sel.has(a.id) && 'bg-chart-1/[0.06]')}>
                   <td className="p-2.5">
                     <Checkbox checked={sel.has(a.id)} onCheckedChange={() => toggle(a.id)} />
                   </td>
-                  <td className="p-2.5 font-medium">{a.name}</td>
+                  <td className="p-2.5 font-medium">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <AccountAvatar name={a.name} size="sm" />
+                      <span className="truncate">{a.name}</span>
+                    </span>
+                  </td>
                   <td className="p-2.5 text-xs text-muted-foreground">
                     {a.platform ?? '—'}
                   </td>
@@ -373,30 +450,30 @@ export function DistributionPage() {
         <h2 className="text-base font-medium">Lập kế hoạch</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Ngày bắt đầu</label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Số ngày</label>
-            <Input
-              type="number"
-              min={1}
-              max={60}
-              value={days}
-              onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))}
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Ngày bắt đầu</span>
+            <DatePicker
+              value={startDate}
+              onChange={setStartDate}
+              presets={[datePresets.today(), { label: 'Ngày mai', range: () => [tomorrow(), tomorrow()] }]}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            <label htmlFor="plan-days" className="mb-1 block text-xs font-medium text-muted-foreground">
+              Số ngày
+            </label>
+            <NumberField id="plan-days" value={days} onChange={setDays} min={1} max={60} />
+            <span id="plan-days-range" className="mt-1 block text-[11px] text-muted-foreground">
+              1–60 ngày
+            </span>
+          </div>
+          <div>
+            <label htmlFor="plan-per-day" className="mb-1 block text-xs font-medium text-muted-foreground">
               Bài / tài khoản / ngày
             </label>
-            <Input
-              type="number"
-              min={1}
-              max={20}
-              value={perDay}
-              onChange={(e) => setPerDay(Math.max(1, Number(e.target.value) || 1))}
-            />
+            <NumberField id="plan-per-day" value={perDay} onChange={setPerDay} min={1} max={20} />
+            <span id="plan-per-day-range" className="mt-1 block text-[11px] text-muted-foreground">
+              1–20 bài
+            </span>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Tên kế hoạch</label>
@@ -404,21 +481,19 @@ export function DistributionPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              Chỉ lấy bài thu thập từ
-            </label>
-            <Input
-              type="date"
-              value={scrapedFrom}
-              onChange={(e) => setScrapedFrom(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">đến</label>
-            <Input type="date" value={scrapedTo} onChange={(e) => setScrapedTo(e.target.value)} />
-          </div>
+        <div>
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Chỉ lấy bài thu thập trong khoảng</span>
+          <DateRangePicker
+            from={scrapedFrom}
+            to={scrapedTo}
+            onChange={(f, t) => {
+              setScrapedFrom(f)
+              setScrapedTo(t)
+            }}
+            presets={SCRAPED_PRESETS}
+            placeholder="Mọi ngày thu thập"
+            clearable
+          />
         </div>
 
         <label className="flex items-center gap-2 py-1 text-xs text-muted-foreground">

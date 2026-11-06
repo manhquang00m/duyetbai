@@ -27,7 +27,14 @@ router.post('/', (req, res) => {
     }
   }
 
-  const job = startBatchJob(urls, force, urlTopics);
+  // Luong tu dong sau khi cao (kiem tra link -> phan loai -> viet lai). Chi nhan dung 2 co boolean.
+  const rawPipeline = req.body?.pipeline;
+  const pipeline =
+    rawPipeline && typeof rawPipeline === 'object'
+      ? { checkLinks: rawPipeline.checkLinks === true, rewrite: rawPipeline.rewrite === true }
+      : undefined;
+
+  const job = startBatchJob(urls, force, urlTopics, pipeline);
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 

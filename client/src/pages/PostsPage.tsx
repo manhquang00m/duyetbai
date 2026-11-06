@@ -1,11 +1,10 @@
-import { useState, type ReactNode } from 'react'
-import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useQueries, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   Download,
   FileDown,
-  Search,
   ChevronLeft,
   ChevronRight,
   MessageCircle,
@@ -19,6 +18,8 @@ import {
   Tag,
   Heart,
   MousePointerClick,
+  ShieldCheck,
+  Workflow,
 } from 'lucide-react'
 import {
   fetchPosts,
@@ -30,6 +31,8 @@ import {
   downloadSelectedPosts,
   buildExportPostsUrl,
   fetchCaptionVariants,
+  deleteRejectedPosts,
+  startPostPipeline,
   UNASSIGNED_TOPIC,
   type ExportPostsWarnings,
   exportShopeeUrl,
@@ -37,9 +40,13 @@ import {
   type PostListItem,
   type PostSort,
   type MediaFilter,
+  type PostFilterParams,
 } from '@/lib/api'
 import { useTopics } from '@/lib/useTopics'
-import { Input } from '@/components/ui/input'
+import { q, useUrlState } from '@/lib/useUrlState'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { confirmDialog } from '@/lib/confirm'
+import { datePresets, fmtVN } from '@/lib/dates'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -48,14 +55,118 @@ import { Dialog } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
 import { FloatingBar } from '@/components/FloatingBar'
+import { Pagination } from '@/components/Pagination'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
+import { ShopeeLinkCheckDialog } from '@/components/ShopeeLinkCheckDialog'
+import { PipelineProgress } from '@/components/PipelineProgress'
 import { AssignTopicDialog } from '@/components/AssignTopicDialog'
 import { PostTopicCell } from '@/components/PostTopicCell'
 import { BulkTopicButton } from '@/components/BulkTopicButton'
-import { MultiFilterDropdown, SingleFilterDropdown, TopicFilterDropdown } from '@/components/ui/filter-dropdown'
+import { DateRangePicker } from '@/components/ui/date-picker'
+import { SearchInput } from '@/components/filters/SearchInput'
+import type { FilterChip } from '@/components/filters/FilterChips'
+import { FilterPill, FilterPillMulti } from '@/components/filters/FilterPill'
+import { SavedViews } from '@/components/filters/SavedViews'
+import { PostThumb } from '@/components/PostThumb'
 import { cn } from '@/lib/utils'
 
-const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const
+const PAGE_SIZE_OPTIONS = ['20', '50', '100', '200'] as const
+
+const POST_STATUS_OPTIONS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'unposted', label: 'Chưa đăng' },
+  { value: 'posted', label: 'Đã đăng' },
+] as const
+const LINK_OPTIONS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'bad', label: 'Link chết hoặc hết hàng' },
+  { value: 'review', label: 'Cần xem lại' },
+  { value: 'unchecked', label: 'Chưa kiểm tra' },
+] as const
+const MEDIA_OPTIONS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'imageOnly', label: 'Chỉ có ảnh' },
+  { value: 'videoOnly', label: 'Chỉ có video' },
+  { value: 'complete', label: 'Đủ cả ảnh & video' },
+  { value: 'missing', label: 'Thiếu ảnh hoặc video' },
+] as const
+const REWRITE_OPTIONS = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'yes', label: 'Đã viết lại (đủ 3 bản)' },
+  { value: 'no', label: 'Chưa viết lại' },
+] as const
+
+const optionLabel = (opts: readonly { value: string; label: string }[], v: string) =>
+  opts.find((o) => o.value === v)?.label ?? v
+
+/*
+ * Bo loc song tren URL: reload / Back / gui link deu giu nguyen. Ctrl+K mo thang
+ * /posts?noShopee=1 va /posts?rewritten=no. page 1-based tren URL.
+ */
+const POST_FILTERS = {
+  q: q.str(),
+  from: q.str(),
+  to: q.str(),
+  sort: q.enum(['newest', 'likes', 'clicks', 'posted'] as const satisfies readonly PostSort[], 'newest'),
+  noShopee: q.bool(),
+  notUpdated: q.bool(),
+  oneShopee: q.bool(),
+  postStatus: q.enum(['all', 'unposted', 'posted'] as const, 'all'),
+  link: q.enum(['all', 'bad', 'dead', 'out_of_stock', 'review', 'unchecked'] as const, 'all'),
+  media: q.enum(['all', 'complete', 'missing', 'imageOnly', 'videoOnly'] as const, 'all'),
+  rewritten: q.enum(['all', 'yes', 'no'] as const, 'all'),
+  reject: q.bool(),
+  topics: q.list(),
+  page: q.int(1, 1),
+  size: q.enum(PAGE_SIZE_OPTIONS, '20'),
+}
+
+/** Key bo loc (khong tinh sap xep / so bai moi trang) - "Xoa tat ca" ve mac dinh cac key nay. */
+const FILTER_KEYS = [
+  'q',
+  'from',
+  'to',
+  'noShopee',
+  'notUpdated',
+  'oneShopee',
+  'postStatus',
+  'link',
+  'media',
+  'rewritten',
+  'reject',
+  'topics',
+  'page',
+] as const
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Mới thu thập' },
+  { value: 'likes', label: 'Nhiều tim nhất' },
+  { value: 'clicks', label: 'Nhiều click nhất' },
+  { value: 'posted', label: 'Đăng nhiều nhất' },
+] as const
+
+/** 3 bo loc bool cua nhom "Shopee" - gop vao 1 pill chon nhieu. */
+const SHOPEE_FLAGS = [
+  { value: 'noShopee', label: 'Chưa có link shopee' },
+  { value: 'notUpdated', label: 'Chưa cập nhật link mới' },
+  { value: 'oneShopee', label: 'Đúng 1 cmt shopee' },
+] as const
+
+/*
+ * View theo viec can lam. Moi view la 1 bo tham so URL (cung ten voi POST_FILTERS) - view dang chon
+ * khi cac bo loc khop dung bo nay. /posts?noShopee=1 va ?rewritten=no (Ctrl+K) roi dung vao view.
+ */
+const POST_VIEWS: { id: string; label: string; params: Record<string, unknown>; api: PostFilterParams }[] = [
+  { id: 'all', label: 'Tất cả', params: {}, api: {} },
+  { id: 'noShopee', label: 'Chưa có link Shopee', params: { noShopee: true }, api: { noShopee: true } },
+  { id: 'notRewritten', label: 'Chưa viết lại', params: { rewritten: 'no' }, api: { rewritten: 'no' } },
+  { id: 'badLink', label: 'Link hỏng', params: { link: 'bad' }, api: { linkStatus: 'bad' } },
+  { id: 'unposted', label: 'Chưa đăng', params: { postStatus: 'unposted' }, api: { postStatus: 'unposted' } },
+  // Khong link / link chet / het hang / can xem lai, chua dang - xoa 1 lan o day
+  { id: 'reject', label: 'Bị loại', params: { reject: true }, api: { reject: true } },
+]
+
+const SCRAPED_PRESETS = [datePresets.today(), datePresets.lastDays(7), datePresets.lastDays(30), datePresets.thisMonth()]
 /** Trang thai on/chua lam: chu xam, khong pill. Pill mau chi danh cho cai can xu ly. */
 const QUIET = 'whitespace-nowrap text-xs text-muted-foreground'
 const PILL = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium'
@@ -76,7 +187,7 @@ function UpdateStatus({ shopee, updated }: { shopee: number; updated: number }) 
   return <span className={QUIET}>Chưa</span>
 }
 
-/** So ban caption AI da viet lai cho bai (xem trang "Phân phối bài" > "Viết lại caption kho bài"). */
+/** So ban caption AI da viet lai cho bai (xem trang "Viết lại caption" > "Viết lại caption kho bài"). */
 function RewriteStatus({ count }: { count: number }) {
   if (count >= 3)
     return (
@@ -158,19 +269,6 @@ function PostStatusBadge({ status }: { status: PostListItem['post_status'] }) {
   return <span className={QUIET}>Mới</span>
 }
 
-function PostThumb({ thumb, className }: { thumb: string | null; className: string }) {
-  return thumb ? (
-    <img
-      src={`/media/${thumb}`}
-      alt=""
-      loading="lazy"
-      className={cn('shrink-0 rounded-md object-cover', className)}
-    />
-  ) : (
-    <div className={cn('shrink-0 rounded-md bg-muted', className)} />
-  )
-}
-
 function CommentChip({ count }: { count: number }) {
   return (
     <span
@@ -200,13 +298,23 @@ function LabeledBadge({ label, children }: { label: string; children: ReactNode 
 interface PostItemProps {
   post: PostListItem
   selected: boolean
-  onToggle: () => void
+  /** Bai dang mo (hoac vua dong) o Sheet chi tiet - to dam de khong lac cho. */
+  current?: boolean
+  /** shift = giu Shift khi tich: chon/bo ca khoang tu o tich truoc. */
+  onToggle: (shift: boolean) => void
   onOpen: () => void
   onTopicChange: (topic: string | null) => Promise<void>
 }
 
-const formatScraped = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('vi-VN') : '—'
+/** dd/MM, them nam khi khac nam nay. */
+const formatScraped = (iso: string | null) => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  // Tu ghep: toLocaleDateString('vi-VN') bo nam thi ra "20-10"
+  const dm = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  return d.getFullYear() === new Date().getFullYear() ? dm : `${dm}/${d.getFullYear()}`
+}
 
 function LikesChip({ likes }: { likes: string | null }) {
   const v = likes?.trim()
@@ -222,10 +330,10 @@ function LikesChip({ likes }: { likes: string | null }) {
   )
 }
 
-function PostStats({ post: p }: { post: PostListItem }) {
+function PostStats({ post: p, className }: { post: PostListItem; className?: string }) {
   const muted = 'text-muted-foreground font-normal'
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+    <div className={cn('flex flex-wrap items-center gap-x-2.5 gap-y-0.5', className)}>
       <LikesChip likes={p.likes} />
       <span
         className={cn(
@@ -251,51 +359,58 @@ function PostStats({ post: p }: { post: PostListItem }) {
   )
 }
 
-/** Dong bang (>= lg). */
-function PostRow({ post: p, selected, onToggle, onOpen, onTopicChange }: PostItemProps) {
+/** Dong bang (>= xl). */
+function PostRow({ post: p, selected, current, onToggle, onOpen, onTopicChange }: PostItemProps) {
   return (
     <tr
       onClick={onOpen}
+      data-post-id={p.post_id}
+      aria-current={current || undefined}
       className={cn(
         'cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/50',
-        selected && 'bg-primary/5',
+        selected && 'bg-chart-1/[0.06]',
+        // Vach cam ben trai = bai dang/vua xem (khong phai bong do)
+        current && 'bg-muted/60 shadow-[inset_2px_0_0_var(--color-chart-1)]',
       )}
     >
-      <td className="p-2.5">
-        <div className="flex items-center gap-2.5">
-          <Checkbox checked={selected} onCheckedChange={onToggle} />
-          <PostThumb thumb={p.thumb} className="h-9 w-9" />
-          <div className="min-w-0 max-w-[13rem]">
-            <div className="truncate font-medium">@{p.username || '—'}</div>
-            <div className="truncate text-xs text-muted-foreground">{p.caption}</div>
-            <PostStats post={p} />
+      <td className="py-2 pl-3 pr-2">
+        <div className="flex items-center gap-3">
+          <Checkbox checked={selected} onCheckedChange={(_, e) => onToggle(e.shiftKey)} />
+          <PostThumb thumb={p.thumb} className="h-12 w-12" />
+          {/* Caption la noi dung chinh -> 2 dong; so lieu dua len cung dong ten */}
+          <div className="min-w-0 max-w-[26rem] space-y-0.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="truncate font-medium">@{p.username || '—'}</span>
+              <PostStats post={p} className="shrink-0 flex-nowrap" />
+            </div>
+            <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">{p.caption || '—'}</p>
           </div>
         </div>
       </td>
       {/* 2 moc thoi gian xep chong 1 o: ngay dang (muc) / ngay thu thap (xam) */}
-      <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">
+      <td className="whitespace-nowrap px-2 py-2 tabular-nums">
         <div className="text-xs">{p.post_date || '—'}</div>
-        <div className="text-[11px] text-muted-foreground">thu {formatScraped(p.scraped_at)}</div>
+        <div className="text-[11px] text-muted-foreground">Thu thập {formatScraped(p.scraped_at)}</div>
       </td>
-      <td className="max-w-[12rem] px-2 py-2.5">
+      <td className="max-w-[12rem] px-2 py-2">
         <div className="mb-1">
           <CommentChip count={p.distinct_comment_count} />
         </div>
         <div className="truncate text-xs text-muted-foreground">{p.comment || '—'}</div>
       </td>
-      <td className="whitespace-nowrap px-2 py-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2 text-center">
         <RewriteStatus count={p.variant_count} />
       </td>
-      <td className="whitespace-nowrap px-2 py-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2 text-center">
         <UpdateStatus shopee={p.shopee_count} updated={p.new_count} />
       </td>
-      <td className="whitespace-nowrap px-2 py-2.5 text-center">
+      <td className="whitespace-nowrap px-2 py-2 text-center">
         <LinkHealthBadge post={p} />
       </td>
-      <td className="max-w-[9rem] px-2 py-2.5 text-xs">
+      <td className="max-w-[9rem] px-2 py-2 text-xs">
         <PostTopicCell topic={p.topic} onChange={onTopicChange} />
       </td>
-      <td className="px-2 py-2.5 text-center">
+      <td className="px-2 py-2 text-center">
         <div className="flex flex-col items-center gap-1">
           <PostStatusBadge status={p.post_status} />
           {p.assigned_account && (
@@ -307,18 +422,21 @@ function PostRow({ post: p, selected, onToggle, onOpen, onTopicChange }: PostIte
   )
 }
 
-/** The bai viet tren mobile/tablet (< lg): cung du lieu + handler voi PostRow. */
-function PostCard({ post: p, selected, onToggle, onOpen, onTopicChange }: PostItemProps) {
+/** The bai viet tren mobile/tablet (< xl): cung du lieu + handler voi PostRow. */
+function PostCard({ post: p, selected, current, onToggle, onOpen, onTopicChange }: PostItemProps) {
   return (
     <div
       onClick={onOpen}
+      data-post-id={p.post_id}
+      aria-current={current || undefined}
       className={cn(
-        'flex cursor-pointer gap-3 p-3 transition-colors active:bg-muted/60',
-        selected && 'bg-primary/5',
+        'flex cursor-pointer gap-3 p-3 transition-colors hover:bg-muted/40 active:bg-muted/60',
+        selected && 'bg-chart-1/[0.06]',
+        current && 'bg-muted/60 shadow-[inset_2px_0_0_var(--color-chart-1)]',
       )}
     >
       <div className="pt-1">
-        <Checkbox checked={selected} onCheckedChange={onToggle} />
+        <Checkbox checked={selected} onCheckedChange={(_, e) => onToggle(e.shiftKey)} />
       </div>
       <PostThumb thumb={p.thumb} className="h-12 w-12" />
       <div className="min-w-0 flex-1 space-y-1.5">
@@ -364,20 +482,21 @@ function PostCard({ post: p, selected, onToggle, onOpen, onTopicChange }: PostIt
 export function PostsPage() {
   const topicOptions = useTopics()
   const qc = useQueryClient()
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0])
-  const [noShopee, setNoShopee] = useState(false)
-  const [notUpdated, setNotUpdated] = useState(false)
-  const [oneShopee, setOneShopee] = useState(false)
-  const [postStatus, setPostStatus] = useState<'unposted' | 'posted' | undefined>(undefined)
-  const [mediaFilter, setMediaFilter] = useState<MediaFilter | undefined>(undefined)
-  const [linkStatus, setLinkStatus] = useState<LinkStatusFilter | undefined>(undefined)
-  const [rewritten, setRewritten] = useState<'yes' | 'no' | undefined>(undefined)
-  const [scrapedFrom, setScrapedFrom] = useState('')
-  const [scrapedTo, setScrapedTo] = useState('')
-  const [topics, setTopics] = useState<string[]>([])
-  const [sort, setSort] = useState<PostSort>('newest')
+  const { values: f, set: setF, reset: resetF, isDefault: isDefaultF } = useUrlState(POST_FILTERS)
+  const search = f.q
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const page = f.page - 1
+  const pageSize = Number(f.size)
+  const { noShopee, notUpdated, oneShopee, sort, topics } = f
+  const postStatus = f.postStatus === 'all' ? undefined : f.postStatus
+  const mediaFilter: MediaFilter | undefined = f.media === 'all' ? undefined : f.media
+  const linkStatus: LinkStatusFilter | undefined = f.link === 'all' ? undefined : f.link
+  const rewritten = f.rewritten === 'all' ? undefined : f.rewritten
+  const scrapedFrom = f.from
+  const scrapedTo = f.to
+  /** Moi lan doi bo loc -> ve trang 1. */
+  const setFilter = (patch: Partial<typeof f>, opts?: { replace?: boolean }) => setF({ ...patch, page: 1 }, opts)
+  const setPage = (p: number) => setF({ page: p + 1 })
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
@@ -395,6 +514,7 @@ export function PostsPage() {
     mediaFilter,
     linkStatus,
     rewritten,
+    reject: f.reject,
     scrapedFrom,
     scrapedTo,
     topics,
@@ -403,7 +523,7 @@ export function PostsPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: [
       'posts',
-      search,
+      debouncedSearch,
       page,
       pageSize,
       noShopee,
@@ -413,6 +533,7 @@ export function PostsPage() {
       mediaFilter,
       linkStatus,
       rewritten,
+      f.reject,
       scrapedFrom,
       scrapedTo,
       topics,
@@ -420,7 +541,7 @@ export function PostsPage() {
     ],
     queryFn: () =>
       fetchPosts({
-        search,
+        search: debouncedSearch,
         limit: pageSize,
         offset: page * pageSize,
         noShopee,
@@ -430,6 +551,7 @@ export function PostsPage() {
         mediaFilter,
         linkStatus,
         rewritten,
+        reject: f.reject,
         scrapedFrom: scrapedFrom || undefined,
         scrapedTo: scrapedTo || undefined,
         topics,
@@ -440,22 +562,121 @@ export function PostsPage() {
 
   const total = data?.total ?? 0
   const items = data?.items ?? []
-  const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1)
-  const activeFilterCount = [
-    noShopee,
-    notUpdated,
-    oneShopee,
-    !!postStatus,
-    !!mediaFilter,
-    !!linkStatus,
-    !!rewritten,
-    !!scrapedFrom || !!scrapedTo,
-    topics.length > 0,
-  ].filter(Boolean).length
-  const filterActive = activeFilterCount > 0
+  // View dang chon: moi key loc (tru page) bang dung tham so cua view, con lai o mac dinh.
+  const activeView = POST_VIEWS.find((v) =>
+    FILTER_KEYS.every((k) => {
+      if (k === 'page') return true
+      const want = v.params[k]
+      return want === undefined ? isDefaultF(k) : f[k] === want
+    }),
+  )?.id
+  // So bai moi view (limit 1, chi lay total) - key ['posts', ...] nen invalidateAll lam moi luon.
+  const viewCounts = useQueries({
+    queries: POST_VIEWS.map((v) => ({
+      queryKey: ['posts', 'view-count', v.id],
+      queryFn: () => fetchPosts({ limit: 1, offset: 0, ...v.api }),
+      staleTime: 30_000,
+    })),
+  })
+  const openView = (params: Record<string, unknown>) => {
+    resetF([...FILTER_KEYS])
+    if (Object.keys(params).length) setF(params as Partial<typeof f>)
+  }
+
+  const chips: FilterChip[] = []
+  if (search) chips.push({ key: 'q', label: 'Tìm', value: `“${search}”`, onRemove: () => setFilter({ q: '' }) })
+  if (scrapedFrom || scrapedTo)
+    chips.push({
+      key: 'scraped',
+      label: 'Thu thập',
+      value: `${fmtVN(scrapedFrom) || '…'} – ${fmtVN(scrapedTo) || '…'}`,
+      onRemove: () => setFilter({ from: '', to: '' }),
+    })
+  if (noShopee) chips.push({ key: 'noShopee', label: 'Shopee', value: 'Chưa có link', onRemove: () => setFilter({ noShopee: false }) })
+  if (notUpdated)
+    chips.push({ key: 'notUpdated', label: 'Cập nhật', value: 'Chưa cập nhật link mới', onRemove: () => setFilter({ notUpdated: false }) })
+  if (oneShopee)
+    chips.push({ key: 'oneShopee', label: 'Comment', value: 'Đúng 1 cmt shopee', onRemove: () => setFilter({ oneShopee: false }) })
+  if (postStatus)
+    chips.push({
+      key: 'postStatus',
+      label: 'Trạng thái đăng',
+      value: optionLabel(POST_STATUS_OPTIONS, postStatus),
+      onRemove: () => setFilter({ postStatus: 'all' }),
+    })
+  if (linkStatus)
+    chips.push({ key: 'link', label: 'Link Shopee', value: optionLabel(LINK_OPTIONS, linkStatus), onRemove: () => setFilter({ link: 'all' }) })
+  if (mediaFilter)
+    chips.push({ key: 'media', label: 'Media', value: optionLabel(MEDIA_OPTIONS, mediaFilter), onRemove: () => setFilter({ media: 'all' }) })
+  if (rewritten)
+    chips.push({
+      key: 'rewritten',
+      label: 'Viết lại',
+      value: optionLabel(REWRITE_OPTIONS, rewritten),
+      onRemove: () => setFilter({ rewritten: 'all' }),
+    })
+  if (f.reject)
+    chips.push({ key: 'reject', label: 'Lọc', value: 'Bị loại', onRemove: () => setFilter({ reject: false }) })
+  if (topics.length > 0)
+    chips.push({
+      key: 'topics',
+      label: 'Chủ đề',
+      value: topics.map((t) => (t === UNASSIGNED_TOPIC ? 'Chưa gán chủ đề' : t)).join(', '),
+      onRemove: () => setFilter({ topics: [] }),
+    })
+  const filterActive = chips.length > 0
+  const onlySearch = chips.length === 1 && !!search
+
+  // Bai da chon nhung khong nam o trang dang xem (trang khac / bi bo loc an) - van bi tac dong
+  const shownIds = new Set(items.map((i) => i.post_id))
+  const hiddenSelected = [...sel].filter((id) => !shownIds.has(id)).length
 
   const allChecked = items.length > 0 && items.every((i) => sel.has(i.post_id))
   const someChecked = items.some((i) => sel.has(i.post_id)) && !allChecked
+
+  const [checkLinkIds, setCheckLinkIds] = useState<string[] | null>(null)
+  const [backlogJobId, setBacklogJobId] = useState<string | null>(null)
+  const [backlogStarting, setBacklogStarting] = useState(false)
+
+  // "Xu ly kho": chay luong tu dong cho moi bai chua dang (kiem tra link chua kiem tra -> phan loai ->
+  // viet lai bai dat chua du ban). Ket qua + nut xoa bai bi loai nam trong dialog.
+  const runBacklog = async () => {
+    const ok = await confirmDialog({
+      title: 'Xử lý kho bài chưa đăng?',
+      description:
+        'Kiểm tra các link Shopee chưa kiểm tra, phân loại bài, rồi viết lại caption (AI) cho bài đạt còn thiếu bản. Bài đã đăng không bị đụng tới. Chưa xoá gì — cuối cùng bạn tự bấm xoá bài bị loại.',
+      confirmLabel: 'Chạy',
+    })
+    if (!ok) return
+    setBacklogStarting(true)
+    try {
+      const { jobId } = await startPostPipeline({ scope: 'backlog' })
+      setBacklogJobId(jobId)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi khởi động')
+    } finally {
+      setBacklogStarting(false)
+    }
+  }
+
+  // View "Bi loai" khong kem loc khac -> xoa het (server tu tinh lai danh sach, vuot gioi han 200/trang)
+  const deleteAllRejected = async () => {
+    const ok = await confirmDialog({
+      title: `Xoá ${total} bài bị loại?`,
+      description: 'Không có link Shopee, link chết, hết hàng hoặc cần xem lại (bài đã đăng không tính). Xoá luôn media đã tải, không hoàn tác được.',
+      confirmLabel: `Xoá ${total} bài`,
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      const r = await deleteRejectedPosts()
+      toast.success(`Đã xoá ${r.deleted} bài bị loại`)
+      setSel(new Set())
+      invalidateAll()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi xoá bài')
+    }
+  }
 
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: ['posts'] })
@@ -468,13 +689,70 @@ export function PostsPage() {
     qc.invalidateQueries({ queryKey: ['account-topics'] })
   }
 
-  const toggle = (id: string) => {
+  // Vi tri o tich gan nhat tren trang - Shift+tich chon/bo ca khoang tu do (nhu Gmail). Doi trang /
+  // bo loc thi moc cu vo nghia -> xoa.
+  const lastToggled = useRef<number | null>(null)
+  useEffect(() => {
+    lastToggled.current = null
+  }, [data])
+  const toggle = (id: string, shift = false) => {
+    const idx = items.findIndex((i) => i.post_id === id)
+    const from = lastToggled.current
     setSel((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      const on = !prev.has(id)
+      const range =
+        shift && from !== null && idx >= 0 && from !== idx
+          ? items.slice(Math.min(from, idx), Math.max(from, idx) + 1)
+          : items.filter((i) => i.post_id === id)
+      for (const it of range) {
+        if (on) next.add(it.post_id)
+        else next.delete(it.post_id)
+      }
       return next
     })
+    lastToggled.current = idx
+  }
+
+  // Sheet chi tiet: nut ‹ › / phim ←→ (j k) chuyen bai trong trang; dong lai van to bai vua xem.
+  const [lastOpened, setLastOpened] = useState<string | null>(null)
+  const detailIdx = detailId ? items.findIndex((i) => i.post_id === detailId) : -1
+  const openDetail = (id: string) => {
+    setDetailId(id)
+    setLastOpened(id)
+  }
+  const stepDetail = (dir: 1 | -1) => {
+    const next = items[detailIdx + dir]
+    if (next) openDetail(next.post_id)
+  }
+  useEffect(() => {
+    if (!detailId) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return
+      if (e.key === 'ArrowRight' || e.key === 'j') stepDetail(1)
+      else if (e.key === 'ArrowLeft' || e.key === 'k') stepDetail(-1)
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+  // Bai dang xem luon nam trong khung nhin phia sau Sheet
+  useEffect(() => {
+    if (!detailId) return
+    const el = [...document.querySelectorAll<HTMLElement>(`[data-post-id="${CSS.escape(detailId)}"]`)].find(
+      (x) => x.offsetParent,
+    )
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [detailId])
+
+  // Doi trang: dua dau danh sach len ngay duoi thanh tren cung (48px) neu dang cuon qua
+  const listRef = useRef<HTMLDivElement>(null)
+  const goPage = (p: number) => {
+    setPage(p)
+    const top = listRef.current?.getBoundingClientRect().top ?? 0
+    if (top < 48) window.scrollTo({ top: window.scrollY + top - 64 })
   }
 
   const toggleAll = () => {
@@ -489,32 +767,30 @@ export function PostsPage() {
   const doDelete = async () => {
     const ids = [...sel]
     if (ids.length === 0) return
-    if (!confirm(`Xoá ${ids.length} bài (kèm media đã tải)?`)) return
-    await deletePosts(ids)
-    setSel(new Set())
-    invalidateAll()
-    toast.success(`Đã xoá ${ids.length} bài`)
+    const ok = await confirmDialog({
+      title: `Xóa ${ids.length} bài?`,
+      description: (
+        <>
+          Xóa luôn media đã tải, không hoàn tác được.
+          {hiddenSelected > 0 && ` Gồm ${hiddenSelected} bài không hiển thị ở trang này.`}
+        </>
+      ),
+      confirmLabel: `Xóa ${ids.length} bài`,
+      destructive: true,
+    })
+    if (!ok) return
+    try {
+      await deletePosts(ids)
+      setSel(new Set())
+      toast.success(`Đã xoá ${ids.length} bài`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Xóa bài thất bại')
+    } finally {
+      invalidateAll()
+    }
   }
 
-  const resetPage = () => setPage(0)
-  const clearFilters = () => {
-    setNoShopee(false)
-    setNotUpdated(false)
-    setOneShopee(false)
-    setPostStatus(undefined)
-    setMediaFilter(undefined)
-    setLinkStatus(undefined)
-    setRewritten(undefined)
-    setScrapedFrom('')
-    setScrapedTo('')
-    setTopics([])
-    resetPage()
-  }
-
-  const toggleTopic = (topic: string) => {
-    setTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]))
-    resetPage()
-  }
+  const clearFilters = () => resetF([...FILTER_KEYS])
 
   const changeTopic = async (postId: string, topic: string | null) => {
     await setPostTopic(postId, topic)
@@ -583,15 +859,17 @@ export function PostsPage() {
       description={
         isError
           ? 'Kiểm tra server đang chạy ở :3000.'
-          : filterActive
-            ? 'Không có bài khớp bộ lọc.'
-            : 'Sang tab Thu thập để tải bài về.'
+          : onlySearch
+            ? `Không có bài nào khớp “${search}”.`
+            : filterActive
+              ? 'Không có bài khớp bộ lọc.'
+              : 'Sang tab Thu thập để tải bài về.'
       }
       action={
         !isError &&
         (filterActive ? (
           <Button size="sm" variant="outline" onClick={clearFilters}>
-            Xóa bộ lọc
+            {onlySearch ? 'Xóa tìm kiếm' : 'Xóa bộ lọc'}
           </Button>
         ) : (
           <Link to="/batch" className={cn(buttonVariants({ size: 'sm' }))}>
@@ -607,222 +885,173 @@ export function PostsPage() {
       <PageHeader
         title="Bài viết"
         description={
-          <>
-            <span className="tabular-nums">{total} bài</span>
-            <span className="mt-0.5 block text-xs">
-              {filterActive ? (
-                <>
-                  Sẽ xuất <strong className="tabular-nums text-foreground">{total}</strong> bài theo bộ lọc hiện tại
-                </>
-              ) : (
-                <>
-                  Sẽ xuất toàn bộ <strong className="tabular-nums text-foreground">{total}</strong> bài (chưa lọc)
-                </>
-              )}
+          filterActive ? (
+            <span className="tabular-nums">
+              {total.toLocaleString('vi-VN')} / {(viewCounts[0].data?.total ?? total).toLocaleString('vi-VN')} bài theo bộ lọc
+              <span className="hidden sm:inline"> · nút Xuất chỉ lấy các bài này</span>
             </span>
-          </>
+          ) : (
+            <span className="tabular-nums">{total.toLocaleString('vi-VN')} bài</span>
+          )
         }
-        actions={
-          <>
-            <Button variant="outline" onClick={() => setTopicDialogOpen(true)}>
-              <Tag className="h-4 w-4" /> Gán chủ đề
-            </Button>
-            <a href={exportShopeeUrl} className={cn(buttonVariants({ variant: 'outline' }))}>
-              <FileDown className="h-4 w-4" /> Shopee input
-            </a>
-            <Button onClick={onExportPostsClick} disabled={checkingExport}>
-              <Download className="h-4 w-4" /> posts.xlsx
-            </Button>
-          </>
-        }
+        primary={{
+          label: 'Xuất posts.xlsx',
+          shortLabel: 'Xuất',
+          icon: Download,
+          onClick: onExportPostsClick,
+          busy: checkingExport,
+          title: filterActive ? 'Xuất các bài đang lọc' : 'Xuất toàn bộ bài',
+        }}
+        secondary={[
+          {
+            label: 'Xử lý kho',
+            icon: Workflow,
+            onClick: runBacklog,
+            busy: backlogStarting,
+            title: 'Kiểm tra link → phân loại → viết lại caption cho bài chưa đăng',
+          },
+          { label: 'Gán chủ đề', icon: Tag, onClick: () => setTopicDialogOpen(true) },
+          { label: 'Shopee input', icon: FileDown, href: exportShopeeUrl },
+        ]}
       />
 
-      {/* Search + filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Tìm caption / user / post id..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              resetPage()
-            }}
-            className="pl-9"
+      {/* View theo viec can lam */}
+      <SavedViews
+        views={POST_VIEWS.map((v, i) => ({
+          id: v.id,
+          label: v.label,
+          count: viewCounts[i].data?.total,
+          active: activeView === v.id,
+          onSelect: () => openView(v.params),
+        }))}
+      />
+
+      {/* Tim + sap xep */}
+      <div className="flex items-center gap-2">
+        <SearchInput
+          className="sm:max-w-sm"
+          placeholder="Tìm caption / user / post id…"
+          value={search}
+          onChange={(v) => setFilter({ q: v }, { replace: true })}
+        />
+        {/* Phone: o tim chiem het hang, Sap xep xuong cuoi hang pill */}
+        <div className="ml-auto hidden shrink-0 sm:block">
+          <FilterPill
+            label="Sắp xếp"
+            neutral
+            value={sort}
+            emptyValue="newest"
+            options={SORT_OPTIONS}
+            onChange={(v) => setFilter({ sort: v as typeof sort })}
           />
         </div>
-        <div className="flex w-full items-center gap-1.5 sm:w-auto">
-          <span className="shrink-0 text-xs text-muted-foreground">Thu thập</span>
-          <Input
-            type="date"
-            aria-label="Thu thập từ ngày"
-            value={scrapedFrom}
-            onChange={(e) => {
-              setScrapedFrom(e.target.value)
-              resetPage()
-            }}
-            className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none"
+      </div>
+
+      {/* Moi nhom loc 1 pill: chua loc = vien net dut; dang loc = hien gia tri + nut bo. Phone: cuon ngang. */}
+      <div className="overflow-x-auto py-0.5">
+        <div className="flex w-max items-center gap-2 sm:w-auto sm:flex-wrap">
+          <DateRangePicker
+            variant="pill"
+            label="Thu thập"
+            from={scrapedFrom}
+            to={scrapedTo}
+            onChange={(from, to) => setFilter({ from, to })}
+            presets={SCRAPED_PRESETS}
+            clearable
           />
-          <span className="text-xs text-muted-foreground">→</span>
-          <Input
-            type="date"
-            aria-label="Thu thập đến ngày"
-            value={scrapedTo}
-            onChange={(e) => {
-              setScrapedTo(e.target.value)
-              resetPage()
-            }}
-            className="min-w-0 flex-1 sm:w-[9.5rem] sm:flex-none"
+          <FilterPill
+            label="Đăng"
+            value={f.postStatus}
+            options={POST_STATUS_OPTIONS}
+            onChange={(v) => setFilter({ postStatus: v as typeof f.postStatus })}
           />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-        <SingleFilterDropdown
-          label="Sắp xếp"
-          activeWhen="newest"
-          value={sort}
-          onChange={(v) => {
-            setSort(v)
-            resetPage()
-          }}
-          options={[
-            { value: 'newest', label: 'Mới thu thập' },
-            { value: 'likes', label: 'Nhiều tim nhất' },
-            { value: 'clicks', label: 'Nhiều click nhất' },
-            { value: 'posted', label: 'Đăng nhiều nhất' },
-          ]}
-        />
-        <MultiFilterDropdown
-          activeCount={activeFilterCount}
-          onClearAll={() => {
-            clearFilters()
-          }}
-          groups={[
-            {
-              type: 'checkbox',
-              key: 'noShopee',
-              label: 'Chưa có link shopee',
-              checked: noShopee,
-              onToggle: () => {
-                setNoShopee((v) => !v)
-                resetPage()
-              },
-            },
-            {
-              type: 'checkbox',
-              key: 'notUpdated',
-              label: 'Chưa cập nhật link mới',
-              checked: notUpdated,
-              onToggle: () => {
-                setNotUpdated((v) => !v)
-                resetPage()
-              },
-            },
-            {
-              type: 'checkbox',
-              key: 'oneShopee',
-              label: 'Đúng 1 cmt shopee',
-              checked: oneShopee,
-              onToggle: () => {
-                setOneShopee((v) => !v)
-                resetPage()
-              },
-            },
-            {
-              type: 'radio',
-              key: 'postStatus',
-              label: 'Trạng thái đăng',
-              value: postStatus ?? 'all',
-              onChange: (v: string) => {
-                setPostStatus(v === 'all' ? undefined : (v as 'unposted' | 'posted'))
-                resetPage()
-              },
-              options: [
-                { value: 'all', label: 'Tất cả' },
-                { value: 'unposted', label: 'Chưa đăng' },
-                { value: 'posted', label: 'Đã đăng' },
-              ],
-            },
-            {
-              type: 'radio',
-              key: 'linkStatus',
-              label: 'Tình trạng link Shopee',
-              value: linkStatus ?? 'all',
-              onChange: (v: string) => {
-                setLinkStatus(v === 'all' ? undefined : (v as LinkStatusFilter))
-                resetPage()
-              },
-              options: [
-                { value: 'all', label: 'Tất cả' },
-                { value: 'bad', label: 'Link chết hoặc hết hàng' },
-                { value: 'review', label: 'Cần xem lại' },
-                { value: 'unchecked', label: 'Chưa kiểm tra' },
-              ],
-            },
-            {
-              type: 'radio',
-              key: 'mediaFilter',
-              label: 'Media',
-              value: mediaFilter ?? 'all',
-              onChange: (v: string) => {
-                setMediaFilter(v === 'all' ? undefined : (v as MediaFilter))
-                resetPage()
-              },
-              options: [
-                { value: 'all', label: 'Tất cả' },
-                { value: 'imageOnly', label: 'Chỉ có ảnh' },
-                { value: 'videoOnly', label: 'Chỉ có video' },
-                { value: 'complete', label: 'Đủ cả ảnh & video' },
-                { value: 'missing', label: 'Thiếu ảnh hoặc video' },
-              ],
-            },
-            {
-              type: 'radio',
-              key: 'rewritten',
-              label: 'Viết lại caption AI',
-              value: rewritten ?? 'all',
-              onChange: (v: string) => {
-                setRewritten(v === 'all' ? undefined : (v as 'yes' | 'no'))
-                resetPage()
-              },
-              options: [
-                { value: 'all', label: 'Tất cả' },
-                { value: 'yes', label: 'Đã viết lại (đủ 3 bản)' },
-                { value: 'no', label: 'Chưa viết lại' },
-              ],
-            },
-          ]}
-        />
-        <TopicFilterDropdown
-          label="Chủ đề"
-          options={topicOptions}
-          selected={topics}
-          onToggle={toggleTopic}
-          onClear={() => {
-            setTopics([])
-            resetPage()
-          }}
-          unassignedValue={UNASSIGNED_TOPIC}
-        />
+          <FilterPill
+            label="Link"
+            value={f.link}
+            options={LINK_OPTIONS}
+            onChange={(v) => setFilter({ link: v as typeof f.link })}
+          />
+          <FilterPill
+            label="Media"
+            value={f.media}
+            options={MEDIA_OPTIONS}
+            onChange={(v) => setFilter({ media: v as typeof f.media })}
+          />
+          <FilterPill
+            label="Viết lại"
+            value={f.rewritten}
+            options={REWRITE_OPTIONS}
+            onChange={(v) => setFilter({ rewritten: v as typeof f.rewritten })}
+          />
+          <FilterPillMulti
+            label="Chủ đề"
+            values={topics}
+            options={[
+              ...topicOptions.map((t) => ({ value: t, label: t })),
+              { value: UNASSIGNED_TOPIC, label: 'Chưa gán chủ đề' },
+            ]}
+            onChange={(v) => setFilter({ topics: v })}
+          />
+          <FilterPillMulti
+            label="Shopee"
+            values={SHOPEE_FLAGS.filter((o) => f[o.value]).map((o) => o.value)}
+            options={SHOPEE_FLAGS}
+            onChange={(v) => setFilter({ noShopee: v.includes('noShopee'), notUpdated: v.includes('notUpdated'), oneShopee: v.includes('oneShopee') })}
+          />
+          {filterActive && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-8 shrink-0 rounded-md px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              Xóa lọc
+            </button>
+          )}
+          <div className="sm:hidden">
+          <FilterPill
+            label="Sắp xếp"
+            neutral
+            value={sort}
+            emptyValue="newest"
+            options={SORT_OPTIONS}
+            onChange={(v) => setFilter({ sort: v as typeof sort })}
+          />
+          </div>
         </div>
       </div>
 
       {/* Table (lg+) / card list (< lg) */}
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="lg:hidden">
+      {activeView === 'reject' && total > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/40 px-3 py-2.5 text-sm">
+          <span className="min-w-0 flex-1">
+            <span className="font-medium tabular-nums">{total.toLocaleString('vi-VN')}</span> bài bị loại: không có link
+            Shopee, link chết, hết hàng hoặc cần xem lại. Bài đã đăng không tính.
+          </span>
+          <Button size="sm" variant="destructive" onClick={deleteAllRejected}>
+            <Trash2 className="h-4 w-4" /> Xoá tất cả {total.toLocaleString('vi-VN')} bài
+          </Button>
+        </div>
+      )}
+
+      {/* overflow-clip (khong phai hidden): giu bo goc ma khong tao khung cuon -> thead dinh duoc theo trang */}
+      <div ref={listRef} className="overflow-clip rounded-xl border bg-card">
+        <div className="xl:hidden">
           {(items.length > 0 || isLoading) && (
             <div className="flex items-center gap-2.5 border-b bg-card px-3 py-2.5 text-xs font-medium text-muted-foreground">
               <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={toggleAll} />
               <span className="ml-1">Chọn tất cả trang này</span>
             </div>
           )}
-          <div className="divide-y">
+          {/* Tablet: 2 cot the; -mb-px de vien duoi hang cuoi chong len vien khung */}
+          <div className="divide-y md:-mb-px md:grid md:grid-cols-2 md:divide-y-0 md:[&>*]:border-b md:[&>*:nth-child(odd)]:border-r">
             {items.map((p: PostListItem) => (
               <PostCard
                 key={p.post_id}
                 post={p}
                 selected={sel.has(p.post_id)}
-                onToggle={() => toggle(p.post_id)}
-                onOpen={() => setDetailId(p.post_id)}
+                current={p.post_id === (detailId ?? lastOpened)}
+                onToggle={(shift) => toggle(p.post_id, shift)}
+                onOpen={() => openDetail(p.post_id)}
                 onTopicChange={(topic) => changeTopic(p.post_id, topic)}
               />
             ))}
@@ -845,25 +1074,37 @@ export function PostsPage() {
           {!isLoading && items.length === 0 && emptyState}
         </div>
 
-        <div className="table-scroll hidden max-h-[calc(100dvh-22rem)] min-h-[20rem] overflow-y-auto lg:block">
-          <table className="w-full min-w-[60rem] text-sm">
-            <thead className="sticky top-0 z-10 bg-card">
-              <tr className="border-b text-xs text-muted-foreground">
-                <th className="p-2.5 text-left">
+        {/* Cuon theo trang (khong long khung cuon rieng); tieu de cot dinh ngay duoi thanh tren cung */}
+        <div className="hidden xl:block">
+          <table className="w-full text-sm">
+            <thead className="sticky top-12 z-10 bg-card">
+              <tr className="text-xs text-muted-foreground [&>th]:font-medium [&>th]:shadow-[inset_0_-1px_0_var(--color-border)]">
+                <th className="py-2.5 pl-3 pr-2 text-left">
                   <div className="flex items-center gap-2.5">
                     <Checkbox
                       checked={allChecked}
                       indeterminate={someChecked}
                       onCheckedChange={toggleAll}
                     />
-                    Bài viết
+                    <span className="ml-0.5">Bài viết</span>
                   </div>
                 </th>
-                <th className="whitespace-nowrap px-2 py-2.5 text-left">Ngày</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-left" title="Ngày đăng gốc / ngày thu thập">
+                  Ngày
+                </th>
                 <th className="whitespace-nowrap px-2 py-2.5 text-left">Comment</th>
-                <th className="whitespace-nowrap px-2 py-2.5 text-center">Viết lại</th>
-                <th className="whitespace-nowrap px-2 py-2.5 text-center">Cập nhật</th>
-                <th className="whitespace-nowrap px-2 py-2.5 text-center">Link</th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center" title="Số bản caption AI đã viết lại (tối đa 3)">
+                  Viết lại
+                </th>
+                <th className="whitespace-nowrap px-2 py-2.5 text-center" title="Số link Shopee đã thay bằng link mới">
+                  Cập nhật
+                </th>
+                <th
+                  className="whitespace-nowrap px-2 py-2.5 text-center"
+                  title="Tình trạng link Shopee: chết / hết hàng / cần xem lại"
+                >
+                  Link
+                </th>
                 <th className="whitespace-nowrap px-2 py-2.5 text-left">Chủ đề</th>
                 <th className="whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
               </tr>
@@ -874,8 +1115,9 @@ export function PostsPage() {
                   key={p.post_id}
                   post={p}
                   selected={sel.has(p.post_id)}
-                  onToggle={() => toggle(p.post_id)}
-                  onOpen={() => setDetailId(p.post_id)}
+                  current={p.post_id === (detailId ?? lastOpened)}
+                  onToggle={(shift) => toggle(p.post_id, shift)}
+                  onOpen={() => openDetail(p.post_id)}
                   onTopicChange={(topic) => changeTopic(p.post_id, topic)}
                 />
               ))}
@@ -915,51 +1157,27 @@ export function PostsPage() {
         </div>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-3">
-          <span className="tabular-nums">
-            Trang {page + 1}/{maxPage + 1}
-          </span>
-          <SingleFilterDropdown
-            label="Số bài/trang"
-            value={String(pageSize)}
-            activeWhen={String(PAGE_SIZE_OPTIONS[0])}
-            options={PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
-            onChange={(v) => {
-              setPageSize(Number(v))
-              setPage(0)
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-10 sm:h-8"
-            disabled={page <= 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" /> Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-10 sm:h-8"
-            disabled={page >= maxPage}
-            onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
-          >
-            Sau <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPage={goPage}
+        sizeOptions={PAGE_SIZE_OPTIONS}
+        onSize={(size) => setF({ size: size as typeof f.size, page: 1 })}
+      />
 
       {/* Thanh action noi khi co chon */}
       {sel.size > 0 && (
         <FloatingBar>
-          <span className="px-2 text-sm font-medium tabular-nums">{sel.size} đã chọn</span>
+          <span className="px-2 text-sm tabular-nums">
+            <span className="font-medium text-chart-1-ink">{sel.size}</span> đã chọn
+            {hiddenSelected > 0 && <span className="text-muted-foreground"> ({hiddenSelected} không hiển thị)</span>}
+          </span>
           <Button size="sm" variant="outline" onClick={() => setRescrapeIds([...sel])}>
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setCheckLinkIds([...sel])}>
+            <ShieldCheck className="h-4 w-4" /> Kiểm tra link
           </Button>
           <BulkTopicButton postIds={[...sel]} onDone={invalidateAll} />
           <Button size="sm" variant="outline" onClick={onExportSelectedClick} disabled={checkingExport}>
@@ -975,7 +1193,43 @@ export function PostsPage() {
       )}
 
       <Sheet open={!!detailId} onClose={() => setDetailId(null)} className="max-w-3xl">
-        {detailId && <PostDetail id={detailId} onRescrape={(ids) => setRescrapeIds(ids)} />}
+        {detailId && (
+          <>
+            {detailIdx >= 0 && (
+              <div className="mb-4 flex items-center gap-1 pr-10 text-xs text-muted-foreground">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 px-0 sm:h-8 sm:w-8"
+                  disabled={detailIdx <= 0}
+                  onClick={() => stepDetail(-1)}
+                  aria-label="Bài trước"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 px-0 sm:h-8 sm:w-8"
+                  disabled={detailIdx >= items.length - 1}
+                  onClick={() => stepDetail(1)}
+                  aria-label="Bài sau"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <span className="ml-1.5 tabular-nums">
+                  Bài {detailIdx + 1}/{items.length} trong trang
+                </span>
+                <span className="ml-auto hidden items-center gap-1 sm:inline-flex">
+                  <kbd className="font-sans rounded border px-1 text-[11px]">←</kbd>
+                  <kbd className="font-sans rounded border px-1 text-[11px]">→</kbd>
+                  chuyển bài
+                </span>
+              </div>
+            )}
+            <PostDetail id={detailId} onRescrape={(ids) => setRescrapeIds(ids)} />
+          </>
+        )}
       </Sheet>
 
       <RescrapeDialog
@@ -987,6 +1241,26 @@ export function PostsPage() {
         }}
         onDone={invalidateAll}
       />
+
+      <ShopeeLinkCheckDialog
+        open={!!checkLinkIds}
+        postIds={checkLinkIds ?? []}
+        onClose={() => setCheckLinkIds(null)}
+        onDone={invalidateAll}
+      />
+
+      <Dialog open={!!backlogJobId} onClose={() => setBacklogJobId(null)} className="max-w-2xl">
+        <h2 className="pr-8 text-lg font-semibold">Xử lý kho</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Đóng cửa sổ này thì job vẫn chạy tiếp ở server.
+        </p>
+        <PipelineProgress
+          className="mt-4"
+          jobId={backlogJobId}
+          planned={{ checkLinks: true, rewrite: true }}
+          onEnd={invalidateAll}
+        />
+      </Dialog>
 
       <AssignTopicDialog
         open={topicDialogOpen}
@@ -1148,7 +1422,7 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
         {variants.isLoading && <p className="text-sm text-muted-foreground">Đang tải...</p>}
         {!variants.isLoading && (variants.data?.length ?? 0) === 0 && (
           <p className="text-sm text-muted-foreground">
-            Chưa có bản nào — chạy ở trang "Phân phối bài" &gt; "Viết lại caption kho bài".
+            Chưa có bản nào — chạy ở trang "Viết lại caption" &gt; "Viết lại caption kho bài".
           </p>
         )}
         {!variants.isLoading && (variants.data?.length ?? 0) > 0 && (

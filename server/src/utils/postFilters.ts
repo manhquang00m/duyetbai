@@ -33,6 +33,7 @@ export function parsePostFilterQuery(query: Record<string, unknown>): PostFilter
     mediaFilter: MEDIA_FILTERS.find((m) => m === mediaFilterRaw),
     linkStatus: LINK_STATUS_VALUES.includes(linkStatusRaw) ? linkStatusRaw : undefined,
     cleanOnly: truthy(query.cleanOnly),
+    reject: truthy(query.reject),
     rewritten: rewrittenRaw === 'yes' || rewrittenRaw === 'no' ? rewrittenRaw : undefined,
     scrapedFrom: query.scrapedFrom != null ? String(query.scrapedFrom) : undefined,
     scrapedTo: query.scrapedTo != null ? String(query.scrapedTo) : undefined,
