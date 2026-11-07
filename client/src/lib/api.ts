@@ -501,6 +501,17 @@ export function batchStreamUrl(jobId: string) {
   return `/api/batch/${jobId}/stream`
 }
 
+/** Trang thai hien tai cua 1 job nen. null = server khong con job nay (vd da khoi dong lai). */
+export async function fetchJob(jobId: string) {
+  try {
+    const { data } = await api.get<JobState>(`/api/batch/${encodeURIComponent(jobId)}`)
+    return data
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) return null
+    throw err
+  }
+}
+
 // ===== Lich su thu thap =====
 export interface CollectHistoryRow {
   id: number

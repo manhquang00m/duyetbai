@@ -17,6 +17,7 @@ import {
 import {
   startBatch,
   batchStreamUrl,
+  fetchJob,
   fetchCollectHistory,
   deleteCollectHistory,
   fetchMediaSourceDefault,
@@ -52,6 +53,14 @@ const DRAFT_KEY = 'batch-draft'
 /** Chu de da gan theo shortcode bai (lan chay truoc) - de Retry tu Lich su van giu dung chu de. */
 const TOPIC_MEMO_KEY = 'batch-url-topics'
 const TOPIC_MEMO_MAX = 1000
+/** Lan chay gan nhat (job nam o server) - F5 / dong tab / chuyen trang roi vao lai van noi tiep duoc. */
+const ACTIVE_KEY = 'batch-active-job'
+const JOB_ID_RE = /^[0-9a-f-]{36}$/
+interface ActiveRun {
+  jobId: string
+  pipeline: PipelineOptions | null
+  urlTopics: Record<string, string>
+}
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -478,6 +487,85 @@ export function BatchPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Lỗi đổi nền tảng'),
   })
 
+  // Theo doi job cao qua SSE. Stream luon day trang thai hien tai truoc nen dung chung cho ca luc
+  // vua bam Chay lan luc noi lai sau F5 (job van chay tiep o server khi trang bi dong).
+  const follow = (jobId: string) => {
+    esRef.current?.close()
+    let sawRunning = false
+    const es = new EventSource(batchStreamUrl(jobId))
+    esRef.current = es
+    es.onmessage = (e) => {
+      const data = JSON.parse(e.data) as { type: string; job: JobState }
+      setJob(data.job)
+      if (data.job.status === 'running') sawRunning = true
+      if (data.type === 'end') {
+        es.close()
+        esRef.current = null
+        // Co chang tu dong chay tiep -> van "dang chay" cho toi khi PipelineProgress bao xong
+        if (data.job.nextJobId) setPipeJobId(data.job.nextJobId)
+        else setRunning(false)
+        qc.invalidateQueries({ queryKey: ['posts'] })
+        qc.invalidateQueries({ queryKey: ['stats'] })
+        qc.invalidateQueries({ queryKey: ['collect-history'] })
+        // Bai moi cao co the lam doi kho "bai sach" (Phan phoi bai) va so bai chua viet lai
+        // caption - cac trang do dung query rieng, khong tu dong biet co bai moi ma lam moi.
+        qc.invalidateQueries({ queryKey: ['dist-pool'] })
+        qc.invalidateQueries({ queryKey: ['caption-variant-status'] })
+        qc.invalidateQueries({ queryKey: ['account-topics'] })
+        // Noi lai vao job da xong tu truoc (F5 sau khi chay xong) -> khong bao lai ket qua cu
+        if (!sawRunning) return
+        const failed = data.job.items.filter(isFailed).length
+        if (failed > 0) toast.warning(`Xong, ${failed} bài lỗi — có thể Retry`)
+        else toast.success('Batch hoàn tất')
+        if (data.job.topicConflicts && data.job.topicConflicts.length > 0) {
+          const detail = data.job.topicConflicts
+            .map((c) => `${c.postId}: ${c.topics.join(', ')}`)
+            .join(' · ')
+          toast.warning(
+            `${data.job.topicConflicts.length} bài bị 2 URL khác nhau gán 2 chủ đề khác nhau trong lần chạy này — ${detail}. Kiểm tra lại trang Bài viết.`,
+          )
+        }
+      }
+    }
+    es.onerror = () => {
+      if (esRef.current) {
+        es.close()
+        esRef.current = null
+        setRunning(false)
+        toast.error('Mất kết nối stream')
+      }
+    }
+  }
+
+  // Vao lai trang: server con giu job lan chay gan nhat -> hien lai tien trinh/ket qua va theo doi tiep
+  useEffect(() => {
+    const saved = readJson<ActiveRun | null>(ACTIVE_KEY, null)
+    if (!saved || typeof saved.jobId !== 'string' || !JOB_ID_RE.test(saved.jobId)) return
+    let cancelled = false
+    fetchJob(saved.jobId)
+      .then((j) => {
+        if (cancelled) return
+        if (!j) {
+          localStorage.removeItem(ACTIVE_KEY)
+          toast.info('Không nối lại được lần thu thập trước — server đã khởi động lại')
+          return
+        }
+        setLastUrlTopics(saved.urlTopics ?? {})
+        setRunPipeline(saved.pipeline ?? null)
+        setJob(j)
+        setRunning(true) // 'end' cua job cao / PipelineProgress se tat lai
+        follow(saved.jobId)
+      })
+      .catch(() => {}) // server tat -> giu lai, lan sau vao lai thu tiep
+    return () => {
+      cancelled = true
+      esRef.current?.close()
+      esRef.current = null
+    }
+    // Chi chay 1 lan khi mo trang
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const runUrls = async (
     urls: string[],
     force: boolean,
@@ -496,47 +584,10 @@ export function BatchPage() {
     try {
       const { jobId } = await startBatch(urls, force, urlTopics, usePipeline)
       if (urlTopics) rememberTopics(urlTopics)
+      const active: ActiveRun = { jobId, pipeline: usePipeline ?? null, urlTopics: urlTopics ?? {} }
+      localStorage.setItem(ACTIVE_KEY, JSON.stringify(active))
       onStarted?.()
-      const es = new EventSource(batchStreamUrl(jobId))
-      esRef.current = es
-      es.onmessage = (e) => {
-        const data = JSON.parse(e.data) as { type: string; job: JobState }
-        setJob(data.job)
-        if (data.type === 'end') {
-          es.close()
-          esRef.current = null
-          // Co chang tu dong chay tiep -> van "dang chay" cho toi khi PipelineProgress bao xong
-          if (data.job.nextJobId) setPipeJobId(data.job.nextJobId)
-          else setRunning(false)
-          qc.invalidateQueries({ queryKey: ['posts'] })
-          qc.invalidateQueries({ queryKey: ['stats'] })
-          qc.invalidateQueries({ queryKey: ['collect-history'] })
-          // Bai moi cao co the lam doi kho "bai sach" (Phan phoi bai) va so bai chua viet lai
-          // caption - cac trang do dung query rieng, khong tu dong biet co bai moi ma lam moi.
-          qc.invalidateQueries({ queryKey: ['dist-pool'] })
-          qc.invalidateQueries({ queryKey: ['caption-variant-status'] })
-          qc.invalidateQueries({ queryKey: ['account-topics'] })
-          const failed = data.job.items.filter(isFailed).length
-          if (failed > 0) toast.warning(`Xong, ${failed} bài lỗi — có thể Retry`)
-          else toast.success('Batch hoàn tất')
-          if (data.job.topicConflicts && data.job.topicConflicts.length > 0) {
-            const detail = data.job.topicConflicts
-              .map((c) => `${c.postId}: ${c.topics.join(', ')}`)
-              .join(' · ')
-            toast.warning(
-              `${data.job.topicConflicts.length} bài bị 2 URL khác nhau gán 2 chủ đề khác nhau trong lần chạy này — ${detail}. Kiểm tra lại trang Bài viết.`,
-            )
-          }
-        }
-      }
-      es.onerror = () => {
-        if (esRef.current) {
-          es.close()
-          esRef.current = null
-          setRunning(false)
-          toast.error('Mất kết nối stream')
-        }
-      }
+      follow(jobId)
     } catch (err) {
       setRunning(false)
       toast.error(err instanceof Error ? err.message : 'Lỗi khởi động batch')

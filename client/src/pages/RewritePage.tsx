@@ -708,7 +708,7 @@ function CaptionVariantCard() {
 
       {expanded && rows.length === 0 && (
         <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
-          Chưa có bài nào trong kho sạch.
+          Chưa có bài nào đủ điều kiện (link Shopee đã kiểm tra còn hàng, có ảnh/video, đã gán chủ đề).
         </p>
       )}
 

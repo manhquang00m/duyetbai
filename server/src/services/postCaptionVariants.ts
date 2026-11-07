@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { getSetting, setSetting } from '../db/settings';
-import { listCleanPostsWithTopic } from '../db/distribution';
+import { listRewritablePosts } from '../db/distribution';
 import ExcelJS from 'exceljs';
 import { maskLinks, unmaskLinks } from './rewrite';
 import { chatComplete } from './llm';
@@ -40,12 +40,12 @@ export interface VariantStatusRow {
 }
 
 /**
- * Bai hop le cho viec viet lai (dung DUNG tap bai se duoc Phan phoi bai dung toi, khong lam gi
- * cho bai khong bao gio duoc phan phoi), kem so ban da co - bai CHUA DU 3 ban len dau de xu ly
+ * Bai hop le cho viec viet lai (tap bai Phan phoi bai se dung toi, ke ca bai chua cap nhat link
+ * Shopee moi - xem listRewritablePosts), kem so ban da co - bai CHUA DU 3 ban len dau de xu ly
  * truoc (cung tinh than uu tien "chua lam" nhu popup gan chu de theo tac gia).
  */
 export function listVariantStatus(): VariantStatusRow[] {
-  const clean = listCleanPostsWithTopic();
+  const clean = listRewritablePosts();
   if (clean.length === 0) return [];
 
   const captionOf = new Map(

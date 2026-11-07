@@ -139,7 +139,7 @@
             "comment": null
           }
         ],
-        "expanded": false,
+        "expanded": true,
         "continue_on_error": false,
         "id": "2e0e292c-4b6e-410d-8c8b-28f7baa7a58d",
         "display_text": null,
@@ -307,7 +307,7 @@
             "comment": null
           }
         ],
-        "expanded": false,
+        "expanded": true,
         "continue_on_error": false,
         "id": "c18210af-b8e3-4e02-b7e8-d25e4388e92c",
         "display_text": null,
@@ -466,7 +466,7 @@
                 "comment": null
               }
             ],
-            "expanded": false,
+            "expanded": true,
             "continue_on_error": false,
             "id": "d6d094b0-95e0-4fb8-b287-3877ce8b286f",
             "display_text": null,
@@ -622,7 +622,7 @@
                 "comment": null
               }
             ],
-            "expanded": false,
+            "expanded": true,
             "continue_on_error": false,
             "id": "f850d4eb-fdab-4242-b38c-73ff61cd1c7d",
             "display_text": "If",
@@ -630,7 +630,7 @@
             "comment": "Like = 0 thi dừng đăng bài luôn"
           }
         ],
-        "expanded": false,
+        "expanded": true,
         "continue_on_error": false,
         "id": "179dbb92-14a3-4aad-9af3-e6cd47ad4b8f",
         "display_text": null,

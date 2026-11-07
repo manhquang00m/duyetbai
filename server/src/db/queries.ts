@@ -73,6 +73,19 @@ export const CLEAN_POST_COND = `(
   )
 )`;
 
+/**
+ * Nhu CLEAN_POST_COND nhung KHONG doi new_link: moi link da kiem tra ra 'available'. Dung cho
+ * viet lai caption - link nam o comment chu khong o caption, nen viet truoc khi cap nhat link moi.
+ */
+export const LINKS_OK_COND = `(
+  EXISTS (SELECT 1 FROM shopee_entries s WHERE s.post_id = p.post_id)
+  AND NOT EXISTS (
+    SELECT 1 FROM shopee_entries s
+     WHERE s.post_id = p.post_id
+       AND (s.link_status IS NULL OR s.link_status <> 'available')
+  )
+)`;
+
 /** Bai chua tung dang (ca danh dau tay lan nhat ky tool auto) - chi bai nay moi duoc "loai". */
 const NOT_POSTED = `(p.post_status <> 'posted'
   AND NOT EXISTS (SELECT 1 FROM post_runs r WHERE r.post_id = p.post_id))`;

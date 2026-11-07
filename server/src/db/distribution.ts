@@ -1,5 +1,5 @@
 import { db } from './index';
-import { CLEAN_POST_COND, HAS_VIDEO, HAS_IMAGE } from './queries';
+import { CLEAN_POST_COND, LINKS_OK_COND, HAS_VIDEO, HAS_IMAGE } from './queries';
 
 export interface PlanRow {
   id: string;
@@ -84,6 +84,21 @@ export function listCleanPostsWithTopic(filter: CleanPoolFilter = {}): CleanPost
         ORDER BY p.post_id`,
     )
     .all(...args) as unknown as CleanPost[];
+}
+
+/**
+ * Bai can chuan bi 3 ban caption: nhu kho phan phoi nhung CHUA can new_link (LINKS_OK_COND) -
+ * viet lai truoc, cap nhat link moi sau thi bai vao kho la co san caption.
+ */
+export function listRewritablePosts(): CleanPost[] {
+  return db
+    .prepare(
+      `SELECT p.post_id AS post_id, p.topic AS topic
+         FROM posts p
+        WHERE ${LINKS_OK_COND} AND (${HAS_VIDEO} OR ${HAS_IMAGE}) AND p.topic IS NOT NULL
+        ORDER BY p.post_id`,
+    )
+    .all() as unknown as CleanPost[];
 }
 
 /** Dem bai sach theo tung chu de - cho the "Kho bai" tren UI. */
