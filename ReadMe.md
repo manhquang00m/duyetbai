@@ -42,6 +42,16 @@ npm run dev
 - Server: http://localhost:3000
 - Client (Vite dev server): xem log console, thường là http://localhost:5173
 
+### Launcher GUI (không cần mở VS Code)
+
+`launcher/duyetbai_launcher.pyw` — cửa sổ "Thread Affiliate Launcher" (tkinter), chạy `npm start` (server không watch), có Start / Stop / Mở trình duyệt, hiện log server + client, tự mở browser khi Vite lên. Stop dùng lại `scripts/kill-dev.mjs`.
+
+Tạo shortcut trên Desktop (chạy 1 lần):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File launcher\create_shortcut.ps1
+```
+
 Chạy riêng từng phần:
 
 ```bash
