@@ -15,6 +15,7 @@ import {
 import { markPostsPosted } from '../db/repository';
 import {
   startRescrapeJob,
+  startRefetchMediaJob,
   startBeautifyJob,
   startShopeeLinkCheckJob,
   startPostPipelineJob,
@@ -69,6 +70,23 @@ router.post('/rescrape', (req, res) => {
     return;
   }
   const job = startRescrapeJob(postIds);
+  res.status(202).json({ jobId: job.id, total: job.total });
+});
+
+// POST /api/posts/refetch-media { postIds: string[] } -> crawl lai RIENG media (job nen). Chi
+// thay media cu khi lan nay tai duoc nhieu file hon - xem services/pipeline.ts refetchMedia.
+router.post('/refetch-media', (req, res) => {
+  const raw: unknown[] = Array.isArray(req.body?.postIds) ? req.body.postIds : [];
+  const postIds = [...new Set(raw.map((s) => String(s).trim()).filter((s) => /^[A-Za-z0-9_-]{1,64}$/.test(s)))];
+  if (postIds.length === 0) {
+    res.status(400).json({ error: 'Thiếu postIds' });
+    return;
+  }
+  if (postIds.length > 1000) {
+    res.status(400).json({ error: 'Tối đa 1000 bài mỗi lần' });
+    return;
+  }
+  const job = startRefetchMediaJob(postIds);
   res.status(202).json({ jobId: job.id, total: job.total });
 });
 

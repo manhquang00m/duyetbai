@@ -113,6 +113,36 @@ export function saveScrape(
   }
 }
 
+/** So media tai duoc (ok=1) theo loai cua 1 bai - de so sanh truoc/sau khi crawl lai media. */
+export function countOkMedia(postId: string): { video: number; image: number } {
+  const rows = db
+    .prepare('SELECT type, COUNT(*) AS n FROM media WHERE post_id = ? AND ok = 1 GROUP BY type')
+    .all(postId) as { type: string; n: number }[];
+  return {
+    video: rows.find((r) => r.type === 'video')?.n ?? 0,
+    image: rows.find((r) => r.type === 'image')?.n ?? 0,
+  };
+}
+
+/**
+ * Thay TOAN BO dong media cua 1 bai (nut "Crawl lai media"). Khong dong toi caption/comment/link.
+ * processed_file (video da lam dep) mat theo dong cu - file cu cung da bi thay, can lam dep lai.
+ */
+export function replaceMedia(
+  postId: string,
+  files: { type: string; file: string; ok: boolean; error?: string }[],
+): void {
+  db.exec('BEGIN');
+  try {
+    delMedia.run(postId);
+    for (const f of files) insMedia.run(postId, f.type, f.file, f.ok ? 1 : 0, f.error ?? null);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
 /**
  * Luu 1 bai (post + media + shopee_entries) trong 1 transaction.
  * Idempotent: chay lai cung URL se cap nhat, khong nhan ban.

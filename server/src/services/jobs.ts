@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import pLimit from 'p-limit';
 import { runBatch, type BatchItemResult } from './batch';
-import { rescrapeComments } from './pipeline';
+import { refetchMedia, rescrapeComments } from './pipeline';
 import { closeBrowser, closeShopeeBrowser } from './browser';
 import { beautifyVideo, type BeautifyConfig } from './beautify';
 import { checkProxy } from './proxyCheck';
@@ -645,6 +645,68 @@ export function startRescrapeJob(postIds: string[]): JobState {
       job.error = err instanceof Error ? err.message : String(err);
     } finally {
       await closeBrowser().catch(() => {});
+      emit(job.id, { type: 'end', job });
+    }
+  })();
+  return job;
+}
+
+/**
+ * Crawl lai RIENG media cho danh sach postId (nut "Crawl lai media" o trang Bai viet).
+ * item.ok = da thay bang bo media tot hon; skipped = crawl xong nhung khong tot hon -> giu ban cu.
+ */
+export function startRefetchMediaJob(postIds: string[]): JobState {
+  const job = newJob(postIds.length);
+  void (async () => {
+    try {
+      // Goi savethreads/snapsave + tai file nang -> gioi han 2 bai song song nhu cac job cao khac
+      const limit = pLimit(2);
+      await Promise.all(
+        postIds.map((pid) =>
+          limit(async () => {
+            const brief = getPostBrief(pid);
+            const log = (message: string) => {
+              const l = { url: pid, message };
+              job.logs.push(l);
+              emit(job.id, { type: 'log', job, log: l });
+            };
+            let item: BatchItemResult;
+            if (!brief) {
+              item = { url: pid, ok: false, postId: pid, error: 'không tìm thấy bài trong DB' };
+            } else {
+              try {
+                const r = await withRetry(() => refetchMedia(pid, brief.url, log), {
+                  retries: 1,
+                  label: `refetch-media ${pid}`,
+                });
+                item = {
+                  url: brief.url,
+                  postId: pid,
+                  ok: r.replaced,
+                  skipped: !r.replaced,
+                  username: brief.username,
+                  mediaOk: r.after.video + r.after.image,
+                  mediaFail: r.mediaFail,
+                  mediaBefore: r.before,
+                  mediaAfter: r.after,
+                };
+              } catch (err) {
+                const msg = (err instanceof Error ? err.message : String(err)).split('\n')[0];
+                log(`LỖI: ${msg}`);
+                item = { url: brief.url, postId: pid, ok: false, username: brief.username, error: msg };
+              }
+            }
+            job.done++;
+            job.items.push(item);
+            emit(job.id, { type: 'progress', job, item });
+          }),
+        ),
+      );
+      job.status = 'done';
+    } catch (err) {
+      job.status = 'error';
+      job.error = err instanceof Error ? err.message : String(err);
+    } finally {
       emit(job.id, { type: 'end', job });
     }
   })();

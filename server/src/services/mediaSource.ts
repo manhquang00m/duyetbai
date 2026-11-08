@@ -386,3 +386,30 @@ export async function getPostMedia(
     return await PROVIDERS[fallback](url);
   }
 }
+
+/**
+ * Dung cho "Crawl lai media": hoi CA 2 nen tang roi lay ben tra NHIEU media hon (bang nhau ->
+ * nen tang mac dinh). Bai bi thieu media thuong do chinh nen tang mac dinh tra thieu, hoi lai dung
+ * no thi ra y nhu cu. Ca 2 loi -> nem loi cua nen tang mac dinh.
+ */
+export async function getPostMediaBest(
+  url: string,
+  log?: (message: string) => void,
+): Promise<PostMedia> {
+  const primary = getDefaultProvider();
+  const order: MediaSourceName[] = primary === 'savethreads' ? ['savethreads', 'snapsave'] : ['snapsave', 'savethreads'];
+  const results: PostMedia[] = [];
+  let firstErr: unknown;
+  for (const name of order) {
+    try {
+      const r = await PROVIDERS[name](url);
+      log?.(`${PROVIDER_LABEL[name]}: ${r.media.length} media`);
+      results.push(r);
+    } catch (err) {
+      firstErr ??= err;
+      log?.(`${PROVIDER_LABEL[name]} lỗi: ${(err instanceof Error ? err.message : String(err)).split('\n')[0]}`);
+    }
+  }
+  if (results.length === 0) throw firstErr;
+  return results.reduce((best, r) => (r.media.length > best.media.length ? r : best));
+}

@@ -149,11 +149,14 @@ export interface AccountImportResult {
 export interface BatchItemResult {
   url: string
   ok: boolean
+  postId?: string
   skipped?: boolean
   username?: string
   caption?: string
   mediaOk?: number
   mediaFail?: number
+  mediaBefore?: { video: number; image: number }
+  mediaAfter?: { video: number; image: number }
   entries?: number
   scrapeError?: string
   error?: string
@@ -317,6 +320,14 @@ export async function fetchPosts(
 
 export async function rescrapePosts(postIds: string[]) {
   const { data } = await api.post<{ jobId: string; total: number }>('/api/posts/rescrape', {
+    postIds,
+  })
+  return data
+}
+
+/** Crawl lai RIENG media (thieu anh/video khi cao) - chi thay khi lan nay tai duoc nhieu hon. */
+export async function refetchMediaPosts(postIds: string[]) {
+  const { data } = await api.post<{ jobId: string; total: number }>('/api/posts/refetch-media', {
     postIds,
   })
   return data

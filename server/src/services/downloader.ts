@@ -36,17 +36,26 @@ async function streamToString(stream: Readable): Promise<string> {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+// Cho video savethreads xu ly toi da bao lau (do thuc te ~5s/video, luc dong hang doi lau hon).
+const VIDEO_WAIT_MS = 120_000;
+const POLL_MS = 2000;
+
 /**
  * Tai 1 URL ve destPath dang stream.
  * Voi video, savethreads tra JSON job-status { status, fileUrl } thay vi bytes:
- *   - co fileUrl  -> tai tiep tu fileUrl
- *   - dang xu ly  -> cho roi thu lai chinh URL do
+ *   queued     -> fileUrl = "Waiting..."            (KHONG phai link)
+ *   processing -> fileUrl = "In Processing..."      (KHONG phai link)
+ *   completed  -> fileUrl = "https://..."           -> tai tiep tu fileUrl
+ * Truoc day thay fileUrl khac rong la coi nhu link -> axios nem "Invalid URL" ngay luot dau,
+ * nen moi video con trong hang doi deu bi danh dau tai loi.
  */
 async function downloadFile(url: string, destPath: string): Promise<void> {
   const agent = getProxyAgent();
   let current = url;
+  const deadline = Date.now() + VIDEO_WAIT_MS;
+  let lastStatus = '';
 
-  for (let attempt = 0; attempt < 6; attempt++) {
+  while (Date.now() < deadline) {
     const res = await axios.get(current, {
       responseType: 'stream',
       timeout: 60_000,
@@ -73,15 +82,21 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
       throw new Error(`Phan hoi khong phai file/JSON hop le: ${body.slice(0, 120)}`);
     }
 
-    if (job.fileUrl) {
+    if (job.fileUrl && /^https?:\/\//i.test(job.fileUrl)) {
       current = job.fileUrl; // vong sau se tai file that
       continue;
     }
-    // chua xong -> cho roi thu lai chinh URL nay
-    await sleep(1500);
+    lastStatus = job.status ?? '';
+    if (/^(error|failed|fail)$/i.test(lastStatus)) {
+      throw new Error(`savethreads xu ly video that bai (status="${lastStatus}")`);
+    }
+    // queued/processing -> cho roi hoi lai chinh URL nay
+    await sleep(POLL_MS);
   }
 
-  throw new Error('Khong tai duoc file (video co the con dang xu ly qua lau).');
+  throw new Error(
+    `Video chua xu ly xong sau ${VIDEO_WAIT_MS / 1000}s (status="${lastStatus || 'khong ro'}") - crawl lai media sau.`,
+  );
 }
 
 // Moi loai media vao 1 thu muc con rieng trong bai.
@@ -99,7 +114,11 @@ function fileNameFor(item: MediaItem, indexWithinType: number, totalOfType: numb
  * Tao folder post_XXX, ghi caption.txt, tai tung media.
  * Loi 1 file khong lam chet ca bai: ghi nhan loi + xoa file do, cac file khac van tai.
  */
-export async function downloadPost(post: PostMedia, baseDir: string): Promise<DownloadResult> {
+export async function downloadPost(
+  post: PostMedia,
+  baseDir: string,
+  onFile?: (f: DownloadedFile, done: number, total: number) => void, // bao tien do tung file
+): Promise<DownloadResult> {
   const dir = path.join(baseDir, `post_${post.postId}`);
   await mkdir(dir, { recursive: true });
 
@@ -133,6 +152,7 @@ export async function downloadPost(post: PostMedia, baseDir: string): Promise<Do
       const msg = err instanceof Error ? err.message : String(err);
       files.push({ type: item.type, file: relName, path: destPath, ok: false, error: msg });
     }
+    onFile?.(files[files.length - 1], files.length, post.media.length);
   }
 
   return { postId: post.postId, dir, captionPath, files };

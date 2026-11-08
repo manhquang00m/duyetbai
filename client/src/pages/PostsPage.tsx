@@ -9,6 +9,7 @@ import {
   ChevronRight,
   MessageCircle,
   Inbox,
+  ImageDown,
   RefreshCw,
   Copy,
   Trash2,
@@ -57,6 +58,7 @@ import { FloatingBar } from '@/components/FloatingBar'
 import { Pagination } from '@/components/Pagination'
 import { useFitToViewport } from '@/lib/useFitToViewport'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
+import { RefetchMediaDialog } from '@/components/RefetchMediaDialog'
 import { ShopeeLinkCheckDialog } from '@/components/ShopeeLinkCheckDialog'
 import { PipelineProgress } from '@/components/PipelineProgress'
 import { AssignTopicDialog } from '@/components/AssignTopicDialog'
@@ -481,6 +483,7 @@ export function PostsPage() {
   const setPage = (p: number) => setF({ page: p + 1 })
   const [detailId, setDetailId] = useState<string | null>(null)
   const [rescrapeIds, setRescrapeIds] = useState<string[] | null>(null)
+  const [refetchMediaIds, setRefetchMediaIds] = useState<string[] | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [exportWarn, setExportWarn] = useState<ExportPostsWarnings | null>(null)
   const [checkingExport, setCheckingExport] = useState(false)
@@ -1166,6 +1169,9 @@ export function PostsPage() {
           <Button size="sm" variant="outline" onClick={() => setRescrapeIds([...sel])}>
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setRefetchMediaIds([...sel])}>
+            <ImageDown className="h-4 w-4" /> Crawl lại media
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setCheckLinkIds([...sel])}>
             <ShieldCheck className="h-4 w-4" /> Kiểm tra link
           </Button>
@@ -1217,7 +1223,11 @@ export function PostsPage() {
                 </span>
               </div>
             )}
-            <PostDetail id={detailId} onRescrape={(ids) => setRescrapeIds(ids)} />
+            <PostDetail
+              id={detailId}
+              onRescrape={(ids) => setRescrapeIds(ids)}
+              onRefetchMedia={(ids) => setRefetchMediaIds(ids)}
+            />
           </>
         )}
       </Sheet>
@@ -1227,6 +1237,16 @@ export function PostsPage() {
         postIds={rescrapeIds ?? []}
         onClose={() => {
           setRescrapeIds(null)
+          invalidateAll()
+        }}
+        onDone={invalidateAll}
+      />
+
+      <RefetchMediaDialog
+        open={!!refetchMediaIds}
+        postIds={refetchMediaIds ?? []}
+        onClose={() => {
+          setRefetchMediaIds(null)
           invalidateAll()
         }}
         onDone={invalidateAll}
@@ -1311,7 +1331,15 @@ export function PostsPage() {
   )
 }
 
-function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]) => void }) {
+function PostDetail({
+  id,
+  onRescrape,
+  onRefetchMedia,
+}: {
+  id: string
+  onRescrape: (ids: string[]) => void
+  onRefetchMedia: (ids: string[]) => void
+}) {
   const { data, isLoading } = useQuery({ queryKey: ['post', id], queryFn: () => fetchPost(id) })
   const variants = useQuery({
     queryKey: ['caption-variants', id],
@@ -1366,6 +1394,9 @@ function PostDetail({ id, onRescrape }: { id: string; onRescrape: (ids: string[]
           </Button>
           <Button variant="outline" size="sm" onClick={() => onRescrape([id])}>
             <RefreshCw className="h-4 w-4" /> Lấy lại comment
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onRefetchMedia([id])}>
+            <ImageDown className="h-4 w-4" /> Crawl lại media
           </Button>
         </div>
       </div>

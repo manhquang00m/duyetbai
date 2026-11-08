@@ -18,6 +18,8 @@ export interface BatchItemResult {
   caption?: string;
   mediaOk?: number;
   mediaFail?: number;
+  mediaBefore?: { video: number; image: number }; // dung cho job "crawl lai media"
+  mediaAfter?: { video: number; image: number }; // dung cho job "crawl lai media"
   entries?: number;
   scrapeError?: string;
   error?: string;
