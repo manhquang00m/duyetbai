@@ -11,6 +11,7 @@ import { OverviewPage } from '@/pages/OverviewPage'
 import { PostsPage } from '@/pages/PostsPage'
 import { BatchPage } from '@/pages/BatchPage'
 import { DistributionPage } from './pages/DistributionPage'
+import { ManualPlanPage } from '@/pages/ManualPlanPage'
 import { AccountsPage } from '@/pages/AccountsPage'
 import { ProxyPage } from '@/pages/ProxyPage'
 import { ShopeePage } from '@/pages/ShopeePage'
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: 'batch', element: <BatchPage /> },
       { path: 'accounts', element: <AccountsPage /> },
       { path: 'distribution', element: <DistributionPage /> },
+      { path: 'distribution/plans/:id/edit', element: <ManualPlanPage /> },
       { path: 'proxy', element: <ProxyPage /> },
       { path: 'shopee', element: <ShopeePage /> },
       { path: 'rewrite', element: <RewritePage /> },

@@ -16,6 +16,13 @@ api.interceptors.response.use(
   },
 )
 
+/** Ma loi nghiep vu server gui kem (vd 'GAP_WARNING') + du lieu di kem, de UI xu ly rieng. */
+export function apiErrorData(err: unknown): { status?: number; code?: string; [k: string]: unknown } {
+  if (!axios.isAxiosError(err)) return {}
+  const data = (err.response?.data ?? {}) as Record<string, unknown>
+  return { ...data, status: err.response?.status, code: typeof data.code === 'string' ? data.code : undefined }
+}
+
 // ===== Types (khop backend) =====
 export interface PostListItem {
   post_id: string
@@ -1038,7 +1045,13 @@ export interface DistributionPlan {
   status: string
   created_at: string
   exported_at: string | null
+  kind?: 'auto' | 'manual' // 'manual' = ke hoach gan tay (per_day = 0, khong co seed)
+  updated_at?: string | null // lan sua tay cuoi -> so voi exported_at de nhac tai lai file
 }
+
+/** Ke hoach da sua tay SAU lan xuat file gan nhat -> file dang cam khong con dung. */
+export const planEditedAfterExport = (p: DistributionPlan) =>
+  !!p.exported_at && !!p.updated_at && p.updated_at > p.exported_at
 
 export interface PlanItem {
   id: number
@@ -1051,6 +1064,31 @@ export interface PlanItem {
   post_id: string | null
   topic: string | null
   caption_variant: number | null // ban caption da dung (1..VARIANT_COUNT), null = dung caption goc
+  // thong tin bai kem theo (server JOIN san) - cho man hinh gan tay
+  likes?: string | null
+  caption?: string | null
+  username?: string | null
+  variant_count?: number
+  thumb?: string | null
+}
+
+/**
+ * Trang thai 1 bai voi (nick, ngay) dang chon khi gan tay:
+ * ok = gan thoai mai; gap = da dung o ngay lien ke (gan duoc sau khi xac nhan);
+ * same_account = nick da co bai nay trong ngay; full = bai het ban caption trong ngay.
+ */
+export type CandidateState = 'ok' | 'gap' | 'same_account' | 'full'
+
+export interface ManualCandidate {
+  post_id: string
+  username: string | null
+  caption: string | null
+  likes: string | null
+  topic: string
+  variant_count: number
+  thumb: string | null
+  state: CandidateState
+  uses: { date: string; account: string }[]
 }
 
 export interface PlanOptions {
@@ -1124,6 +1162,61 @@ export async function fetchDistributionPlan(id: string) {
 
 export async function deleteDistributionPlan(id: string) {
   const { data } = await api.delete<{ ok: boolean }>(`/api/distribution/plans/${id}`)
+  return data
+}
+
+export async function createManualPlan(body: { name?: string; startDate: string; days: number }) {
+  const { data } = await api.post<{ planId: string }>('/api/distribution/plans/manual', body)
+  return data
+}
+
+export async function fetchPlanCandidates(
+  planId: string,
+  params: {
+    accountId: number
+    postDate: string
+    topics?: string[]
+    search?: string
+    hideUsed?: boolean
+    limit?: number
+    offset?: number
+  },
+) {
+  const { data } = await api.get<{ total: number; items: ManualCandidate[]; topics: string[] }>(
+    `/api/distribution/plans/${planId}/candidates`,
+    {
+      params: {
+        accountId: params.accountId,
+        postDate: params.postDate,
+        topics: params.topics?.length ? params.topics : undefined,
+        search: params.search || undefined,
+        hideUsed: params.hideUsed ? '1' : undefined,
+        limit: params.limit,
+        offset: params.offset,
+      },
+      paramsSerializer: { indexes: null }, // topics=a&topics=b (khong phai topics[]=a)
+    },
+  )
+  return data
+}
+
+export async function addPlanItem(
+  planId: string,
+  body: { accountId: number; postDate: string; postId: string; confirmGap?: boolean; variant?: number | null },
+) {
+  const { data } = await api.post<PlanItem>(`/api/distribution/plans/${planId}/items`, body)
+  return data
+}
+
+export async function removePlanItem(planId: string, itemId: number) {
+  const { data } = await api.delete<PlanItem>(`/api/distribution/plans/${planId}/items/${itemId}`)
+  return data
+}
+
+export async function setPlanItemVariant(planId: string, itemId: number, variant: number | null) {
+  const { data } = await api.patch<{ ok: boolean }>(`/api/distribution/plans/${planId}/items/${itemId}`, {
+    variant,
+  })
   return data
 }
 

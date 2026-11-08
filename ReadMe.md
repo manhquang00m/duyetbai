@@ -52,6 +52,14 @@ Tạo shortcut trên Desktop (chạy 1 lần):
 powershell -ExecutionPolicy Bypass -File launcher\create_shortcut.ps1
 ```
 
+**Port forward ra internet** (giống Ports → Forward của VS Code, dùng Microsoft Dev Tunnels):
+
+1. Cài 1 lần: `winget install Microsoft.devtunnel`
+2. Launcher → Start → bấm `Forward :5173` (lần đầu sẽ hỏi đăng nhập GitHub/Microsoft).
+3. Link `https://<id>-5173.<region>.devtunnels.ms` hiện trên launcher, bấm `Copy link`. Link giữ nguyên giữa các lần (id lưu ở `launcher/.tunnel.json`, không commit).
+
+Tunnel luôn **private**: ai mở link cũng phải đăng nhập đúng tài khoản devtunnel của bạn. App không có đăng nhập riêng nên không chuyển tunnel sang public. Stop server hoặc đóng launcher là tunnel tắt theo. Trên máy/mạng SSI cần security@ssi.com.vn duyệt trước khi dùng devtunnel.
+
 Chạy riêng từng phần:
 
 ```bash

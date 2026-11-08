@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   server: {
+    // Cho phep mo qua devtunnel (nut Forward trong launcher). Chi domain devtunnels, khong mo tat ca.
+    allowedHosts: ['.devtunnels.ms'],
     // Proxy API + media sang Express (:3000) de tranh CORS, dung path tuong doi
     proxy: {
       '/api': 'http://localhost:3000',

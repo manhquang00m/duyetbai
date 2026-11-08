@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   Send,
   Tag,
-  Heart,
   MousePointerClick,
   ShieldCheck,
   Workflow,
@@ -68,6 +67,7 @@ import type { FilterChip } from '@/components/filters/FilterChips'
 import { FilterPill, FilterPillMulti } from '@/components/filters/FilterPill'
 import { SavedViews } from '@/components/filters/SavedViews'
 import { PostThumb } from '@/components/PostThumb'
+import { LikesChip } from '@/components/LikesChip'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE_OPTIONS = ['20', '50', '100', '200'] as const
@@ -314,20 +314,6 @@ const formatScraped = (iso: string | null) => {
   // Tu ghep: toLocaleDateString('vi-VN') bo nam thi ra "20-10"
   const dm = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
   return d.getFullYear() === new Date().getFullYear() ? dm : `${dm}/${d.getFullYear()}`
-}
-
-function LikesChip({ likes }: { likes: string | null }) {
-  const v = likes?.trim()
-  if (!v) return null
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground"
-      title={`${v} tim`}
-    >
-      <Heart className="h-3 w-3" />
-      {v}
-    </span>
-  )
 }
 
 function PostStats({ post: p, className }: { post: PostListItem; className?: string }) {

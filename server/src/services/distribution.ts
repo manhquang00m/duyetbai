@@ -56,8 +56,20 @@ export interface PlanPreview {
   warnings: string[];
 }
 
-/** Loi nghiep vu (khong phai bug) -> API tra 400 kem dung thong diep nay. */
-export class DistributionError extends Error {}
+/**
+ * Loi nghiep vu (khong phai bug) -> API tra `status` (mac dinh 400) kem dung thong diep nay.
+ * `code` + `details` cho client xu ly rieng (vd GAP_WARNING -> hoi xac nhan roi gui lai).
+ */
+export class DistributionError extends Error {
+  constructor(
+    message: string,
+    readonly status: number = 400,
+    readonly code?: string,
+    readonly details?: Record<string, unknown>,
+  ) {
+    super(message);
+  }
+}
 
 interface CoreResult {
   planId: string;

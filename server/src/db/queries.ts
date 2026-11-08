@@ -36,7 +36,7 @@ export type PostSort = 'newest' | 'likes' | 'clicks' | 'posted';
 
 // Allowlist ORDER BY - khong bao gio noi chuoi gia tri tu client vao SQL.
 // likes luu dang chuoi ('261', '3.2K', '1,5K') -> quy ve so; rong/NULL xuong cuoi (-1).
-const LIKES_NUM = `(CASE
+export const LIKES_NUM = `(CASE
   WHEN p.likes IS NULL OR TRIM(p.likes) = '' THEN -1
   WHEN UPPER(p.likes) LIKE '%K' THEN CAST(REPLACE(REPLACE(REPLACE(p.likes, 'K', ''), 'k', ''), ',', '.') AS REAL) * 1000
   WHEN UPPER(p.likes) LIKE '%M' THEN CAST(REPLACE(REPLACE(REPLACE(p.likes, 'M', ''), 'm', ''), ',', '.') AS REAL) * 1000000

@@ -25,3 +25,9 @@ dist/
 
 # anh chup / report cua skill design-taste-frontend - KHONG commit
 .taste-skill/
+
+# id devtunnel cua launcher (rieng tung may) - KHONG commit
+launcher/.tunnel.json
+
+# Python bytecode
+__pycache__/

@@ -14,10 +14,19 @@ import {
   listCleanPostsWithTopic,
   listPlans,
   getPlan,
-  getPlanItems,
+  getPlanItemsDetailed,
   deletePlan,
 } from '../db/distribution';
 import { previewPlan, generatePlan, DistributionError } from '../services/distribution';
+import {
+  createManual,
+  listCandidates,
+  addItem,
+  removeItem,
+  setItemVariant,
+} from '../services/manualDistribution';
+import { VARIANT_COUNT } from '../services/postCaptionVariants';
+import { isValidDate } from '../utils/dates';
 import { exportPlanXlsx } from '../services/distributionExporter';
 import { fileStamp } from '../utils/fileStamp';
 import { EXPORT_DIR } from '../config';
@@ -25,6 +34,7 @@ import { EXPORT_DIR } from '../config';
 const router = Router();
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const realDate = dateStr.refine(isValidDate, 'Ngày không hợp lệ');
 const TopicSchema = z.string().refine(isTopic, 'Chủ đề không hợp lệ');
 
 const PlanOptionsSchema = z.object({
@@ -41,18 +51,56 @@ const PlanOptionsSchema = z.object({
 
 const TopicsSchema = z.array(TopicSchema);
 
-/** Loi nghiep vu -> 400 kem thong diep tieng Viet; loi khac de middleware xu ly. */
+/** Loi nghiep vu -> status (400/404/409) kem thong diep tieng Viet; loi khac de middleware xu ly. */
 function handle(res: import('express').Response, fn: () => unknown): void {
   try {
     res.json(fn());
   } catch (err) {
     if (err instanceof DistributionError) {
-      res.status(400).json({ error: err.message });
+      res.status(err.status).json({ error: err.message, code: err.code, ...err.details });
       return;
     }
     throw err;
   }
 }
+
+// ---- Ke hoach thu cong ----
+const ManualPlanSchema = z.object({
+  name: z.string().trim().max(120).optional(),
+  startDate: realDate,
+  days: z.number().int().min(1).max(60),
+});
+
+const CandidatesQuery = z.object({
+  accountId: z.coerce.number().int().positive(),
+  postDate: realDate,
+  topics: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]))
+    .pipe(z.array(TopicSchema).max(50).optional()),
+  search: z.string().trim().max(100).optional(),
+  hideUsed: z
+    .enum(['1', '0', 'true', 'false'])
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});
+
+const AddItemSchema = z.object({
+  accountId: z.number().int().positive(),
+  postDate: realDate,
+  postId: z.string().trim().min(1).max(200),
+  confirmGap: z.boolean().optional(),
+  variant: z.number().int().min(1).max(VARIANT_COUNT).nullable().optional(),
+});
+
+const VariantSchema = z.object({
+  variant: z.number().int().min(1).max(VARIANT_COUNT).nullable(),
+});
+
+const itemIdParam = z.coerce.number().int().positive();
 
 // GET /api/distribution/accounts -> account dang bai + chu de dang gan
 router.get('/accounts', (_req, res) => {
@@ -132,7 +180,61 @@ router.get('/plans/:id', (req, res) => {
     res.status(404).json({ error: 'khong tim thay ke hoach' });
     return;
   }
-  res.json({ plan, items: getPlanItems(req.params.id) });
+  res.json({ plan, items: getPlanItemsDetailed(req.params.id) });
+});
+
+// POST /api/distribution/plans/manual { name?, startDate, days } -> ke hoach thu cong rong
+router.post('/plans/manual', (req, res) => {
+  const parsed = ManualPlanSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  handle(res, () => createManual(parsed.data));
+});
+
+// GET /api/distribution/plans/:id/candidates?accountId&postDate&topics&search&hideUsed&limit&offset
+// -> bai trong kho thuoc chu de cua nick, nhieu like nhat truoc, kem trang thai luat gian ngay
+router.get('/plans/:id/candidates', (req, res) => {
+  const parsed = CandidatesQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  handle(res, () => listCandidates({ planId: req.params.id, ...parsed.data }));
+});
+
+// POST /api/distribution/plans/:id/items { accountId, postDate, postId, confirmGap?, variant? }
+router.post('/plans/:id/items', (req, res) => {
+  const parsed = AddItemSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  handle(res, () => addItem({ planId: req.params.id, ...parsed.data }));
+});
+
+router.delete('/plans/:id/items/:itemId', (req, res) => {
+  const itemId = itemIdParam.safeParse(req.params.itemId);
+  if (!itemId.success) {
+    res.status(400).json({ error: 'itemId khong hop le' });
+    return;
+  }
+  handle(res, () => removeItem(req.params.id, itemId.data));
+});
+
+// PATCH /api/distribution/plans/:id/items/:itemId { variant } -> doi ban caption
+router.patch('/plans/:id/items/:itemId', (req, res) => {
+  const itemId = itemIdParam.safeParse(req.params.itemId);
+  const parsed = VariantSchema.safeParse(req.body);
+  if (!itemId.success || !parsed.success) {
+    res.status(400).json({ error: 'itemId hoac variant khong hop le' });
+    return;
+  }
+  handle(res, () => {
+    setItemVariant(req.params.id, itemId.data, parsed.data.variant);
+    return { ok: true };
+  });
 });
 
 router.delete('/plans/:id', (req, res) => {

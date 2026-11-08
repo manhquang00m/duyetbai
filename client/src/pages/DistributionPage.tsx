@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   CalendarDays,
+  Hand,
+  PenLine,
   Loader2,
   Download,
   Trash2,
@@ -21,6 +24,8 @@ import {
   fetchDistributionPlan,
   deleteDistributionPlan,
   distributionExportUrl,
+  createManualPlan,
+  planEditedAfterExport,
   type PlanPreview,
   type PostingAccount,
 } from '@/lib/api'
@@ -41,7 +46,7 @@ import { DatePicker, DateRangePicker } from '@/components/ui/date-picker'
 import { AccountAvatar } from '@/components/AccountAvatar'
 import { POSTING_STATUSES } from '@/lib/accountAttention'
 import { confirmDialog } from '@/lib/confirm'
-import { addDaysIso, datePresets, todayIso } from '@/lib/dates'
+import { addDaysIso, datePresets, fmtVN, todayIso } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
 // Thiet lap ke hoach lan truoc (so ngay, so bai/ngay, khoang thu thap) - khong nhay cam.
@@ -162,6 +167,7 @@ export function DistributionPage() {
   const [busy, setBusy] = useState(false)
   const [confirmShortage, setConfirmShortage] = useState(false)
   const [openPlan, setOpenPlan] = useState<string | null>(null)
+  const [manualOpen, setManualOpen] = useState(false)
   // Tai khoan hop le (tra ve tu Xem truoc) nhung bi LOAI KHOI lan tao nay - vd chua muon len lich
   // ngay cho vai tai khoan cu the du chung van du dieu kien.
   const [excluded, setExcluded] = useState<Set<number>>(new Set())
@@ -447,7 +453,17 @@ export function DistributionPage() {
 
       {/* 3. Lập kế hoạch */}
       <Card className="space-y-4 p-4 sm:p-5">
-        <h2 className="text-base font-medium">Lập kế hoạch</h2>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-medium">Lập kế hoạch</h2>
+            <p className="text-xs text-muted-foreground">
+              Tự động chia bài theo chủ đề — hoặc tự chọn bài cho từng nick bằng “Gán thủ công”.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setManualOpen(true)} className="shrink-0">
+            <Hand className="h-4 w-4" /> Gán thủ công
+          </Button>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <span className="mb-1 block text-xs font-medium text-muted-foreground">Ngày bắt đầu</span>
@@ -668,22 +684,52 @@ export function DistributionPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                         <span className="min-w-0 truncate">{p.name || `Kế hoạch ${p.start_date}`}</span>
-                        {p.status === 'exported' && (
-                          <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-positive px-2 py-0.5 text-[11px] font-medium text-pill-positive-ink">
-                            Đã xuất
+                        {p.kind === 'manual' && (
+                          <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-neutral px-2 py-0.5 text-[11px] font-medium text-pill-neutral-ink">
+                            Thủ công
                           </span>
                         )}
+                        {p.status === 'exported' &&
+                          (planEditedAfterExport(p) ? (
+                            <span
+                              className="shrink-0 whitespace-nowrap rounded-full bg-pill-warning px-2 py-0.5 text-[11px] font-medium text-pill-warning-ink"
+                              title="Kế hoạch đã sửa sau lần xuất file gần nhất — tải lại file"
+                            >
+                              Đã sửa sau khi xuất
+                            </span>
+                          ) : (
+                            <span className="shrink-0 whitespace-nowrap rounded-full bg-pill-positive px-2 py-0.5 text-[11px] font-medium text-pill-positive-ink">
+                              Đã xuất
+                            </span>
+                          ))}
                       </div>
                       <div className="text-xs tabular-nums text-muted-foreground">
-                        {p.start_date} · {p.days} ngày × {p.per_day} bài · {p.account_count} tài khoản ·{' '}
-                        <strong className={cn(p.shortage > 0 && 'text-destructive')}>
-                          {p.assigned}/{p.planned}
-                        </strong>{' '}
-                        slot
+                        {p.kind === 'manual' ? (
+                          <>
+                            {p.start_date} · {p.days} ngày · {p.account_count} nick ·{' '}
+                            <strong className="text-foreground">{p.assigned}</strong> bài gán tay
+                          </>
+                        ) : (
+                          <>
+                            {p.start_date} · {p.days} ngày × {p.per_day} bài · {p.account_count} tài khoản ·{' '}
+                            <strong className={cn(p.shortage > 0 && 'text-destructive')}>
+                              {p.assigned}/{p.planned}
+                            </strong>{' '}
+                            slot
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 pl-11 sm:pl-0">
+                    {p.kind === 'manual' && (
+                      <Link
+                        to={`/distribution/plans/${p.id}/edit`}
+                        className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'flex-1 sm:flex-none')}
+                      >
+                        <PenLine className="h-4 w-4" /> Sửa
+                      </Link>
+                    )}
                     <a
                       href={distributionExportUrl(p.id)}
                       className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 sm:flex-none')}
@@ -745,7 +791,107 @@ export function DistributionPage() {
       </Dialog>
 
       <RulesDialog open={rulesOpen} onClose={() => setRulesOpen(false)} />
+      <NewManualPlanDialog open={manualOpen} onClose={() => setManualOpen(false)} defaultDays={days} />
     </div>
+  )
+}
+
+/** Tao ke hoach thu cong rong roi chuyen thang sang man hinh gan bai. */
+function NewManualPlanDialog({
+  open,
+  onClose,
+  defaultDays,
+}: {
+  open: boolean
+  onClose: () => void
+  defaultDays: number
+}) {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [name, setName] = useState('')
+  const [startDate, setStartDate] = useState(todayIso())
+  const [days, setDays] = useState(defaultDays)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setName('')
+    setStartDate(todayIso())
+    setDays(defaultDays)
+  }, [open, defaultDays])
+
+  const create = async () => {
+    setBusy(true)
+    try {
+      const { planId } = await createManualPlan({ name: name.trim() || undefined, startDate, days })
+      qc.invalidateQueries({ queryKey: ['dist-plans'] })
+      onClose()
+      navigate(`/distribution/plans/${planId}/edit`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Không tạo được kế hoạch')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} busy={busy} className="max-w-md">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          create()
+        }}
+      >
+        <h2 className="pr-8 text-lg font-semibold">Kế hoạch gán thủ công</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tự chọn bài cho từng nick: chọn nick → danh sách bài theo chủ đề của nick, nhiều tim nhất lên đầu → bấm
+          Gán.
+        </p>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label htmlFor="manual-name" className="mb-1 block text-xs font-medium text-muted-foreground">
+              Tên kế hoạch
+            </label>
+            <Input
+              id="manual-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="tuỳ chọn, vd “Tuần 46 — chọn tay”"
+              maxLength={120}
+              data-autofocus
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">Ngày bắt đầu</span>
+              <DatePicker
+                value={startDate}
+                onChange={setStartDate}
+                presets={[datePresets.today(), { label: 'Ngày mai', range: () => [tomorrow(), tomorrow()] }]}
+              />
+            </div>
+            <div>
+              <label htmlFor="manual-days" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Số ngày
+              </label>
+              <NumberField id="manual-days" value={days} onChange={setDays} min={1} max={60} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {fmtVN(startDate)} → {fmtVN(addDaysIso(startDate, days - 1))} · mọi thay đổi tự lưu.
+          </p>
+        </div>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Huỷ
+          </Button>
+          <Button type="submit" disabled={busy || !startDate}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            Tạo và bắt đầu gán
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   )
 }
 

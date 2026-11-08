@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { db } from './index';
-import { CLEAN_POST_COND, LINKS_OK_COND, HAS_VIDEO, HAS_IMAGE } from './queries';
+import { CLEAN_POST_COND, LINKS_OK_COND, HAS_VIDEO, HAS_IMAGE, LIKES_NUM } from './queries';
 
 export interface PlanRow {
   id: string;
@@ -16,6 +17,8 @@ export interface PlanRow {
   status: string;
   created_at: string;
   exported_at: string | null;
+  kind?: 'auto' | 'manual'; // cot them bang migration, plan cu = 'auto'
+  updated_at?: string | null; // lan sua tay cuoi (ke hoach thu cong)
 }
 
 export interface PlanItemRow {
@@ -280,4 +283,241 @@ export function markPlanExported(id: string): void {
     new Date().toISOString(),
     id,
   );
+}
+
+// ======================================================================
+//  Ke hoach THU CONG: nguoi dung tu chon bai cho tung nick (xem services/manualDistribution.ts)
+// ======================================================================
+
+/** Dieu kien "bai trong kho phan phoi" - GIONG HET listCleanPostsWithTopic de 2 luong khong lech nhau. */
+const POOL_COND = `${CLEAN_POST_COND} AND (${HAS_VIDEO} OR ${HAS_IMAGE}) AND p.topic IS NOT NULL`;
+
+// Anh dai dien cua bai: uu tien anh, khong co thi file media dau tien (giong listPosts)
+const THUMB_FILE = (col: string) => `COALESCE(
+  (SELECT file FROM media m WHERE m.post_id = ${col} AND m.type = 'image' AND m.ok = 1 ORDER BY id LIMIT 1),
+  (SELECT file FROM media m WHERE m.post_id = ${col} AND m.ok = 1 ORDER BY id LIMIT 1)
+)`;
+const thumbPath = (postId: string | null, file: string | null) =>
+  postId && file ? `post_${postId}/${file}` : null;
+
+export function createManualPlan(p: { name: string | null; startDate: string; days: number }): string {
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO distribution_plans
+       (id, name, start_date, days, per_day, topics, account_count, planned, assigned, shortage,
+        seed, status, created_at, exported_at, kind, updated_at)
+     VALUES (?, ?, ?, ?, 0, NULL, 0, 0, 0, 0, 'manual', 'draft', ?, NULL, 'manual', ?)`,
+  ).run(id, p.name, p.startDate, p.days, now, now);
+  return id;
+}
+
+export interface PoolPostRow {
+  post_id: string;
+  username: string | null;
+  caption: string | null;
+  likes: string | null;
+  topic: string;
+  variant_count: number;
+  thumb: string | null; // duong dan tuong doi duoi /media, giong listPosts
+}
+
+// LIKE an toan: escape ky tu dai dien de chuoi tim "50%" khong thanh "khop moi thu"
+const likeArg = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/**
+ * Bai trong kho thuoc cac chu de cho truoc, NHIEU LIKE NHAT TRUOC. `hideUsedFrom/To` (neu co):
+ * an bai da dung (bat ky nick/plan nao) trong khoang ngay do - toggle "An bai da dung quanh ngay nay".
+ */
+export function listPoolPostsByLikes(f: {
+  topics: string[];
+  search?: string;
+  hideUsedFrom?: string;
+  hideUsedTo?: string;
+  limit: number;
+  offset: number;
+}): { total: number; items: PoolPostRow[] } {
+  if (f.topics.length === 0) return { total: 0, items: [] };
+  const conds = [POOL_COND, `p.topic IN (${f.topics.map(() => '?').join(',')})`];
+  const args: (string | number)[] = [...f.topics];
+  const search = (f.search ?? '').trim();
+  if (search) {
+    conds.push(
+      "(p.caption LIKE ? ESCAPE '\\' OR p.post_id LIKE ? ESCAPE '\\' OR p.username LIKE ? ESCAPE '\\')",
+    );
+    args.push(likeArg(search), likeArg(search), likeArg(search));
+  }
+  if (f.hideUsedFrom && f.hideUsedTo) {
+    conds.push(
+      `NOT EXISTS (SELECT 1 FROM distribution_items d
+                    WHERE d.post_id = p.post_id AND d.post_date BETWEEN ? AND ?)`,
+    );
+    args.push(f.hideUsedFrom, f.hideUsedTo);
+  }
+  const where = conds.join(' AND ');
+  const total = (
+    db.prepare(`SELECT COUNT(*) AS n FROM posts p WHERE ${where}`).get(...args) as { n: number }
+  ).n;
+  const rows = db
+    .prepare(
+      `SELECT p.post_id, p.username, p.caption, p.likes, p.topic,
+              (SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = p.post_id) AS variant_count,
+              ${THUMB_FILE('p.post_id')} AS thumb_file
+         FROM posts p
+        WHERE ${where}
+        ORDER BY ${LIKES_NUM} DESC, p.scraped_at DESC, p.post_id
+        LIMIT ? OFFSET ?`,
+    )
+    .all(...args, f.limit, f.offset) as unknown as (Omit<PoolPostRow, 'thumb'> & {
+    thumb_file: string | null;
+  })[];
+  return {
+    total,
+    items: rows.map(({ thumb_file, ...r }) => ({ ...r, thumb: thumbPath(r.post_id, thumb_file) })),
+  };
+}
+
+/** 1 bai trong kho (null neu khong con du dieu kien) - kiem tra truoc khi gan tay. */
+export function getPoolPost(postId: string): { post_id: string; topic: string } | null {
+  return (
+    (db
+      .prepare(`SELECT p.post_id, p.topic FROM posts p WHERE p.post_id = ? AND ${POOL_COND}`)
+      .get(postId) as { post_id: string; topic: string } | undefined) ?? null
+  );
+}
+
+export interface UsageRow {
+  item_id: number;
+  plan_id: string;
+  post_id: string;
+  post_date: string;
+  caption_variant: number | null;
+  account_name: string;
+}
+
+/** Moi lan dung cua cac bai trong khoang ngay [from, to] (moi plan) - phuc vu luat gian ngay. */
+export function loadUsageForPosts(postIds: string[], from: string, to: string): UsageRow[] {
+  if (postIds.length === 0) return [];
+  return db
+    .prepare(
+      `SELECT id AS item_id, plan_id, post_id, post_date, caption_variant, account_name
+         FROM distribution_items
+        WHERE post_id IN (${postIds.map(() => '?').join(',')})
+          AND post_date BETWEEN ? AND ?
+        ORDER BY post_date, id`,
+    )
+    .all(...postIds, from, to) as unknown as UsageRow[];
+}
+
+/** Cac bai (trong danh sach) da co du ban caption viet lai. */
+export function postsWithVariantsAmong(postIds: string[]): Set<string> {
+  if (postIds.length === 0) return new Set();
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT post_id FROM post_caption_variants
+        WHERE post_id IN (${postIds.map(() => '?').join(',')})`,
+    )
+    .all(...postIds) as { post_id: string }[];
+  return new Set(rows.map((r) => r.post_id));
+}
+
+/** So lan dung tung ban caption cua 1 bai (key = variant, null = caption goc). */
+export function variantUsageOfPost(postId: string): Map<number | null, number> {
+  const rows = db
+    .prepare(
+      `SELECT caption_variant AS v, COUNT(*) AS n FROM distribution_items
+        WHERE post_id = ? GROUP BY caption_variant`,
+    )
+    .all(postId) as unknown as { v: number | null; n: number }[];
+  return new Map(rows.map((r) => [r.v, r.n]));
+}
+
+export function getPlanItem(planId: string, itemId: number): PlanItemRow | null {
+  return (
+    (db
+      .prepare(
+        `SELECT id, plan_id, day_index, slot_index, post_date, account_id, account_name, post_id,
+                topic, caption_variant
+           FROM distribution_items WHERE id = ? AND plan_id = ?`,
+      )
+      .get(itemId, planId) as PlanItemRow | undefined) ?? null
+  );
+}
+
+export function nextSlotIndex(planId: string, accountName: string, dayIndex: number): number {
+  const r = db
+    .prepare(
+      `SELECT COALESCE(MAX(slot_index) + 1, 0) AS n FROM distribution_items
+        WHERE plan_id = ? AND account_name = ? AND day_index = ?`,
+    )
+    .get(planId, accountName, dayIndex) as { n: number };
+  return r.n;
+}
+
+export function insertItem(it: Omit<PlanItemRow, 'id'>): number {
+  const r = insItem.run({ ...it, created_at: new Date().toISOString() });
+  return Number(r.lastInsertRowid);
+}
+
+export function deleteItem(planId: string, itemId: number): void {
+  db.prepare('DELETE FROM distribution_items WHERE id = ? AND plan_id = ?').run(itemId, planId);
+}
+
+export function updateItemVariant(planId: string, itemId: number, variant: number | null): void {
+  db.prepare('UPDATE distribution_items SET caption_variant = ? WHERE id = ? AND plan_id = ?').run(
+    variant,
+    itemId,
+    planId,
+  );
+}
+
+/** Tinh lai so lieu tong cua plan tu items (plan thu cong thay doi lien tuc) + moc updated_at. */
+export function recomputePlanStats(planId: string): void {
+  db.prepare(
+    `UPDATE distribution_plans SET
+       planned = (SELECT COUNT(*) FROM distribution_items WHERE plan_id = @id),
+       assigned = (SELECT COUNT(*) FROM distribution_items WHERE plan_id = @id AND post_id IS NOT NULL),
+       shortage = (SELECT COUNT(*) FROM distribution_items WHERE plan_id = @id AND post_id IS NULL),
+       account_count = (SELECT COUNT(DISTINCT account_name) FROM distribution_items WHERE plan_id = @id),
+       updated_at = @now
+     WHERE id = @id`,
+  ).run({ id: planId, now: new Date().toISOString() });
+}
+
+export interface PlanItemDetail extends PlanItemRow {
+  likes: string | null;
+  caption: string | null;
+  username: string | null;
+  variant_count: number;
+  thumb: string | null;
+}
+
+/** Items kem thong tin bai (like, caption, anh) cho man hinh gan tay / chi tiet ke hoach. */
+export function getPlanItemsDetailed(planId: string): PlanItemDetail[] {
+  const rows = db
+    .prepare(
+      `SELECT d.id, d.plan_id, d.day_index, d.slot_index, d.post_date, d.account_id, d.account_name,
+              d.post_id, d.topic, d.caption_variant, p.likes, p.caption, p.username,
+              (SELECT COUNT(*) FROM post_caption_variants v WHERE v.post_id = d.post_id) AS variant_count,
+              ${THUMB_FILE('d.post_id')} AS thumb_file
+         FROM distribution_items d
+         LEFT JOIN posts p ON p.post_id = d.post_id
+        WHERE d.plan_id = ?
+        ORDER BY d.day_index, d.slot_index, d.account_name`,
+    )
+    .all(planId) as unknown as (Omit<PlanItemDetail, 'thumb'> & { thumb_file: string | null })[];
+  return rows.map(({ thumb_file, ...r }) => ({ ...r, thumb: thumbPath(r.post_id, thumb_file) }));
+}
+
+/** Chay fn trong transaction GHI (BEGIN IMMEDIATE): kiem tra + ghi khong bi chen giua chung. */
+export function inWriteTx<T>(fn: () => T): T {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const r = fn();
+    db.exec('COMMIT');
+    return r;
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 }

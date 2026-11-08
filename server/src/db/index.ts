@@ -439,6 +439,19 @@ try {
   // cot da ton tai -> bo qua
 }
 
+// Migration: ke hoach THU CONG (nguoi dung tu chon bai cho tung nick, khong qua thuat toan auto)
+// + moc sua cuoi de UI nhac "da sua sau khi xuat file". Plan cu mac dinh la 'auto'.
+for (const stmt of [
+  "ALTER TABLE distribution_plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'auto'",
+  'ALTER TABLE distribution_plans ADD COLUMN updated_at TEXT',
+]) {
+  try {
+    db.exec(stmt);
+  } catch {
+    // cot da ton tai -> bo qua
+  }
+}
+
 // Migration: doi ten gia tri enum 'Thanh cong' -> 'Khang thanh cong' (xem db/accountEnums.ts).
 // Idempotent tu nhien: sau lan chay dau, khong con dong nao khop dieu kien WHERE nua.
 db.exec("UPDATE accounts SET appeal_status = 'Kháng thành công' WHERE appeal_status = 'Thành công'");
