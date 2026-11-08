@@ -90,18 +90,19 @@ export function listCleanPostsWithTopic(filter: CleanPoolFilter = {}): CleanPost
 }
 
 /**
- * Bai can chuan bi 3 ban caption: nhu kho phan phoi nhung CHUA can new_link (LINKS_OK_COND) -
- * viet lai truoc, cap nhat link moi sau thi bai vao kho la co san caption.
+ * Bai can chuan bi 3 ban caption: nhu kho phan phoi nhung CHUA can new_link (LINKS_OK_COND) va
+ * CHUA can gan chu de - viet lai truoc, cap nhat link moi / gan chu de sau thi bai vao kho la co
+ * san caption.
  */
-export function listRewritablePosts(): CleanPost[] {
+export function listRewritablePosts(): { post_id: string; topic: string | null }[] {
   return db
     .prepare(
       `SELECT p.post_id AS post_id, p.topic AS topic
          FROM posts p
-        WHERE ${LINKS_OK_COND} AND (${HAS_VIDEO} OR ${HAS_IMAGE}) AND p.topic IS NOT NULL
+        WHERE ${LINKS_OK_COND} AND (${HAS_VIDEO} OR ${HAS_IMAGE})
         ORDER BY p.post_id`,
     )
-    .all() as unknown as CleanPost[];
+    .all() as unknown as { post_id: string; topic: string | null }[];
 }
 
 /** Dem bai sach theo tung chu de - cho the "Kho bai" tren UI. */

@@ -35,7 +35,7 @@ export function saveVariantRewritePrompt(prompt: string): void {
 export interface VariantStatusRow {
   post_id: string;
   caption: string;
-  topic: string;
+  topic: string | null;
   variant_count: number;
 }
 
