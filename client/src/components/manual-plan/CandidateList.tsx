@@ -6,6 +6,8 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PostThumb } from '@/components/PostThumb'
 import { SearchInput } from '@/components/filters/SearchInput'
+import { FilterPill } from '@/components/filters/FilterPill'
+import { MEDIA_OPTIONS, type MediaFilterValue } from '@/components/filters/mediaOptions'
 import { EmptyState } from '@/components/EmptyState'
 import { cn } from '@/lib/utils'
 import { shortDay } from './shared'
@@ -30,6 +32,8 @@ export function CandidateList({
   onTopicsChange,
   search,
   onSearchChange,
+  media,
+  onMediaChange,
   hideUsed,
   onHideUsedChange,
   items,
@@ -55,6 +59,8 @@ export function CandidateList({
   onTopicsChange: (t: string[]) => void
   search: string
   onSearchChange: (v: string) => void
+  media: MediaFilterValue
+  onMediaChange: (v: MediaFilterValue) => void
   hideUsed: boolean
   onHideUsedChange: (v: boolean) => void
   items: ManualCandidate[]
@@ -80,6 +86,8 @@ export function CandidateList({
     const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
     el?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
+
+  const filtered = !!search || hideUsed || media !== 'all'
 
   const toggleTopic = (t: string) =>
     onTopicsChange(topics.includes(t) ? topics.filter((x) => x !== t) : [...topics, t])
@@ -128,6 +136,12 @@ export function CandidateList({
             className="sm:max-w-sm"
             aria-label="Tìm bài"
           />
+          <FilterPill
+            label="Media"
+            value={media}
+            options={MEDIA_OPTIONS}
+            onChange={(m) => onMediaChange(m as MediaFilterValue)}
+          />
           <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground sm:ml-auto">
             <Switch checked={hideUsed} onCheckedChange={onHideUsedChange} />
             Ẩn bài đã dùng quanh ngày này
@@ -152,10 +166,10 @@ export function CandidateList({
         ) : items.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={search || hideUsed ? 'Không có bài nào khớp bộ lọc' : 'Kho chưa có bài cho chủ đề này'}
+            title={filtered ? 'Không có bài nào khớp bộ lọc' : 'Kho chưa có bài cho chủ đề này'}
             description={
-              search || hideUsed
-                ? 'Thử xoá ô tìm hoặc tắt "Ẩn bài đã dùng".'
+              filtered
+                ? 'Thử xoá ô tìm, bỏ lọc Media hoặc tắt "Ẩn bài đã dùng".'
                 : 'Bài cần có link Shopee còn hàng, link mới và ảnh/video tải được mới vào kho.'
             }
           />

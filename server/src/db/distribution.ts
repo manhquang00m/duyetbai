@@ -1,6 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { db } from './index';
-import { CLEAN_POST_COND, LINKS_OK_COND, HAS_VIDEO, HAS_IMAGE, LIKES_NUM } from './queries';
+import {
+  CLEAN_POST_COND,
+  LINKS_OK_COND,
+  HAS_VIDEO,
+  HAS_IMAGE,
+  LIKES_NUM,
+  mediaFilterCond,
+  type MediaFilter,
+} from './queries';
 
 export interface PlanRow {
   id: string;
@@ -333,6 +341,7 @@ const likeArg = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 export function listPoolPostsByLikes(f: {
   topics: string[];
   search?: string;
+  media?: MediaFilter;
   hideUsedFrom?: string;
   hideUsedTo?: string;
   limit: number;
@@ -348,6 +357,7 @@ export function listPoolPostsByLikes(f: {
     );
     args.push(likeArg(search), likeArg(search), likeArg(search));
   }
+  if (f.media) conds.push(mediaFilterCond(f.media));
   if (f.hideUsedFrom && f.hideUsedTo) {
     conds.push(
       `NOT EXISTS (SELECT 1 FROM distribution_items d

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Router } from 'express';
 import { z } from 'zod';
 import { isTopic, listTopicNames } from '../db/topics';
+import { MEDIA_FILTERS } from '../db/queries';
 import {
   listPostingAccounts,
   bulkSetPostingTopics,
@@ -80,6 +81,7 @@ const CandidatesQuery = z.object({
     .transform((v) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]))
     .pipe(z.array(TopicSchema).max(50).optional()),
   search: z.string().trim().max(100).optional(),
+  media: z.enum(MEDIA_FILTERS).optional(),
   hideUsed: z
     .enum(['1', '0', 'true', 'false'])
     .optional()
@@ -193,7 +195,7 @@ router.post('/plans/manual', (req, res) => {
   handle(res, () => createManual(parsed.data));
 });
 
-// GET /api/distribution/plans/:id/candidates?accountId&postDate&topics&search&hideUsed&limit&offset
+// GET /api/distribution/plans/:id/candidates?accountId&postDate&topics&search&media&hideUsed&limit&offset
 // -> bai trong kho thuoc chu de cua nick, nhieu like nhat truoc, kem trang thai luat gian ngay
 router.get('/plans/:id/candidates', (req, res) => {
   const parsed = CandidatesQuery.safeParse(req.query);

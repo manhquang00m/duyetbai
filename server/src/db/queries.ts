@@ -119,6 +119,20 @@ export const REJECT_COND = `(${NOT_POSTED} AND (${REJECT_REASONS.map((r) => REJE
 export const MEDIA_FILTERS = ['complete', 'missing', 'imageOnly', 'videoOnly'] as const;
 export type MediaFilter = (typeof MEDIA_FILTERS)[number];
 
+/** Dieu kien SQL (alias p) cho 1 bo loc media - dung chung trang Bai viet va Ke hoach thu cong. */
+export function mediaFilterCond(f: MediaFilter): string {
+  switch (f) {
+    case 'complete':
+      return `(${HAS_VIDEO} AND ${HAS_IMAGE})`;
+    case 'missing':
+      return `NOT (${HAS_VIDEO} AND ${HAS_IMAGE})`;
+    case 'imageOnly':
+      return `(${HAS_IMAGE} AND NOT ${HAS_VIDEO})`;
+    case 'videoOnly':
+      return `(${HAS_VIDEO} AND NOT ${HAS_IMAGE})`;
+  }
+}
+
 export interface PostFilterOpts {
   search?: string;
   username?: string; // dung CHINH XAC 1 tac gia (khac search: search la LIKE nen de dinh nham)
@@ -186,14 +200,8 @@ export function buildPostFilterConds(opts: PostFilterOpts): { conds: string[]; a
   } else if (opts.postStatus === 'unposted') {
     conds.push("p.post_status <> 'posted'");
   }
-  if (opts.mediaFilter === 'complete') {
-    conds.push(`(${HAS_VIDEO} AND ${HAS_IMAGE})`);
-  } else if (opts.mediaFilter === 'missing') {
-    conds.push(`NOT (${HAS_VIDEO} AND ${HAS_IMAGE})`);
-  } else if (opts.mediaFilter === 'imageOnly') {
-    conds.push(`(${HAS_IMAGE} AND NOT ${HAS_VIDEO})`);
-  } else if (opts.mediaFilter === 'videoOnly') {
-    conds.push(`(${HAS_VIDEO} AND NOT ${HAS_IMAGE})`);
+  if (opts.mediaFilter) {
+    conds.push(mediaFilterCond(opts.mediaFilter));
   }
   if (opts.linkStatus) {
     conds.push(

@@ -7,6 +7,7 @@
 //   - 1 (bai, ban caption) chi dung 1 lan / ngay, moi nick       -> chan cung (DB ux_dist_date_post)
 //   - khong dung lai (bai, ban caption) o ngay LIEN KE (D-1, D+1) -> CANH BAO, nguoi dung xac nhan
 //     thi van gan (gan tay la de nguoi dung quyet, khong chan cung nhu auto).
+import type { MediaFilter } from '../db/queries';
 import {
   createManualPlan,
   getPlan,
@@ -140,6 +141,7 @@ export function listCandidates(opts: {
   postDate: string;
   topics?: string[];
   search?: string;
+  media?: MediaFilter;
   hideUsed?: boolean;
   limit: number;
   offset: number;
@@ -160,6 +162,7 @@ export function listCandidates(opts: {
   const pool = listPoolPostsByLikes({
     topics,
     search: opts.search,
+    media: opts.media,
     hideUsedFrom: opts.hideUsed ? from : undefined,
     hideUsedTo: opts.hideUsed ? to : undefined,
     limit: opts.limit,

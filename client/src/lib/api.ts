@@ -1170,6 +1170,7 @@ export async function fetchPlanCandidates(
     postDate: string
     topics?: string[]
     search?: string
+    media?: MediaFilter
     hideUsed?: boolean
     limit?: number
     offset?: number
@@ -1183,6 +1184,7 @@ export async function fetchPlanCandidates(
         postDate: params.postDate,
         topics: params.topics?.length ? params.topics : undefined,
         search: params.search || undefined,
+        media: params.media,
         hideUsed: params.hideUsed ? '1' : undefined,
         limit: params.limit,
         offset: params.offset,

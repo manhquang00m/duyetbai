@@ -27,6 +27,7 @@ import { CandidateList, type PendingGap } from '@/components/manual-plan/Candida
 import { ScheduleColumn } from '@/components/manual-plan/ScheduleColumn'
 import { dayLabel, isPostingAccount, isTyping, shortDay } from '@/components/manual-plan/shared'
 import { cn } from '@/lib/utils'
+import { MEDIA_VALUES } from '@/components/filters/mediaOptions'
 
 // Ngu canh dang gan song tren URL: F5 / gui link van mo dung nick + ngay + bo loc
 const SCHEMA = {
@@ -34,6 +35,7 @@ const SCHEMA = {
   date: q.str(''),
   topic: q.list([]),
   q: q.str(''),
+  media: q.enum(MEDIA_VALUES, 'all'),
   hide: q.bool(false),
 }
 const PAGE = 50
@@ -69,6 +71,7 @@ export function ManualPlanPage() {
   const date = dates.includes(v.date) ? v.date : dates.includes(todayIso()) ? todayIso() : (dates[0] ?? '')
   const topics = account ? v.topic.filter((t) => account.topics.includes(t)) : []
   const search = useDebouncedValue(v.q.trim(), 300)
+  const media = v.media === 'all' ? undefined : v.media
 
   // Chua chon nick / ngay (hoac tren URL khong hop le) -> tu chon nick dau tien, ngay hom nay/ngay dau
   useEffect(() => {
@@ -80,13 +83,14 @@ export function ManualPlanPage() {
   }, [plan, accountsQ.data, account, selectable, date, v.date, set])
 
   const candQ = useInfiniteQuery({
-    queryKey: ['dist-candidates', id, account?.id, date, topics, search, v.hide],
+    queryKey: ['dist-candidates', id, account?.id, date, topics, search, media, v.hide],
     queryFn: ({ pageParam }) =>
       fetchPlanCandidates(id, {
         accountId: account!.id,
         postDate: date,
         topics,
         search,
+        media,
         hideUsed: v.hide,
         limit: PAGE,
         offset: pageParam,
@@ -113,7 +117,7 @@ export function ManualPlanPage() {
   const [busyIds, setBusyIds] = useState<Set<number>>(new Set())
   const [tab, setTab] = useState<Tab>('posts')
 
-  const contextKey = `${account?.id}|${date}|${topics.join(',')}|${search}|${v.hide}`
+  const contextKey = `${account?.id}|${date}|${topics.join(',')}|${search}|${media}|${v.hide}`
   useEffect(() => {
     setActiveIndex(0)
     setPending(null)
@@ -423,6 +427,8 @@ export function ManualPlanPage() {
           onTopicsChange={(t) => set({ topic: t }, { replace: true })}
           search={v.q}
           onSearchChange={(s) => set({ q: s }, { replace: true })}
+          media={v.media}
+          onMediaChange={(m) => set({ media: m }, { replace: true })}
           hideUsed={v.hide}
           onHideUsedChange={(h) => set({ hide: h }, { replace: true })}
           items={candidates}

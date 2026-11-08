@@ -378,7 +378,7 @@
                 "continue_on_error": true,
                 "id": "043262b0-7e5d-4c5a-96cd-6be40bc9de88",
                 "display_text": "HTTP Request",
-                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/violations\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n       \\\"postedAt\\\": \\\"$bannedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/violations\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: qyqy3101\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n       \\\"postedAt\\\": \\\"$bannedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
                 "comment": null
               },
               {
@@ -1025,7 +1025,7 @@
                 "continue_on_error": true,
                 "id": "96298875-8b8d-467a-a8f4-94a07850f511",
                 "display_text": "HTTP Request",
-                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"posted\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: qyqy3101\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"posted\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
                 "comment": null
               }
             ],
@@ -1359,7 +1359,7 @@
                 "continue_on_error": true,
                 "id": "e595da99-c8d7-41df-bfef-855dfac51999",
                 "display_text": "HTTP Request",
-                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: manhquang00m02112000\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"commented\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
+                "raw_input": "[{\"Key\":\"URL\",\"Value\":\"http://localhost:3000/api/automation/post-results\"},{\"Key\":\"METHOD\",\"Value\":\"POST\"},{\"Key\":\"HEADER\",\"Value\":\"X-Api-Key: qyqy3101\\r\\nContent-Type: application/json\"},{\"Key\":\"DATA\",\"Value\":\"{\\r\\n  \\\"results\\\": [\\r\\n    {\\r\\n      \\\"accountName\\\": \\\"$inputExcel[A]\\\",\\r\\n      \\\"postId\\\": \\\"$inputExcel[H]\\\",\\r\\n      \\\"postDate\\\": \\\"$inputExcel[J]\\\",\\r\\n      \\\"status\\\": \\\"commented\\\",\\r\\n       \\\"postedAt\\\": \\\"$postedAt\\\"\\r\\n    }\\r\\n  ]\\r\\n}\"},{\"Key\":\"TIMEOUT\",\"Value\":\"15\"},{\"Key\":\"USE_PROFILE_PROXY\",\"Value\":\"False\"}]",
                 "comment": null
               }
             ],

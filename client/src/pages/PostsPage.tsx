@@ -70,6 +70,7 @@ import { SavedViews } from '@/components/filters/SavedViews'
 import { PostThumb } from '@/components/PostThumb'
 import { LikesChip } from '@/components/LikesChip'
 import { cn } from '@/lib/utils'
+import { MEDIA_OPTIONS, MEDIA_VALUES } from '@/components/filters/mediaOptions'
 
 const PAGE_SIZE_OPTIONS = ['20', '50', '100', '200'] as const
 
@@ -83,13 +84,6 @@ const LINK_OPTIONS = [
   { value: 'bad', label: 'Link chết hoặc hết hàng' },
   { value: 'review', label: 'Cần xem lại' },
   { value: 'unchecked', label: 'Chưa kiểm tra' },
-] as const
-const MEDIA_OPTIONS = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'imageOnly', label: 'Chỉ có ảnh' },
-  { value: 'videoOnly', label: 'Chỉ có video' },
-  { value: 'complete', label: 'Đủ cả ảnh & video' },
-  { value: 'missing', label: 'Thiếu ảnh hoặc video' },
 ] as const
 const REWRITE_OPTIONS = [
   { value: 'all', label: 'Tất cả' },
@@ -115,7 +109,7 @@ const POST_FILTERS = {
   oneShopee: q.bool(),
   postStatus: q.enum(['all', 'unposted', 'posted'] as const, 'all'),
   link: q.enum(['all', 'bad', 'dead', 'out_of_stock', 'review', 'unchecked'] as const, 'all'),
-  media: q.enum(['all', 'complete', 'missing', 'imageOnly', 'videoOnly'] as const, 'all'),
+  media: q.enum(MEDIA_VALUES, 'all'),
   rewritten: q.enum(['all', 'yes', 'no'] as const, 'all'),
   reject: q.bool(),
   topics: q.list(),
