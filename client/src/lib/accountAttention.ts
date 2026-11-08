@@ -1,9 +1,9 @@
 import type { Account } from '@/lib/api'
 
 /** Trang thai "dang dung duoc" - mac dinh cua bang Accounts. */
-export const USABLE_STATUSES = ['Live', 'Kháng thành công', 'Chưa kháng'] as const
+export const USABLE_STATUSES = ['Live'] as const
 /** Trang thai duoc nhan bai (them "Dang ngam" de gan chu de truoc) - Phan phoi bai, Nhat ky dang. */
-export const POSTING_STATUSES = ['Kháng thành công', 'Live', 'Chưa kháng', 'Đang ngâm'] as const
+export const POSTING_STATUSES = ['Live', 'Đang ngâm'] as const
 
 export type AttentionReason = 'shadowban' | 'proxy-die' | 'suspect' | 'no-proxy'
 

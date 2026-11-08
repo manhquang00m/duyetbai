@@ -295,11 +295,10 @@ function BulkStatusButton({
 }
 
 /**
- * Chi to mau trang thai can xu ly: Die (do) > Dang khang/ngam (vang). Trang thai on hoac chua bat
- * dau (Live, Khang thanh cong, Chua khang, Chua tao nick) la chu xam - tranh ca cot pill xanh.
+ * Chi to mau trang thai can xu ly: Die (do) > Dang ngam (vang). Trang thai on hoac chua bat dau
+ * (Live, Chua tao nick) la chu xam - tranh ca cot pill xanh.
  */
 const APPEAL_PILL: Record<string, string> = {
-  'Đang kháng': 'bg-pill-warning text-pill-warning-ink',
   'Đang ngâm': 'bg-pill-warning text-pill-warning-ink',
   Die: 'bg-pill-negative text-pill-negative-ink',
 }

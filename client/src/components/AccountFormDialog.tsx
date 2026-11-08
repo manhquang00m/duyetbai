@@ -37,7 +37,7 @@ function emptyForm(): AccountInput {
     name: '',
     active: true,
     banned: false,
-    device: '',
+    device: 'GPM GLOBAL', // nick moi mac dinh chay tren GPM Login (khop gia tri da dung cho phan lon nick)
     pass_threads: '',
     gmail: '',
     gmail_password: '',

@@ -59,3 +59,13 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+// PWA: service worker chi lo trang "chua ket noi duoc" khi server tat (xem public/sw.js).
+// Chi dang ky trong secure context (localhost / https devtunnel) - trinh duyet bat buoc.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // khong dang ky duoc (trinh duyet chan, private mode...) -> app van chay binh thuong
+    })
+  })
+}

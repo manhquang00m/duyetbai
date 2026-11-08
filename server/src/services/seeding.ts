@@ -10,7 +10,7 @@ import { SEEDING_COMMENTS } from './seedingComments';
  */
 
 // "Dang chay" = giong Phan phoi bai: Active, khong banned, 1 trong 4 trang thai dung duoc.
-const SEEDING_STATUSES = new Set(['Live', 'Kháng thành công', 'Chưa kháng', 'Đang ngâm']);
+const SEEDING_STATUSES = new Set(['Live', 'Đang ngâm']);
 const USERNAME_RE = /^[A-Za-z0-9._]{1,30}$/;
 
 export const SEEDING_MAX_PER_ROW = 50;

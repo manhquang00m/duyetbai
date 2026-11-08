@@ -452,9 +452,11 @@ for (const stmt of [
   }
 }
 
-// Migration: doi ten gia tri enum 'Thanh cong' -> 'Khang thanh cong' (xem db/accountEnums.ts).
-// Idempotent tu nhien: sau lan chay dau, khong con dong nao khop dieu kien WHERE nua.
-db.exec("UPDATE accounts SET appeal_status = 'Kháng thành công' WHERE appeal_status = 'Thành công'");
+// Migration: gop 'Khang thanh cong' / 'Chua khang' / 'Dang khang' (va ten cu 'Thanh cong') vao 'Live'
+// (xem db/accountEnums.ts). Idempotent tu nhien: sau lan chay dau khong con dong nao khop WHERE.
+db.exec(
+  "UPDATE accounts SET appeal_status = 'Live' WHERE appeal_status IN ('Kháng thành công', 'Chưa kháng', 'Đang kháng', 'Thành công')",
+);
 
 // Index cho tinh nang "Phan phoi bai".
 // KHONG con rang buoc "1 account khong bao gio nhan lai 1 bai TRON DOI" nua - da noi long xuong

@@ -63,7 +63,7 @@ export function listPostingAccounts(): PostingAccount[] {
 // Chi 4 trang thai nay duoc coi la "dung de dang" cho Phan phoi bai - cac trang thai con lai
 // (Chua tao nick, Dang khang, Die, hoac chua dat) deu bi loai. Gia tri phai KHOP DUNG tung ky tu
 // voi accountEnums.ts (APPEAL_STATUSES).
-const DISTRIBUTION_ALLOWED_STATUSES = ['Live', 'Kháng thành công', 'Chưa kháng', 'Đang ngâm'];
+const DISTRIBUTION_ALLOWED_STATUSES = ['Live', 'Đang ngâm'];
 
 /**
  * Account DU DIEU KIEN nhan bai: active, khong banned, trang thai thuoc

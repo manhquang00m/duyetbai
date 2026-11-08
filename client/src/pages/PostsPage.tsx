@@ -55,6 +55,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
 import { FloatingBar } from '@/components/FloatingBar'
 import { Pagination } from '@/components/Pagination'
+import { useFitToViewport } from '@/lib/useFitToViewport'
 import { RescrapeDialog } from '@/components/RescrapeDialog'
 import { ShopeeLinkCheckDialog } from '@/components/ShopeeLinkCheckDialog'
 import { PipelineProgress } from '@/components/PipelineProgress'
@@ -107,7 +108,8 @@ const POST_FILTERS = {
   q: q.str(),
   from: q.str(),
   to: q.str(),
-  sort: q.enum(['newest', 'likes', 'clicks', 'posted'] as const satisfies readonly PostSort[], 'newest'),
+  // Mac dinh nhieu tim nhat truoc (bai hot nhat de chon dang); 'newest' van chon duoc o nut Sap xep
+  sort: q.enum(['newest', 'likes', 'clicks', 'posted'] as const satisfies readonly PostSort[], 'likes'),
   noShopee: q.bool(),
   notUpdated: q.bool(),
   oneShopee: q.bool(),
@@ -139,8 +141,8 @@ const FILTER_KEYS = [
 ] as const
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Mới thu thập' },
   { value: 'likes', label: 'Nhiều tim nhất' },
+  { value: 'newest', label: 'Mới thu thập' },
   { value: 'clicks', label: 'Nhiều click nhất' },
   { value: 'posted', label: 'Đăng nhiều nhất' },
 ] as const
@@ -733,10 +735,13 @@ export function PostsPage() {
     el?.scrollIntoView({ block: 'nearest' })
   }, [detailId])
 
-  // Doi trang: dua dau danh sach len ngay duoi thanh tren cung (48px) neu dang cuon qua
+  // Man hinh rong (bang): khung danh sach vua khit man hinh, cuon ben trong
   const listRef = useRef<HTMLDivElement>(null)
+  const listMaxH = useFitToViewport(listRef)
+  // Doi trang: ve dau khung cuon; man hinh nho (cuon theo trang) thi dua dau danh sach len duoi thanh tren cung
   const goPage = (p: number) => {
     setPage(p)
+    if (listRef.current) listRef.current.scrollTop = 0
     const top = listRef.current?.getBoundingClientRect().top ?? 0
     if (top < 48) window.scrollTo({ top: window.scrollY + top - 64 })
   }
@@ -926,7 +931,7 @@ export function PostsPage() {
             label="Sắp xếp"
             neutral
             value={sort}
-            emptyValue="newest"
+            emptyValue="likes"
             options={SORT_OPTIONS}
             onChange={(v) => setFilter({ sort: v as typeof sort })}
           />
@@ -998,7 +1003,7 @@ export function PostsPage() {
             label="Sắp xếp"
             neutral
             value={sort}
-            emptyValue="newest"
+            emptyValue="likes"
             options={SORT_OPTIONS}
             onChange={(v) => setFilter({ sort: v as typeof sort })}
           />
@@ -1019,8 +1024,13 @@ export function PostsPage() {
         </div>
       )}
 
-      {/* overflow-clip (khong phai hidden): giu bo goc ma khong tao khung cuon -> thead dinh duoc theo trang */}
-      <div ref={listRef} className="overflow-clip rounded-xl border bg-card">
+      {/* Man hinh nho: overflow-clip giu bo goc, cuon theo trang. >= xl: cao toi da vua man hinh
+          (useFitToViewport), cuon trong khung, thead dinh o dau khung. */}
+      <div
+        ref={listRef}
+        className="overflow-clip rounded-xl border bg-card xl:overflow-y-auto xl:overscroll-contain"
+        style={listMaxH ? { maxHeight: listMaxH } : undefined}
+      >
         <div className="xl:hidden">
           {(items.length > 0 || isLoading) && (
             <div className="flex items-center gap-2.5 border-b bg-card px-3 py-2.5 text-xs font-medium text-muted-foreground">
@@ -1060,10 +1070,10 @@ export function PostsPage() {
           {!isLoading && items.length === 0 && emptyState}
         </div>
 
-        {/* Cuon theo trang (khong long khung cuon rieng); tieu de cot dinh ngay duoi thanh tren cung */}
+        {/* Bang (>= xl) cuon trong khung listRef; tieu de cot dinh o dau khung */}
         <div className="hidden xl:block">
           <table className="w-full text-sm">
-            <thead className="sticky top-12 z-10 bg-card">
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="text-xs text-muted-foreground [&>th]:font-medium [&>th]:shadow-[inset_0_-1px_0_var(--color-border)]">
                 <th className="py-2.5 pl-3 pr-2 text-left">
                   <div className="flex items-center gap-2.5">

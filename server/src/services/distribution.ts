@@ -95,8 +95,8 @@ function computeAssignments(opts: PlanOptions): CoreResult {
   }
   if (accounts.length === 0) {
     throw new DistributionError(
-      'Không có tài khoản nào đủ điều kiện (cần: đang bật, không banned, trạng thái Live/Kháng ' +
-        'thành công/Chưa kháng/Đang ngâm, và đã gán chủ đề)',
+      'Không có tài khoản nào đủ điều kiện (cần: đang bật, không banned, trạng thái Live/Đang ngâm, ' +
+        'và đã gán chủ đề)',
     );
   }
 

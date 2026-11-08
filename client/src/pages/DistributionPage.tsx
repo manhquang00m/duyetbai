@@ -910,11 +910,9 @@ function RulesDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
           <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
             <li>Đang bật (Active), không banned</li>
             <li>
-              Trạng thái là <strong className="text-foreground">Live</strong>,{' '}
-              <strong className="text-foreground">Kháng thành công</strong>,{' '}
-              <strong className="text-foreground">Chưa kháng</strong>, hoặc{' '}
+              Trạng thái là <strong className="text-foreground">Live</strong> hoặc{' '}
               <strong className="text-foreground">Đang ngâm</strong> — các trạng thái khác (Chưa
-              tạo nick, Đang kháng, Die, chưa đặt) đều bị loại
+              tạo nick, Die, chưa đặt) đều bị loại
             </li>
             <li>Đã gán ít nhất 1 chủ đề đăng (trạng thái proxy không ảnh hưởng)</li>
           </ul>

@@ -95,15 +95,8 @@ export const PROXY_TYPES = [
 
 // Y nghia GIO LA "trang thai chung" cua account (khong con rieng ve khang) - xem
 // server/src/db/accountEnums.ts. 'Die' la gia tri duy nhat tu dong danh dau banned luc import.
-export const APPEAL_STATUSES = [
-  'Kháng thành công',
-  'Chưa kháng',
-  'Die',
-  'Đang kháng',
-  'Live',
-  'Chưa tạo nick',
-  'Đang ngâm',
-] as const
+// 'Kháng thành công' / 'Chưa kháng' / 'Đang kháng' da gop vao 'Live' (khop server).
+export const APPEAL_STATUSES = ['Live', 'Đang ngâm', 'Chưa tạo nick', 'Die'] as const
 
 export type ProxyType = (typeof PROXY_TYPES)[number]
 export type AppealStatus = (typeof APPEAL_STATUSES)[number]

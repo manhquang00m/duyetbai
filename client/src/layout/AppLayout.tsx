@@ -14,7 +14,6 @@ import {
   ClipboardList,
   Lightbulb,
   Tags,
-  AtSign,
   ChevronRight,
   Menu,
   X,
@@ -112,11 +111,11 @@ function currentRoute(pathname: string): { group?: string; label: string } {
   return { label: 'Threads Affiliate' }
 }
 
-/** Mark: @ (handle Threads) to mau cam Shopee - noi 2 the gioi cua san pham. */
+/** Mark: logo app (chu T soi chi + tui cam) - cung file voi favicon/PWA, ve boi launcher/make_icon.py. */
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2" title="Threads Affiliate · Phase 2 · v0.1">
-      <AtSign className="h-5 w-5 shrink-0 text-chart-1" strokeWidth={2.5} aria-hidden />
+      <img src="/icons/icon-192.png" alt="" aria-hidden className="h-6 w-6 shrink-0" draggable={false} />
       {compact ? (
         <span className="sr-only">Threads Affiliate</span>
       ) : (
