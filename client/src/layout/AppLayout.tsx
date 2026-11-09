@@ -21,6 +21,7 @@ import {
   PanelLeftOpen,
   Search,
   Repeat2,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -70,6 +71,10 @@ const groups: { title: string; items: NavItem[] }[] = [
       { to: '/affiliate', label: 'Hiệu quả Affiliate', icon: TrendingUp },
       { to: '/insights', label: 'Phân tích & chiến lược', icon: Lightbulb },
     ],
+  },
+  {
+    title: 'Trợ giúp',
+    items: [{ to: '/guide', label: 'Hướng dẫn', icon: BookOpen }],
   },
 ]
 

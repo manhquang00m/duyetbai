@@ -1,5 +1,6 @@
 import { db } from './index';
 import type { PostResult } from '../services/pipeline';
+import { stripTiktokLinks } from '../utils/tiktok';
 
 const upsertPost = db.prepare(`
   INSERT INTO posts (post_id, url, username, title, caption, likes, comments, views, post_date, scrape_error, shopee_comment_count, scraped_at)
@@ -105,7 +106,7 @@ export function saveScrape(
   try {
     updateScrape.run(postDate || null, scrapeError ?? null, shopeeCommentCount, postId);
     delEntries.run(postId);
-    for (const e of entries) insEntry.run(postId, e.comment, e.link);
+    for (const e of entries) insEntry.run(postId, stripTiktokLinks(e.comment), e.link);
     db.exec('COMMIT');
   } catch (err) {
     db.exec('ROLLBACK');
@@ -172,7 +173,7 @@ export function savePostResult(r: PostResult): void {
 
     delEntries.run(r.postId);
     for (const e of r.entries) {
-      insEntry.run(r.postId, e.comment, e.link);
+      insEntry.run(r.postId, stripTiktokLinks(e.comment), e.link);
     }
 
     db.exec('COMMIT');

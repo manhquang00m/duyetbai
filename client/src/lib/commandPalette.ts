@@ -18,4 +18,5 @@ export const VIEWS: { label: string; to: string; keywords?: string }[] = [
   { label: 'Bài chưa viết lại', to: '/posts?rewritten=no', keywords: 'rewrite caption' },
   { label: 'Bài bị loại (cần xoá)', to: '/posts?reject=1', keywords: 'loai xoa link chet het hang' },
   { label: 'Proxy die', to: '/proxy?tab=die' },
+  { label: 'Hướng dẫn: Đăng bài', to: '/guide/dang-bai', keywords: 'huong dan dang bai gpm upload threads automation' },
 ]

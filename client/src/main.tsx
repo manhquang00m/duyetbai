@@ -21,6 +21,7 @@ import { InsightsPage } from './pages/InsightsPage'
 import { PostLogPage } from '@/pages/PostLogPage'
 import { TopicsPage } from '@/pages/TopicsPage'
 import { SeedingPage } from '@/pages/SeedingPage'
+import { GuidePage } from '@/pages/GuidePage'
 import { ConfirmHost } from '@/components/ConfirmDialog'
 
 initTheme()
@@ -46,6 +47,8 @@ const router = createBrowserRouter([
       { path: 'post-log', element: <PostLogPage /> },
       { path: 'topics', element: <TopicsPage /> },
       { path: 'seeding', element: <SeedingPage /> },
+      { path: 'guide', element: <GuidePage /> },
+      { path: 'guide/:lessonId', element: <GuidePage /> },
     ],
   },
 ])

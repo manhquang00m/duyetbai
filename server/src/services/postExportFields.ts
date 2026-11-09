@@ -7,10 +7,15 @@ import { DOWNLOAD_DIR } from '../config';
 // Noi dung ben duoi giu NGUYEN VAN tu exporter.ts, khong doi logic.
 
 // Xoa cac doan link shopee (ke ca bi cat "…") khoi text comment.
-const SHOPEE_TOKEN_RE = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:shopee\.vn|shp\.ee)\/?\S*(?:[……]|\.\.\.)?/gi;
+// Kem nhan "Link:" dung NGAY truoc link (neu co) - link cu bi bo, link moi noi xuong duoi, giu
+// nhan lai chi con "Link:" tro troi trong comment dang ra.
+const SHOPEE_TOKEN_RE =
+  /(?:\bLink\s*:\s*)?(?:https?:\/\/)?(?:[\w-]+\.)*(?:shopee\.vn|shp\.ee)\/?\S*(?:[……]|\.\.\.)?/gi;
 
 export function stripShopeeTokens(text: string): string {
-  return text.replace(SHOPEE_TOKEN_RE, ' ').replace(/\s+/g, ' ').trim();
+  const out = text.replace(SHOPEE_TOKEN_RE, ' ').replace(/\s+/g, ' ').trim();
+  // Comment chi co link -> con tro dau "·" -> coi nhu rong (chi dang link moi)
+  return /^[\s·•\-–—:.,]*$/.test(out) ? '' : out;
 }
 
 const mediaFor = db.prepare(
